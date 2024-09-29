@@ -83,38 +83,53 @@ const AddressScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "yellow", // Softer background color
   },
   scrollView: {
     flexGrow: 1,
     justifyContent: "center",
-    padding: 20,
+    paddingVertical: 30, // Increase vertical padding for more spacing
+    paddingHorizontal: 20,
   },
   title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 20,
+    fontSize: 26, // Slightly larger title
+    fontWeight: "700", // Heavier font-weight for a bolder look
+    color: "#333", // Darker text color for better readability
+    marginBottom: 25, // Increased spacing below title
     textAlign: "center",
   },
   input: {
-    backgroundColor: "#fff",
+    backgroundColor: "#fafafa", // Lighter background for input
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 15,
+    borderColor: "#ccc", // Softer border color
+    borderRadius: 8, // More rounded corners
+    padding: 12, // Slightly more padding for a comfortable input size
+    marginBottom: 20, // Increased margin for better separation
     fontSize: 16,
+    shadowColor: "#000", // Subtle shadow effect
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2, // Elevation for shadow effect in Android
   },
   button: {
-    backgroundColor: "#007AFF",
-    padding: 15,
-    borderRadius: 5,
+    backgroundColor: "#28a745", // Changed to a green color for a fresher look
+    paddingVertical: 15,
+    paddingHorizontal: 25, // Added horizontal padding for a bigger button
+    borderRadius: 8, // More rounded button corners
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3, // Elevation for shadow in Android
   },
   buttonText: {
     color: "#fff",
     fontSize: 18,
-    fontWeight: "bold",
+    fontWeight: "600", // Slightly lighter font-weight
+    textTransform: "uppercase", // Capitalize text for emphasis
+    letterSpacing: 1, // Spacing between letters for a sleek look
   },
 });
 
