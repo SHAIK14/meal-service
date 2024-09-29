@@ -7,7 +7,7 @@ import InformationScreen from "./src/screens/InformationScreen";
 import AddressScreen from "./src/screens/AddressScreen";
 
 const Stack = createNativeStackNavigator();
-
+// this is the change in the code
 export default function App() {
   return (
     <NavigationContainer>
@@ -36,3 +36,5 @@ export default function App() {
     </NavigationContainer>
   );
 }
+
+// this is the change in the code
