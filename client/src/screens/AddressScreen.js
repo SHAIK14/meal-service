@@ -24,7 +24,6 @@ const AddressScreen = ({ navigation }) => {
       return;
     }
 
-    
     console.log("Address Info:", { street, city, state, zipCode, country });
     Alert.alert("Success", "Address information collected successfully");
   };
