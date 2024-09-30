@@ -9,10 +9,14 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  ImageBackground,
+  Dimensions,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { updateUserInfo, getUserStatus } from "../utils/api";
-// import AsyncStorage from "@react-native-async-storage/async-storage";
+import backgroundImage from "../../assets/background.png";
+
+const { height, width } = Dimensions.get("window");
 
 const InformationScreen = ({ navigation }) => {
   const [firstName, setFirstName] = useState("");
@@ -20,13 +24,13 @@ const InformationScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [gender, setGender] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
     const fetchUserInfo = async () => {
       try {
         const userStatus = await getUserStatus();
         if (userStatus.isInfoComplete) {
-       
-          const userInfo = await updateUserInfo({}); 
+          const userInfo = await updateUserInfo({});
           setFirstName(userInfo.firstName || "");
           setLastName(userInfo.lastName || "");
           setEmail(userInfo.email || "");
@@ -70,101 +74,133 @@ const InformationScreen = ({ navigation }) => {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
+    <ImageBackground
+      source={backgroundImage}
+      style={styles.background}
+      resizeMode="cover"
     >
-      <ScrollView contentContainerStyle={styles.scrollView}>
-        <Text style={styles.title}>Complete Your Profile</Text>
+      <View style={styles.overlay} />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.container}
+      >
+        <ScrollView contentContainerStyle={styles.scrollView}>
+          <View style={styles.formContainer}>
+            <Text style={styles.title}>Complete Your Profile</Text>
 
-        <TextInput
-          style={styles.input}
-          placeholder="First Name"
-          value={firstName}
-          onChangeText={setFirstName}
-        />
+            <Text style={styles.subtitle}>First Name</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter your first name"
+              value={firstName}
+              onChangeText={setFirstName}
+            />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Last Name"
-          value={lastName}
-          onChangeText={setLastName}
-        />
+            <Text style={styles.subtitle}>Last Name</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter your last name"
+              value={lastName}
+              onChangeText={setLastName}
+            />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
+            <Text style={styles.subtitle}>Email</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter your email"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
 
-        <View style={styles.pickerContainer}>
-          <Picker
-            selectedValue={gender}
-            onValueChange={(itemValue) => setGender(itemValue)}
-            style={styles.picker}
-          >
-            <Picker.Item label="Select Gender" value="" />
-            <Picker.Item label="Male" value="male" />
-            <Picker.Item label="Female" value="female" />
-            <Picker.Item label="Other" value="other" />
-          </Picker>
-        </View>
+            <Text style={styles.subtitle}>Select your Gender</Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={gender}
+                onValueChange={(itemValue) => setGender(itemValue)}
+                style={styles.picker}
+              >
+                <Picker.Item label="Select Gender" value="" />
+                <Picker.Item label="Male" value="male" />
+                <Picker.Item label="Female" value="female" />
+                <Picker.Item label="Other" value="other" />
+              </Picker>
+            </View>
 
-        <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-          <Text style={styles.buttonText}>Submit</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </KeyboardAvoidingView>
+            <TouchableOpacity style={styles.nextButton} onPress={handleSubmit}>
+              <Text style={styles.buttonText}>NEXT</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
+  background: {
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
   },
   scrollView: {
     flexGrow: 1,
-    justifyContent: "center",
-    padding: 20,
+    justifyContent: "flex-end",
+  },
+  formContainer: {
+    backgroundColor: "#fff",
+    padding: width * 0.05,
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
+    maxHeight: height * 0.8,
   },
   title: {
-    fontSize: 24,
+    fontSize: width * 0.06,
     fontWeight: "bold",
-    marginBottom: 20,
+    marginBottom: height * 0.02,
     textAlign: "center",
   },
+  subtitle: {
+    fontSize: width * 0.04,
+    fontWeight: "bold",
+    color: "#858585",
+    marginBottom: height * 0.01,
+  },
   input: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 15,
-    fontSize: 16,
+    height: height * 0.06,
+    borderBottomColor: "#858585",
+    borderBottomWidth: 1,
+    marginBottom: height * 0.02,
+    fontSize: width * 0.04,
   },
   pickerContainer: {
-    backgroundColor: "#fff",
+    borderColor: "#858585",
     borderWidth: 1,
-    borderColor: "#ddd",
     borderRadius: 5,
-    marginBottom: 15,
+    marginBottom: height * 0.02,
   },
   picker: {
-    height: 50,
+    height: height * 0.06,
+    width: "100%",
+    color: "#858585",
   },
-  button: {
-    backgroundColor: "#007AFF",
-    padding: 15,
+  nextButton: {
+    backgroundColor: "#FAF9D9",
+    paddingVertical: height * 0.015,
     borderRadius: 5,
     alignItems: "center",
+    marginTop: height * 0.02,
   },
   buttonText: {
-    color: "#fff",
-    fontSize: 18,
+    color: "black",
+    fontSize: width * 0.04,
     fontWeight: "bold",
   },
 });
