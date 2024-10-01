@@ -10,39 +10,60 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Modal,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
-import { Picker } from "@react-native-picker/picker";
+import { Ionicons } from "@expo/vector-icons";
 import { requestOTP } from "../utils/api";
 import backgroundImage from "../../assets/background.png";
 
 const { width, height } = Dimensions.get("window");
 
 const countryCodes = [
-  { code: "+966", country: "Saudi Arabia", maxLength: 9 },
-  { code: "+91", country: "India", maxLength: 10 },
+  { code: "+966", country: "Saudi Arabia", maxLength: 9, flag: "🇸🇦" },
+  { code: "+91", country: "India", maxLength: 10, flag: "🇮🇳" },
 ];
 
 const LoginScreen = ({ navigation }) => {
-  const [countryCode, setCountryCode] = useState("+966");
+  const [selectedCountry, setSelectedCountry] = useState(countryCodes[0]);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [error, setError] = useState("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSendOtp = async () => {
     setError("");
+    setIsLoading(true);
     try {
-      const selectedCountry = countryCodes.find((c) => c.code === countryCode);
       if (phoneNumber.length !== selectedCountry.maxLength) {
         throw new Error(
           `Phone number must be ${selectedCountry.maxLength} digits for ${selectedCountry.country}`
         );
       }
-      await requestOTP(countryCode + phoneNumber);
+      const fullPhoneNumber = selectedCountry.code + phoneNumber;
+      console.log(`Sending OTP to ${fullPhoneNumber}`);
+      const response = await requestOTP(fullPhoneNumber);
+      setIsLoading(false);
+      console.log("OTP request successful:", response);
       navigation.navigate("OtpScreen", {
-        phoneNumber: countryCode + phoneNumber,
+        phoneNumber: fullPhoneNumber,
       });
     } catch (err) {
-      setError(err.message);
+      setIsLoading(false);
+      console.error("Error sending OTP:", err);
+      setError(err.message || "An error occurred while sending OTP");
+      Alert.alert(
+        "Error",
+        err.message || "An error occurred while sending OTP"
+      );
     }
+  };
+  const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
+
+  const selectCountry = (country) => {
+    setSelectedCountry(country);
+    setIsDropdownOpen(false);
   };
 
   return (
@@ -60,42 +81,64 @@ const LoginScreen = ({ navigation }) => {
           <View style={styles.formContainer}>
             <Text style={styles.title}>Welcome to Zafran Valley</Text>
             <View style={styles.phoneContainer}>
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={countryCode}
-                  onValueChange={(itemValue) => setCountryCode(itemValue)}
-                  style={styles.picker}
-                >
-                  {countryCodes.map((country) => (
-                    <Picker.Item
-                      key={country.code}
-                      label={country.code}
-                      value={country.code}
-                    />
-                  ))}
-                </Picker>
-              </View>
+              <TouchableOpacity
+                style={styles.dropdownButton}
+                onPress={toggleDropdown}
+              >
+                <Text style={styles.dropdownButtonText}>
+                  {selectedCountry.flag} {selectedCountry.code}
+                </Text>
+                <Ionicons name="chevron-down" size={24} color="black" />
+              </TouchableOpacity>
               <TextInput
                 style={styles.phoneInput}
                 placeholder="Enter your phone number"
                 keyboardType="phone-pad"
                 value={phoneNumber}
                 onChangeText={setPhoneNumber}
-                maxLength={
-                  countryCodes.find((c) => c.code === countryCode).maxLength
-                }
+                maxLength={selectedCountry.maxLength}
               />
             </View>
             <TouchableOpacity
-              style={styles.verifyButton}
+              style={[styles.verifyButton, isLoading && styles.disabledButton]}
               onPress={handleSendOtp}
+              disabled={isLoading}
             >
-              <Text style={styles.buttonText}>VERIFY</Text>
+              {isLoading ? (
+                <ActivityIndicator color="black" />
+              ) : (
+                <Text style={styles.buttonText}>VERIFY</Text>
+              )}
             </TouchableOpacity>
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Modal visible={isDropdownOpen} transparent={true} animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Select Country</Text>
+            {countryCodes.map((country) => (
+              <TouchableOpacity
+                key={country.code}
+                style={styles.countryOption}
+                onPress={() => selectCountry(country)}
+              >
+                <Text style={styles.countryOptionText}>
+                  {country.flag} {country.country} ({country.code})
+                </Text>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={toggleDropdown}
+            >
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ImageBackground>
   );
 };
@@ -136,23 +179,29 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: height * 0.02,
   },
-  pickerContainer: {
+  dropdownButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     width: width * 0.25,
-    borderWidth: 1,
-    borderColor: "gray",
-    borderRadius: 5,
-    marginRight: width * 0.02,
-  },
-  picker: {
-    height: 40,
-  },
-  phoneInput: {
-    flex: 1,
-    height: 40,
+    height: 50,
     borderWidth: 1,
     borderColor: "gray",
     borderRadius: 5,
     paddingHorizontal: 10,
+    marginRight: width * 0.02,
+  },
+  dropdownButtonText: {
+    fontSize: width * 0.04,
+  },
+  phoneInput: {
+    flex: 1,
+    height: 50,
+    borderWidth: 1,
+    borderColor: "gray",
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    fontSize: width * 0.04,
   },
   verifyButton: {
     backgroundColor: "#FAF9D9",
@@ -161,6 +210,9 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     alignItems: "center",
     marginTop: height * 0.03,
+  },
+  disabledButton: {
+    opacity: 0.7,
   },
   buttonText: {
     color: "black",
@@ -172,6 +224,42 @@ const styles = StyleSheet.create({
     marginTop: height * 0.02,
     textAlign: "center",
     fontSize: width * 0.035,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalContent: {
+    backgroundColor: "white",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: width * 0.05,
+    fontWeight: "bold",
+    marginBottom: 15,
+    textAlign: "center",
+  },
+  countryOption: {
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  countryOptionText: {
+    fontSize: width * 0.04,
+  },
+  closeButton: {
+    marginTop: 20,
+    padding: 15,
+    backgroundColor: "#FAF9D9",
+    borderRadius: 5,
+    alignItems: "center",
+  },
+  closeButtonText: {
+    fontSize: width * 0.04,
+    fontWeight: "bold",
   },
 });
 

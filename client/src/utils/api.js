@@ -1,23 +1,46 @@
+import { Platform } from "react-native";
+import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-const API_URL = "http://localhost:5000/api";
-
-export const requestOTP = async (phoneNumber) => {
-  const response = await fetch(`${API_URL}/auth/request-otp`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ phoneNumber }),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || "Failed to request OTP");
+// const API_URL = "http://localhost:5000/api";
+const getApiUrl = () => {
+  if (__DEV__) {
+    const localIpAddress = "192.168.1.105"; // Replace with your actual IP address if different
+    return `http://${localIpAddress}:5000/api`;
+  } else {
+    return "https://your-production-api-url.com/api";
   }
-
-  return response.json();
 };
 
+export const API_URL = getApiUrl();
+console.log("API_URL:", API_URL);
+export const requestOTP = async (phoneNumber) => {
+  console.log(
+    `Requesting OTP for ${phoneNumber} to ${API_URL}/auth/request-otp`
+  );
+  try {
+    const response = await fetch(`${API_URL}/auth/request-otp`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ phoneNumber }),
+    });
+
+    console.log("Response status:", response.status);
+
+    const responseData = await response.json();
+    console.log("Response data:", responseData);
+
+    if (!response.ok) {
+      throw new Error(responseData.message || "Failed to request OTP");
+    }
+
+    return responseData;
+  } catch (error) {
+    console.error("Error in requestOTP:", error);
+    throw error;
+  }
+};
 export const verifyOTP = async (phoneNumber, otp) => {
   const response = await fetch(`${API_URL}/auth/verify-otp`, {
     method: "POST",

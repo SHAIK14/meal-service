@@ -1,109 +1,57 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
-} from "react-native";
+import React from "react";
+import { StyleSheet, View, Text, TouchableOpacity } from "react-native";
+import MapView from "react-native-maps";
 
 const AddressScreen = ({ navigation }) => {
-  const [street, setStreet] = useState("");
-  const [city, setCity] = useState("");
-  const [state, setState] = useState("");
-  const [zipCode, setZipCode] = useState("");
-  const [country, setCountry] = useState("");
-
   const handleSubmit = () => {
-    if (!street || !city || !state || !zipCode || !country) {
-      Alert.alert("Error", "Please fill in all fields");
-      return;
-    }
-
-    console.log("Address Info:", { street, city, state, zipCode, country });
-    Alert.alert("Success", "Address information collected successfully");
+    // This is a placeholder for the submit functionality
+    // You can implement the address submission logic here
+    console.log("Address submitted");
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
-    >
-      <ScrollView contentContainerStyle={styles.scrollView}>
-        <Text style={styles.title}>Enter Your Address</Text>
-
-        <TextInput
-          style={styles.input}
-          placeholder="Street"
-          value={street}
-          onChangeText={setStreet}
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="City"
-          value={city}
-          onChangeText={setCity}
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="State"
-          value={state}
-          onChangeText={setState}
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="Zip Code"
-          value={zipCode}
-          onChangeText={setZipCode}
-          keyboardType="numeric"
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="Country"
-          value={country}
-          onChangeText={setCountry}
-        />
-
+    <View style={styles.container}>
+      <MapView style={styles.map} />
+      <View style={styles.overlay}>
+        <Text style={styles.title}>Select Your Address</Text>
         <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-          <Text style={styles.buttonText}>Save Address</Text>
+          <Text style={styles.buttonText}>Confirm Location</Text>
         </TouchableOpacity>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
   },
-  scrollView: {
-    flexGrow: 1,
-    justifyContent: "center",
+  map: {
+    width: "100%",
+    height: "100%",
+  },
+  overlay: {
+    position: "absolute",
+    bottom: 20,
+    left: 20,
+    right: 20,
+    backgroundColor: "white",
     padding: 20,
+    borderRadius: 10,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   title: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: "bold",
-    marginBottom: 20,
+    marginBottom: 10,
     textAlign: "center",
-  },
-  input: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 15,
-    fontSize: 16,
   },
   button: {
     backgroundColor: "#007AFF",
@@ -113,7 +61,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "#fff",
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "bold",
   },
 });
