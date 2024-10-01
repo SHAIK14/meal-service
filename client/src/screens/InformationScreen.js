@@ -11,12 +11,95 @@ import {
   Alert,
   ImageBackground,
   Dimensions,
+  ActivityIndicator,
 } from "react-native";
-import { Picker } from "@react-native-picker/picker";
+import { Ionicons } from "@expo/vector-icons";
 import { updateUserInfo, getUserStatus } from "../utils/api";
 import backgroundImage from "../../assets/background.png";
 
 const { height, width } = Dimensions.get("window");
+
+const CustomInput = ({
+  icon,
+  placeholder,
+  value,
+  onChangeText,
+  keyboardType = "default",
+}) => (
+  <View style={styles.inputContainer}>
+    <Ionicons name={icon} size={24} color="#858585" style={styles.inputIcon} />
+    <TextInput
+      style={styles.input}
+      placeholder={placeholder}
+      value={value}
+      onChangeText={onChangeText}
+      keyboardType={keyboardType}
+      autoCapitalize="none"
+    />
+  </View>
+);
+
+const GenderSelector = ({ gender, setGender }) => (
+  <View style={styles.genderContainer}>
+    <TouchableOpacity
+      style={[styles.genderButton, gender === "male" && styles.selectedGender]}
+      onPress={() => setGender("male")}
+    >
+      <Ionicons
+        name="man"
+        size={24}
+        color={gender === "male" ? "#FAF9D9" : "#858585"}
+      />
+      <Text
+        style={[
+          styles.genderText,
+          gender === "male" && styles.selectedGenderText,
+        ]}
+      >
+        Male
+      </Text>
+    </TouchableOpacity>
+    <TouchableOpacity
+      style={[
+        styles.genderButton,
+        gender === "female" && styles.selectedGender,
+      ]}
+      onPress={() => setGender("female")}
+    >
+      <Ionicons
+        name="woman"
+        size={24}
+        color={gender === "female" ? "#FAF9D9" : "#858585"}
+      />
+      <Text
+        style={[
+          styles.genderText,
+          gender === "female" && styles.selectedGenderText,
+        ]}
+      >
+        Female
+      </Text>
+    </TouchableOpacity>
+    <TouchableOpacity
+      style={[styles.genderButton, gender === "other" && styles.selectedGender]}
+      onPress={() => setGender("other")}
+    >
+      <Ionicons
+        name="person"
+        size={24}
+        color={gender === "other" ? "#FAF9D9" : "#858585"}
+      />
+      <Text
+        style={[
+          styles.genderText,
+          gender === "other" && styles.selectedGenderText,
+        ]}
+      >
+        Other
+      </Text>
+    </TouchableOpacity>
+  </View>
+);
 
 const InformationScreen = ({ navigation }) => {
   const [firstName, setFirstName] = useState("");
@@ -58,20 +141,30 @@ const InformationScreen = ({ navigation }) => {
     }
 
     try {
+      setIsLoading(true);
       const userInfo = { firstName, lastName, email, gender };
       await updateUserInfo(userInfo);
       Alert.alert("Success", "Information saved successfully");
       navigation.navigate("Address");
     } catch (error) {
       Alert.alert("Error", "Failed to save information");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const isValidEmail = (email) => {
-    const re =
-      /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(String(email).toLowerCase());
   };
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#FAF9D9" />
+      </View>
+    );
+  }
 
   return (
     <ImageBackground
@@ -83,50 +176,36 @@ const InformationScreen = ({ navigation }) => {
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.container}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
       >
         <ScrollView contentContainerStyle={styles.scrollView}>
           <View style={styles.formContainer}>
             <Text style={styles.title}>Complete Your Profile</Text>
 
-            <Text style={styles.subtitle}>First Name</Text>
-            <TextInput
-              style={styles.input}
+            <CustomInput
+              icon="person-outline"
               placeholder="Enter your first name"
               value={firstName}
               onChangeText={setFirstName}
             />
 
-            <Text style={styles.subtitle}>Last Name</Text>
-            <TextInput
-              style={styles.input}
+            <CustomInput
+              icon="person-outline"
               placeholder="Enter your last name"
               value={lastName}
               onChangeText={setLastName}
             />
 
-            <Text style={styles.subtitle}>Email</Text>
-            <TextInput
-              style={styles.input}
+            <CustomInput
+              icon="mail-outline"
               placeholder="Enter your email"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
-              autoCapitalize="none"
             />
 
             <Text style={styles.subtitle}>Select your Gender</Text>
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={gender}
-                onValueChange={(itemValue) => setGender(itemValue)}
-                style={styles.picker}
-              >
-                <Picker.Item label="Select Gender" value="" />
-                <Picker.Item label="Male" value="male" />
-                <Picker.Item label="Female" value="female" />
-                <Picker.Item label="Other" value="other" />
-              </Picker>
-            </View>
+            <GenderSelector gender={gender} setGender={setGender} />
 
             <TouchableOpacity style={styles.nextButton} onPress={handleSubmit}>
               <Text style={styles.buttonText}>NEXT</Text>
@@ -141,11 +220,10 @@ const InformationScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   background: {
     flex: 1,
-    justifyContent: "flex-end",
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
   },
   container: {
     flex: 1,
@@ -156,52 +234,89 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     backgroundColor: "#fff",
-    padding: width * 0.05,
+    padding: width * 0.06,
     borderTopLeftRadius: 25,
     borderTopRightRadius: 25,
-    maxHeight: height * 0.8,
   },
   title: {
-    fontSize: width * 0.06,
+    fontSize: width * 0.07,
     fontWeight: "bold",
-    marginBottom: height * 0.02,
+    marginBottom: height * 0.03,
     textAlign: "center",
+    color: "#333",
   },
   subtitle: {
-    fontSize: width * 0.04,
+    fontSize: width * 0.045,
     fontWeight: "bold",
-    color: "#858585",
-    marginBottom: height * 0.01,
+    color: "#333",
+    marginBottom: height * 0.02,
+    marginTop: height * 0.02,
+  },
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: "#858585",
+    marginBottom: height * 0.02,
+  },
+  inputIcon: {
+    marginRight: width * 0.03,
   },
   input: {
+    flex: 1,
     height: height * 0.06,
-    borderBottomColor: "#858585",
-    borderBottomWidth: 1,
-    marginBottom: height * 0.02,
     fontSize: width * 0.04,
   },
-  pickerContainer: {
-    borderColor: "#858585",
-    borderWidth: 1,
-    borderRadius: 5,
-    marginBottom: height * 0.02,
+  genderContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: height * 0.03,
   },
-  picker: {
-    height: height * 0.06,
-    width: "100%",
+  genderButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: height * 0.015,
+    borderWidth: 1,
+    borderColor: "#858585",
+    borderRadius: 10,
+    marginHorizontal: width * 0.01,
+  },
+  selectedGender: {
+    backgroundColor: "#333",
+    borderColor: "#333",
+  },
+  genderText: {
+    marginLeft: width * 0.02,
+    fontSize: width * 0.035,
     color: "#858585",
+  },
+  selectedGenderText: {
+    color: "#FAF9D9",
   },
   nextButton: {
     backgroundColor: "#FAF9D9",
-    paddingVertical: height * 0.015,
-    borderRadius: 5,
+    paddingVertical: height * 0.02,
+    borderRadius: 25,
     alignItems: "center",
-    marginTop: height * 0.02,
+    marginTop: height * 0.03,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   buttonText: {
-    color: "black",
-    fontSize: width * 0.04,
+    color: "#333",
+    fontSize: width * 0.045,
     fontWeight: "bold",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
   },
 });
 

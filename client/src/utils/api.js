@@ -92,17 +92,21 @@ export const getUserStatus = async () => {
   return response.json();
 };
 
-// export const getUserInfo = async (token) => {
-//   const response = await fetch(`${API_URL}/me`, {
-//     headers: {
-//       Authorization: `Bearer ${token}`,
-//     },
-//   });
+export const updateUserAddress = async (addressData) => {
+  const token = await AsyncStorage.getItem("userToken");
+  const response = await fetch(`${API_URL}/users/update-address`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(addressData),
+  });
 
-//   if (!response.ok) {
-//     const errorData = await response.json();
-//     throw new Error(errorData.message || "Failed to get user info");
-//   }
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || "Failed to update address");
+  }
 
-//   return response.json();
-// };
+  return response.json();
+};

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,18 +10,30 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { verifyOTP } from "../utils/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Ionicons } from "@expo/vector-icons";
 import backgroundImage from "../../assets/background.png";
 
-const { height } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 
 const OtpScreen = ({ route, navigation }) => {
   const { phoneNumber } = route.params;
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(30);
   const inputRefs = useRef([]);
+
+  useEffect(() => {
+    if (timeLeft > 0) {
+      const timerId = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+      return () => clearTimeout(timerId);
+    }
+  }, [timeLeft]);
 
   const handleOtpChange = (value, index) => {
     const newOtp = [...otp];
@@ -34,6 +46,7 @@ const OtpScreen = ({ route, navigation }) => {
 
   const handleVerifyOtp = async () => {
     setError("");
+    setIsLoading(true);
     try {
       const otpString = otp.join("");
       if (otpString.length !== 6) {
@@ -55,7 +68,15 @@ const OtpScreen = ({ route, navigation }) => {
       }
     } catch (err) {
       setError(err.message);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const handleResendOtp = () => {
+    // Implement OTP resend logic here
+    setTimeLeft(30);
+    Alert.alert("OTP Resent", "A new OTP has been sent to your phone number.");
   };
 
   return (
@@ -67,36 +88,63 @@ const OtpScreen = ({ route, navigation }) => {
       <View style={styles.overlay} />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.formContainer}
+        style={styles.container}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
       >
-        <Text style={styles.title}>Enter Verification Code</Text>
-        <Text style={styles.subtitle}>
-          Enter verification code sent to {phoneNumber}
-        </Text>
-
-        <View style={styles.codeContainer}>
-          {otp.map((digit, index) => (
-            <TextInput
-              key={index}
-              style={styles.codeInput}
-              keyboardType="number-pad"
-              maxLength={1}
-              value={digit}
-              onChangeText={(value) => handleOtpChange(value, index)}
-              ref={(input) => (inputRefs.current[index] = input)}
+        <ScrollView contentContainerStyle={styles.scrollViewContent}>
+          <View style={styles.formContainer}>
+            <Ionicons
+              name="lock-closed"
+              size={64}
+              color="#FAF9D9"
+              style={styles.icon}
             />
-          ))}
-        </View>
+            <Text style={styles.title}>Verification Code</Text>
+            <Text style={styles.subtitle}>
+              Enter the 6-digit code sent to {phoneNumber}
+            </Text>
 
-        <TouchableOpacity style={styles.verifyButton} onPress={handleVerifyOtp}>
-          <Text style={styles.buttonText}>SUBMIT</Text>
-        </TouchableOpacity>
+            <View style={styles.codeContainer}>
+              {otp.map((digit, index) => (
+                <TextInput
+                  key={index}
+                  style={styles.codeInput}
+                  keyboardType="number-pad"
+                  maxLength={1}
+                  value={digit}
+                  onChangeText={(value) => handleOtpChange(value, index)}
+                  ref={(input) => (inputRefs.current[index] = input)}
+                />
+              ))}
+            </View>
 
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+            <TouchableOpacity
+              style={[styles.verifyButton, isLoading && styles.disabledButton]}
+              onPress={handleVerifyOtp}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#000" />
+              ) : (
+                <Text style={styles.buttonText}>VERIFY</Text>
+              )}
+            </TouchableOpacity>
 
-        <Text style={styles.resendText}>
-          Didn't Get the Code? <Text style={styles.boldText}>Resend</Text>
-        </Text>
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+            <TouchableOpacity
+              style={styles.resendButton}
+              onPress={handleResendOtp}
+              disabled={timeLeft > 0}
+            >
+              <Text
+                style={[styles.resendText, timeLeft > 0 && styles.disabledText]}
+              >
+                {timeLeft > 0 ? `Resend OTP in ${timeLeft}s` : "Resend OTP"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </ImageBackground>
   );
@@ -105,69 +153,96 @@ const OtpScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   background: {
     flex: 1,
-    justifyContent: "flex-end",
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+  },
+  container: {
+    flex: 1,
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+    justifyContent: "flex-end",
   },
   formContainer: {
     backgroundColor: "#fff",
-    padding: 40,
+    padding: width * 0.06,
     borderTopLeftRadius: 25,
     borderTopRightRadius: 25,
-    height: height * 0.5,
+    alignItems: "center",
+  },
+  icon: {
+    marginBottom: height * 0.02,
   },
   title: {
-    fontSize: 24,
+    fontSize: width * 0.07,
     fontWeight: "bold",
     textAlign: "center",
-    marginBottom: 20,
+    marginBottom: height * 0.01,
+    color: "#333",
   },
   subtitle: {
-    fontSize: 16,
-    color: "#858585",
+    fontSize: width * 0.04,
+    color: "#666",
     textAlign: "center",
-    marginBottom: 20,
+    marginBottom: height * 0.03,
   },
   codeContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 20,
+    marginBottom: height * 0.03,
+    width: "100%",
   },
   codeInput: {
-    width: 40,
-    height: 40,
-    borderColor: "#858585",
-    borderWidth: 1,
-    borderRadius: 5,
+    width: width * 0.12,
+    height: width * 0.12,
+    borderColor: "#FAF9D9",
+    borderWidth: 2,
+    borderRadius: 12,
     textAlign: "center",
-    fontSize: 18,
-    marginHorizontal: 5,
+    fontSize: width * 0.06,
+    fontWeight: "bold",
+    color: "#333",
+    backgroundColor: "#F0F0F0",
   },
   verifyButton: {
     backgroundColor: "#FAF9D9",
-    paddingVertical: 10,
-    borderRadius: 5,
+    paddingVertical: height * 0.02,
+    paddingHorizontal: width * 0.1,
+    borderRadius: 25,
     alignItems: "center",
-    marginTop: 20,
+    marginTop: height * 0.02,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  disabledButton: {
+    opacity: 0.7,
   },
   buttonText: {
-    color: "black",
-    fontSize: 18,
+    color: "#333",
+    fontSize: width * 0.045,
     fontWeight: "bold",
+  },
+  resendButton: {
+    marginTop: height * 0.03,
   },
   resendText: {
-    textAlign: "center",
-    marginTop: 20,
-  },
-  boldText: {
+    color: "#FAF9D9",
+    fontSize: width * 0.04,
     fontWeight: "bold",
   },
+  disabledText: {
+    color: "#999",
+  },
   errorText: {
-    color: "red",
-    marginTop: 10,
+    color: "#FF6B6B",
+    marginTop: height * 0.02,
     textAlign: "center",
+    fontSize: width * 0.035,
   },
 });
 
