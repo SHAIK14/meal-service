@@ -2,21 +2,32 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const connectDB = require("./config/database");
+const session = require("express-session");
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
-
+const adminAuthRoutes = require("./routes/admin/adminAuthRoutes");
+const itemRoutes = require("./routes/admin/itemRoutes");
 dotenv.config();
 
 const app = express();
 
 // Configure CORS
 const corsOptions = {
-  origin: "*", // Allow all origins for debugging
+  origin: "*",
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
 };
 
 app.use(cors(corsOptions));
+// session middleware
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: process.env.NODE_ENV === "production" },
+  })
+);
 
 connectDB().catch((err) =>
   console.error("Failed to connect to database:", err)
@@ -32,9 +43,11 @@ app.use((req, res, next) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/admin", adminAuthRoutes);
+app.use("/api/admin/items", itemRoutes);
 
 const PORT = process.env.PORT || 5000;
-const HOST = "0.0.0.0"; // This allows connections from any IP address
+const HOST = "0.0.0.0";
 
 const server = app.listen(PORT, HOST, () => {
   console.log(`Server running on http://${HOST}:${PORT}`);
