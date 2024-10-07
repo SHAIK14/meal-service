@@ -1,5 +1,6 @@
 // server/controllers/admin/adminAuthController.js
 const Admin = require("../../models/admin/Admin");
+const jwt = require("jsonwebtoken");
 
 exports.login = async (req, res) => {
   const { username, password } = req.body;
@@ -12,18 +13,11 @@ exports.login = async (req, res) => {
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
-    req.session.adminId = admin._id;
-    res.json({ message: "Logged in successfully" });
+    const token = jwt.sign({ id: admin._id }, process.env.JWT_SECRET_ADMIN, {
+      expiresIn: process.env.JWT_EXPIRY,
+    });
+    res.json({ message: "Logged in successfully", token });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
-};
-
-exports.logout = (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      return res.status(500).json({ message: "Could not log out" });
-    }
-    res.json({ message: "Logged out successfully" });
-  });
 };

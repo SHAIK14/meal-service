@@ -48,12 +48,9 @@ export const login = async (username, password) => {
   return result;
 };
 
-export const logout = async () => {
-  const result = await handleResponse(api.post("/admin/logout"));
-  if (result.success) {
-    removeToken();
-  }
-  return result;
+export const logout = () => {
+  removeToken();
+  return { success: true, message: "Logged out successfully" };
 };
 
 export const getPlans = () => handleResponse(api.get("/admin/plans"));

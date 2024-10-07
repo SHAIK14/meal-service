@@ -65,8 +65,13 @@
   transition: background-color 0.3s ease;
 }
 
-.login-button:hover {
+.login-button:hover:not(:disabled) {
   background-color: #3182ce;
+}
+
+.login-button:disabled {
+  background-color: #a0aec0;
+  cursor: not-allowed;
 }
 
 .error-message {

@@ -1,259 +1,275 @@
 import React, { useState } from "react";
-import { Plus, X } from "lucide-react";
-import "../styles/Add-item.css";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 
-const AddItemPage = () => {
-  const [item, setItem] = useState({
-    image: null,
-    nameEnglish: "",
-    nameArabic: "",
-    descriptionEnglish: "",
-    descriptionArabic: "",
-    calories: "",
-    protein: "",
-    carbs: "",
-    type: "Non Veg",
-    category: "Dinner",
-    prices: [{ currency: "SAR", sellingPrice: "", discountPrice: "" }],
+const NewPlan = () => {
+  const navigate = useNavigate(); // Initialize the useNavigate hook
+  const [image, setImage] = useState(null);
+  const [planNameEn, setPlanNameEn] = useState("");
+  const [planNameAr, setPlanNameAr] = useState("");
+  const [descriptionEn, setDescriptionEn] = useState("");
+  const [descriptionAr, setDescriptionAr] = useState("");
+  const [categories, setCategories] = useState({
+    multiplePlan: false,
+    individualPlan: false,
+    vegCategory: false,
+    nonVegCategory: false,
   });
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setItem((prevState) => ({
-      ...prevState,
-      [name]: value,
-    }));
-  };
-
   const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setItem((prevState) => ({
-          ...prevState,
-          image: reader.result,
-        }));
-      };
-      reader.readAsDataURL(file);
+    if (e.target.files && e.target.files[0]) {
+      setImage(URL.createObjectURL(e.target.files[0])); // Preview the image
     }
   };
 
-  const handlePriceChange = (index, field, value) => {
-    const newPrices = [...item.prices];
-    newPrices[index] = { ...newPrices[index], [field]: value };
-    setItem((prevState) => ({
-      ...prevState,
-      prices: newPrices,
-    }));
-  };
-
-  const addCurrency = () => {
-    setItem((prevState) => ({
-      ...prevState,
-      prices: [
-        ...prevState.prices,
-        { currency: "", sellingPrice: "", discountPrice: "" },
-      ],
-    }));
-  };
-
-  const removeCurrency = (index) => {
-    setItem((prevState) => ({
-      ...prevState,
-      prices: prevState.prices.filter((_, i) => i !== index),
-    }));
+  const handleCheckboxChange = (e) => {
+    setCategories({
+      ...categories,
+      [e.target.name]: e.target.checked,
+    });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Item added:", item);
+    console.log("Form submitted!"); // Debug log
+    console.log({
+      image,
+      planNameEn,
+      planNameAr,
+      descriptionEn,
+      descriptionAr,
+      categories,
+    });
+
+    // Navigate to SelectItemPage on form submission
+    navigate("/select-item-page"); // Change this path based on your routing configuration
   };
 
   return (
-    <div className="add-item-page">
-      <h1>Add New Item</h1>
-      <form onSubmit={handleSubmit}>
-        <div className="form-layout">
-          <div className="image-upload">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              id="image-upload"
-              className="hidden"
-            />
-            <label htmlFor="image-upload" className="upload-label">
-              {item.image ? (
-                <img src={item.image} alt="Item" className="uploaded-image" />
-              ) : (
-                <span className="upload-button">Upload Image</span>
-              )}
-            </label>
-            {item.image && (
-              <div className="image-actions">
-                <button
-                  type="button"
-                  onClick={() => setItem((prev) => ({ ...prev, image: null }))}
-                  className="delete-button"
-                >
-                  Delete Image
-                </button>
-                <label htmlFor="image-upload" className="edit-button">
-                  Edit Image
-                </label>
-              </div>
+    <div style={formContainerStyle}>
+      <h1>Create New Plan</h1>
+      <form onSubmit={handleSubmit} style={{ display: "flex" }}>
+        <div style={{ marginRight: "20px" }}>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageChange}
+            style={{ display: "none" }}
+            id="image-upload"
+          />
+          <label htmlFor="image-upload" style={uploadLabelStyle}>
+            {image ? (
+              <img src={image} alt="Plan" style={imageStyle} />
+            ) : (
+              <span style={uploadButtonStyle}>Upload Image</span>
             )}
-          </div>
-
-          <div className="form-fields">
-            <div className="form-group">
-              <input
-                type="text"
-                name="nameEnglish"
-                placeholder="Name in English"
-                value={item.nameEnglish}
-                onChange={handleInputChange}
-                required
-              />
-              <input
-                type="text"
-                name="nameArabic"
-                placeholder="Name in Arabic"
-                value={item.nameArabic}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <textarea
-                name="descriptionEnglish"
-                placeholder="Description in English"
-                value={item.descriptionEnglish}
-                onChange={handleInputChange}
-                required
-              />
-              <textarea
-                name="descriptionArabic"
-                placeholder="Description in Arabic"
-                value={item.descriptionArabic}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <input
-                type="number"
-                name="calories"
-                placeholder="Calories"
-                value={item.calories}
-                onChange={handleInputChange}
-                required
-              />
-              <input
-                type="number"
-                name="protein"
-                placeholder="Protein (g)"
-                value={item.protein}
-                onChange={handleInputChange}
-                required
-              />
-              <input
-                type="number"
-                name="carbs"
-                placeholder="Carbs (g)"
-                value={item.carbs}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <select
-                name="type"
-                value={item.type}
-                onChange={handleInputChange}
-                required
-              >
-                <option value="Non Veg">Non Veg</option>
-                <option value="Veg">Veg</option>
-              </select>
-              <select
-                name="category"
-                value={item.category}
-                onChange={handleInputChange}
-                required
-              >
-                <option value="Lunch">Lunch</option>
-                <option value="Dinner">Dinner</option>
-                <option value="Lunch and Dinner">Lunch and Dinner</option>
-              </select>
-            </div>
-
-            <div className="price-section">
-              {item.prices.map((price, index) => (
-                <div key={index} className="currency-group">
-                  <select
-                    value={price.currency}
-                    onChange={(e) =>
-                      handlePriceChange(index, "currency", e.target.value)
-                    }
-                    required
-                  >
-                    <option value="">Select Currency</option>
-                    <option value="SAR">SAR</option>
-                    <option value="AED">AED</option>
-                    <option value="BHD">BHD</option>
-                    <option value="QAR">QAR</option>
-                  </select>
-                  <input
-                    type="number"
-                    placeholder="Selling Price"
-                    value={price.sellingPrice}
-                    onChange={(e) =>
-                      handlePriceChange(index, "sellingPrice", e.target.value)
-                    }
-                    required
-                  />
-                  <input
-                    type="number"
-                    placeholder="Discount Price (optional)"
-                    value={price.discountPrice}
-                    onChange={(e) =>
-                      handlePriceChange(index, "discountPrice", e.target.value)
-                    }
-                  />
-                  {index > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => removeCurrency(index)}
-                      className="remove-currency"
-                    >
-                      <X size={20} />
-                    </button>
-                  )}
-                </div>
-              ))}
+          </label>
+          {image && (
+            <div style={imageButtonContainerStyle}>
               <button
                 type="button"
-                onClick={addCurrency}
-                className="add-currency"
+                onClick={() => setImage(null)} // Delete Image
+                style={deleteButtonStyle}
               >
-                <Plus size={20} /> Add Currency
+                Delete Image
               </button>
+              <label htmlFor="image-upload" style={editButtonStyle}>
+                Edit Image
+              </label>
             </div>
+          )}
+        </div>
+        <div style={{ flexGrow: 1 }}>
+          <div>
+            <input
+              type="text"
+              placeholder="Plan Name (English)"
+              value={planNameEn}
+              onChange={(e) => setPlanNameEn(e.target.value)}
+              style={inputStyle}
+              required
+            />
+          </div>
+          <div>
+            <input
+              type="text"
+              placeholder="Plan Name (Arabic)"
+              value={planNameAr}
+              onChange={(e) => setPlanNameAr(e.target.value)}
+              style={inputStyle}
+              required
+            />
+          </div>
+          <div>
+            <textarea
+              placeholder="Description (English)"
+              value={descriptionEn}
+              onChange={(e) => setDescriptionEn(e.target.value)}
+              style={textareaStyle}
+              required
+            />
+          </div>
+          <div>
+            <textarea
+              placeholder="Description (Arabic)"
+              value={descriptionAr}
+              onChange={(e) => setDescriptionAr(e.target.value)}
+              style={textareaStyle}
+              required
+            />
+          </div>
+          <div className="category-section">
+            <h3>Select Categories</h3>
+            <label style={RadioInputStyle}>
+              <input
+                style={CheckboxStyle}
+                type="checkbox"
+                name="multiplePlan"
+                checked={categories.multiplePlan}
+                onChange={handleCheckboxChange}
+              />
+              Multiple Plan
+            </label>
+            <br />
+            <label style={RadioInputStyle}>
+              <input
+                style={CheckboxStyle}
+                type="checkbox"
+                name="individualPlan"
+                checked={categories.individualPlan}
+                onChange={handleCheckboxChange}
+              />
+              Individual Plan
+            </label>
+            <br />
+            <label style={RadioInputStyle}>
+              <input
+                style={CheckboxStyle}
+                type="checkbox"
+                name="vegCategory"
+                checked={categories.vegCategory}
+                onChange={handleCheckboxChange}
+              />
+              Veg Category
+            </label>
+            <br />
+            <label style={RadioInputStyle}>
+              <input
+                style={CheckboxStyle}
+                type="checkbox"
+                name="nonVegCategory"
+                checked={categories.nonVegCategory}
+                onChange={handleCheckboxChange}
+              />
+              Non-Veg Category
+            </label>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              marginTop: "20px",
+            }}
+          >
+            <button type="submit" style={nextButtonStyle}>
+              Next
+            </button>
           </div>
         </div>
-
-        <button type="submit" className="submit-btn">
-          <Plus size={20} />
-          Add Item
-        </button>
       </form>
     </div>
   );
 };
 
-export default AddItemPage;
+// Styles
+const formContainerStyle = {
+  backgroundColor: "white",
+  borderRadius: "50px",
+  padding: "50px",
+  boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+  width: "600px",
+};
+
+const uploadLabelStyle = {
+  width: "200px",
+  height: "200px",
+  border: "2px dashed #ccc",
+  borderRadius: "8px",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  cursor: "pointer",
+  marginBottom: "20px",
+  backgroundColor: "#f9f9f9",
+};
+
+const uploadButtonStyle = {
+  color: "black", // Text color for upload button
+};
+
+const imageStyle = {
+  width: "100%",
+  height: "100%",
+  objectFit: "cover",
+  borderRadius: "8px",
+};
+
+const imageButtonContainerStyle = {
+  display: "flex",
+  justifyContent: "space-between",
+  marginTop: "10px",
+};
+
+const deleteButtonStyle = {
+  color: "red",
+  border: "none",
+  borderRadius: "5px",
+  cursor: "pointer",
+};
+
+const editButtonStyle = {
+  color: "blue",
+  border: "none",
+  borderRadius: "5px",
+  cursor: "pointer",
+};
+
+const inputStyle = {
+  width: "100%",
+  padding: "10px",
+  margin: "10px 0",
+  border: "1px solid #ccc",
+  borderRadius: "25px",
+};
+
+const textareaStyle = {
+  width: "100%",
+  padding: "10px",
+  margin: "10px 0",
+  border: "1px solid #ccc",
+  borderRadius: "25px",
+  minHeight: "100px",
+};
+
+const RadioInputStyle = {
+  cursor: "pointer",
+  color: "black",
+};
+
+const CheckboxStyle = {
+  marginBottom: "15px",
+  marginRight: "20px",
+};
+
+const nextButtonStyle = {
+  marginLeft: "10px",
+  padding: "10px 30px",
+  fontSize: "16px",
+  cursor: "pointer",
+  backgroundColor: "#FF0000", // Background color for next button
+  color: "white",
+  border: "none",
+  borderRadius: "50px",
+};
+
+export default NewPlan;
