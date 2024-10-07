@@ -19,15 +19,15 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-// session middleware
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    cookie: { secure: process.env.NODE_ENV === "production" },
-  })
-);
+// // session middleware
+// app.use(
+//   session({
+//     secret: process.env.SESSION_SECRET,
+//     resave: false,
+//     saveUninitialized: false,
+//     cookie: { secure: process.env.NODE_ENV === "production" },
+//   })
+// );
 
 connectDB().catch((err) =>
   console.error("Failed to connect to database:", err)
