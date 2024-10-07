@@ -1,0 +1,82 @@
+.sidebar {
+  height: auto;
+  background-color: white;
+  color: black;
+  transition: width 0.3s ease;
+  overflow: hidden;
+}
+
+.sidebar.open {
+  width: 250px;
+}
+
+.sidebar.closed {
+  width: 0;
+}
+
+.sidebar ul {
+  list-style-type: none;
+  padding: 0;
+  margin-top: 100px;
+}
+
+.sidebar ul li {
+  margin-bottom: 20px;
+}
+
+.sidebar ul li a {
+  display: flex;
+  align-items: center;
+  color: grey;
+  text-decoration: none;
+  font-size: 18px;
+  transition: 0.3s ease-in-out;
+  margin: 50px;
+}
+
+.sidebar ul li a:hover {
+  color: black;
+}
+
+.icon {
+  margin-right: 10px;
+  font-size: 20px;
+}
+
+.toggle-btn {
+  margin: 0px 50px;
+  cursor: pointer;
+  color: grey;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 50px;
+  width: 50px;
+  border-radius: 50%;
+  position: absolute;
+  top: 20px;
+  left: -25px;
+  z-index: 1000;
+  transition: 0.3s ease-in-out;
+}
+.toggle-btn:hover {
+  color: black;
+}
+
+.sidebar.closed .icon {
+  margin-right: 0;
+}
+
+.sidebar.closed ul li a span {
+  display: none;
+}
+
+/* Active link style */
+.sidebar ul li .active {
+  background-color: #faf9d9;
+  color: black;
+  padding: 15px;
+  border-radius: 50px;
+  transition: 0.3s ease;
+}
