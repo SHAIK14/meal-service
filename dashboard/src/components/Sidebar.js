@@ -8,6 +8,8 @@ import {
   FaUsers,
   FaBars,
   FaSignOutAlt,
+  FaUtensilSpoon,
+  FaCreditCard,
 } from "react-icons/fa";
 import "../styles/Sidebar.css";
 
@@ -42,6 +44,14 @@ const Sidebar = () => {
         </li>
         <li>
           <NavLink
+            to="/payment-options"
+            className={({ isActive }) => (isActive ? "active" : "")}
+          >
+            <FaCreditCard className="icon" /> <span>Payment</span>
+          </NavLink>
+        </li>
+        <li>
+          <NavLink
             to="/delivery"
             className={({ isActive }) => (isActive ? "active" : "")}
           >
@@ -54,6 +64,14 @@ const Sidebar = () => {
             className={({ isActive }) => (isActive ? "active" : "")}
           >
             <FaShoppingCart className="icon" /> <span>Orders</span>
+          </NavLink>
+        </li>
+        <li>
+          <NavLink
+            to="/banners-container"
+            className={({ isActive }) => (isActive ? "active" : "")}
+          >
+            <FaUtensilSpoon className="icon" /> <span>Banners</span>
           </NavLink>
         </li>
         <li>
