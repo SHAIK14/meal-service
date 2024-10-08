@@ -13,6 +13,10 @@ router.get(
 );
 router.put("/:id", adminAuth, itemController.updateItem);
 router.delete("/:id", adminAuth, itemController.deleteItem);
-router.put("/toggle/:id", adminAuth, itemController.toggleItemAvailability);
+router.patch(
+  "/:id/toggle-availability",
+  adminAuth,
+  itemController.toggleItemAvailability
+);
 
 module.exports = router;

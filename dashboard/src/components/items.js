@@ -47,9 +47,10 @@ const Items = () => {
       try {
         const result = await createCategory({ name: newCategory.trim() });
         if (result.success) {
-          setCategories([...categories, result.data]);
           setNewCategory("");
           toast.success("Category added successfully");
+
+          await fetchCategories();
         } else {
           toast.error("Failed to add category");
         }
@@ -64,8 +65,9 @@ const Items = () => {
       try {
         const result = await deleteCategory(categoryId);
         if (result.success) {
-          setCategories(categories.filter((cat) => cat._id !== categoryId));
           toast.success("Category deleted successfully");
+
+          await fetchCategories();
         } else {
           toast.error(result.error || "Failed to delete category");
         }
@@ -74,23 +76,56 @@ const Items = () => {
       }
     };
 
-    toast.info("Are you sure you want to delete this category?", {
-      autoClose: false,
-      closeOnClick: false,
-      closeButton: false,
-      draggable: false,
-      onClick: (e) => e.stopPropagation(),
-      buttons: [
-        {
-          label: "Yes",
-          onClick: () => confirmDelete(),
-        },
-        {
-          label: "No",
-          onClick: () => toast.dismiss(),
-        },
-      ],
-    });
+    toast.info(
+      ({ closeToast }) => (
+        <div>
+          <p>Are you sure you want to delete this category?</p>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-around",
+              marginTop: "10px",
+            }}
+          >
+            <button
+              onClick={() => {
+                confirmDelete();
+                closeToast();
+              }}
+              style={{
+                padding: "5px 10px",
+                backgroundColor: "#f44336",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+              }}
+            >
+              Yes
+            </button>
+            <button
+              onClick={closeToast}
+              style={{
+                padding: "5px 10px",
+                backgroundColor: "#4CAF50",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+              }}
+            >
+              No
+            </button>
+          </div>
+        </div>
+      ),
+      {
+        autoClose: false,
+        closeOnClick: false,
+        closeButton: false,
+        draggable: false,
+      }
+    );
   };
 
   if (loading) {

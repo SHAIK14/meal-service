@@ -35,27 +35,27 @@ const ItemsCategories = () => {
     fetchItems();
   }, [fetchItems]);
 
-  const handleToggleAvailability = async (id) => {
-    try {
-      const result = await toggleItemAvailability(id);
-      if (result.success) {
-        setItems(
-          items.map((item) =>
-            item._id === id ? { ...item, available: !item.available } : item
-          )
-        );
-      } else {
-        setError(result.error || "Failed to toggle item availability");
-      }
-    } catch (error) {
-      console.error("Error toggling item availability:", error);
-      setError("An error occurred while toggling item availability");
-    }
-  };
-
   const handleEdit = (id) => {
     navigate(`/edit-item/${id}`);
   };
+
+  const handleToggle = async (itemId) => {
+    try {
+      const result = await toggleItemAvailability(itemId);
+      if (result.success) {
+        setItems(
+          items.map((item) =>
+            item._id === itemId ? { ...item, available: !item.available } : item
+          )
+        );
+      } else {
+        console.error("Failed to toggle item availability:", result.error);
+      }
+    } catch (error) {
+      console.error("Error in handleToggle:", error);
+    }
+  };
+
   const renderPagination = (type) => {
     const filteredItems = items.filter((item) => item.type === type);
     const pageCount = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
@@ -111,7 +111,7 @@ const ItemsCategories = () => {
             <input
               type="checkbox"
               checked={item.available}
-              onChange={() => handleToggleAvailability(item._id)}
+              onChange={() => handleToggle(item._id)}
             />
             <span className="slider"></span>
           </label>

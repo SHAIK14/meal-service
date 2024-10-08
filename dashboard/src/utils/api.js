@@ -1,7 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:5000/api"; // Replace with your actual API URL
-
+const API_URL = "http://localhost:5000/api";
 const api = axios.create({
   baseURL: API_URL,
 });
@@ -23,7 +22,6 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Helper function to handle API responses
 const handleResponse = async (apiCall) => {
   try {
     const response = await apiCall;
@@ -139,16 +137,17 @@ export const deleteItem = async (itemId) => {
     };
   }
 };
-
-export const toggleItemAvailability = async (id) => {
+export const toggleItemAvailability = async (itemId) => {
   try {
-    const response = await axios.put(`/api/admin/items/toggle/${id}`);
-    return response.data;
+    const response = await api.patch(
+      `/admin/items/${itemId}/toggle-availability`
+    );
+    return { success: true, data: response.data };
   } catch (error) {
-    console.error("Error toggling item availability:", error);
+    console.error("Error in toggleItemAvailability:", error);
     return {
       success: false,
-      error: error.response?.data?.message || "An error occurred",
+      error: error.response?.data?.message || "An unexpected error occurred",
     };
   }
 };

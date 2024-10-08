@@ -106,13 +106,11 @@ exports.updateItem = async (req, res) => {
     }
     res.json({ success: true, item: updatedItem });
   } catch (error) {
-    res
-      .status(400)
-      .json({
-        success: false,
-        message: "Error updating item",
-        error: error.message,
-      });
+    res.status(400).json({
+      success: false,
+      message: "Error updating item",
+      error: error.message,
+    });
   }
 };
 
@@ -127,13 +125,11 @@ exports.deleteItem = async (req, res) => {
     }
     res.json({ success: true, message: "Item deleted successfully" });
   } catch (error) {
-    res
-      .status(400)
-      .json({
-        success: false,
-        message: "Error deleting item",
-        error: error.message,
-      });
+    res.status(400).json({
+      success: false,
+      message: "Error deleting item",
+      error: error.message,
+    });
   }
 };
 
@@ -151,7 +147,11 @@ exports.toggleItemAvailability = async (req, res) => {
     item.available = !item.available;
     await item.save();
 
-    res.json({ success: true, item });
+    res.json({
+      success: true,
+      message: `Item availability set to ${item.available}`,
+      item,
+    });
   } catch (error) {
     console.error("Error in toggleItemAvailability:", error);
     res.status(500).json({ success: false, error: error.message });
