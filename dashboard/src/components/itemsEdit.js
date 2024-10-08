@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { X, Upload, Image } from "lucide-react";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "../config/firebaseConfig";
-import { createItem, getAllCategories } from "../utils/api";
+import { getItem, updateItem, deleteItem } from "../utils/api";
 import "../styles/Add-item.css";
 
-const AddItemPage = () => {
+const ItemsEdit = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
   const [item, setItem] = useState({
     image: null,
     nameEnglish: "",
@@ -17,42 +20,27 @@ const AddItemPage = () => {
     carbs: "",
     fat: "",
     type: "Non Veg",
-    category: "",
+    category: "Dinner",
     prices: [{ currency: "SAR", sellingPrice: "", discountPrice: "" }],
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
-  const [categories, setCategories] = useState([]);
-  const [categoriesLoading, setCategoriesLoading] = useState(true);
 
   useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  const fetchCategories = async () => {
-    setCategoriesLoading(true);
-    try {
-      const result = await getAllCategories();
-      if (result.success && Array.isArray(result.data)) {
-        setCategories(result.data);
-        if (result.data.length > 0) {
-          setItem((prevItem) => ({
-            ...prevItem,
-            category: result.data[0]._id || "",
-          }));
-        }
+    const fetchItem = async () => {
+      setLoading(true);
+      const result = await getItem(id);
+      if (result.success) {
+        setItem(result.data);
       } else {
-        console.error("Failed to fetch categories:", result.error);
-        setError("Failed to fetch categories. Please try again.");
+        setError("Failed to fetch item details.");
       }
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-      setError("An error occurred while fetching categories.");
-    } finally {
-      setCategoriesLoading(false);
-    }
-  };
+      setLoading(false);
+    };
+
+    fetchItem();
+  }, [id]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -86,7 +74,7 @@ const AddItemPage = () => {
       ...prevState,
       prices: [
         ...prevState.prices,
-        { currency: "SAR", sellingPrice: "", discountPrice: "" },
+        { currency: "", sellingPrice: "", discountPrice: "" },
       ],
     }));
   };
@@ -106,15 +94,15 @@ const AddItemPage = () => {
     return getDownloadURL(snapshot.ref);
   };
 
-  const handleSubmit = async (e) => {
+  const handleUpdate = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     setSuccess(false);
 
     try {
-      let imageUrl = "";
-      if (item.image) {
+      let imageUrl = item.image;
+      if (item.image instanceof File) {
         imageUrl = await uploadImage(item.image);
       }
 
@@ -133,55 +121,51 @@ const AddItemPage = () => {
             : null,
         })),
       };
-      console.log("Selected category:", item.category);
-      console.log("All categories:", categories);
 
-      const result = await createItem(itemData);
+      const result = await updateItem(id, itemData);
       if (result.success) {
-        console.log("Item added:", result.data);
         setSuccess(true);
-        // Reset form
-        setItem({
-          image: null,
-          nameEnglish: "",
-          nameArabic: "",
-          descriptionEnglish: "",
-          descriptionArabic: "",
-          calories: "",
-          protein: "",
-          carbs: "",
-          fat: "",
-          type: "Non Veg",
-          category: categories[0]?._id || "",
-          prices: [{ currency: "SAR", sellingPrice: "", discountPrice: "" }],
-        });
       } else {
-        setError(result.error || "Failed to add item. Please try again.");
+        setError(result.error);
       }
     } catch (error) {
-      console.error("Error adding item:", error);
-      setError("Failed to add item. Please try again.");
+      console.error("Error updating item:", error);
+      setError("Failed to update item. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  if (categoriesLoading) {
-    return <div>Loading categories...</div>;
-  }
+  const handleDelete = async () => {
+    if (window.confirm("Are you sure you want to delete this item?")) {
+      setLoading(true);
+      setError(null);
+      try {
+        const result = await deleteItem(id);
+        if (result.success) {
+          navigate("/lunch"); // Redirect to lunch page after successful delete
+        } else {
+          setError(result.error);
+        }
+      } catch (error) {
+        console.error("Error deleting item:", error);
+        setError("Failed to delete item. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
 
-  if (error) {
-    return <div className="error-message">{error}</div>;
-  }
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div className="error-message">{error}</div>;
 
   return (
     <div className="add-item-page">
-      <h1>Add New Item</h1>
-      {error && <div className="error-message">{error}</div>}
+      <h1>Edit Item</h1>
       {success && (
-        <div className="success-message">Item added successfully!</div>
+        <div className="success-message">Item updated successfully!</div>
       )}
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleUpdate}>
         <div className="form-layout">
           <div className="image-upload">
             <input
@@ -195,7 +179,11 @@ const AddItemPage = () => {
               {item.image ? (
                 <div className="image-preview">
                   <img
-                    src={URL.createObjectURL(item.image)}
+                    src={
+                      item.image instanceof File
+                        ? URL.createObjectURL(item.image)
+                        : item.image
+                    }
                     alt="Item"
                     className="uploaded-image"
                   />
@@ -301,15 +289,9 @@ const AddItemPage = () => {
                 onChange={handleInputChange}
                 required
               >
-                {categories.length > 0 ? (
-                  categories.map((category) => (
-                    <option key={category._id} value={category._id}>
-                      {category.name} (ID: {category._id})
-                    </option>
-                  ))
-                ) : (
-                  <option value="">No categories available</option>
-                )}
+                <option value="Lunch">Lunch</option>
+                <option value="Dinner">Dinner</option>
+                <option value="Lunch and Dinner">Lunch and Dinner</option>
               </select>
             </div>
 
@@ -363,12 +345,26 @@ const AddItemPage = () => {
           </div>
         </div>
 
-        <button type="submit" className="submit-btn" disabled={loading}>
-          {loading ? "Saving..." : "SAVE"}
-        </button>
+        <div className="button-group">
+          <button
+            type="submit"
+            className="action-btn update-btn"
+            disabled={loading}
+          >
+            {loading ? "Updating..." : "Update"}
+          </button>
+          <button
+            type="button"
+            className="action-btn delete-btn"
+            onClick={handleDelete}
+            disabled={loading}
+          >
+            {loading ? "Deleting..." : "Delete"}
+          </button>
+        </div>
       </form>
     </div>
   );
 };
 
-export default AddItemPage;
+export default ItemsEdit;

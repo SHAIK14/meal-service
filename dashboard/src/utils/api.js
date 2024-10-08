@@ -8,7 +8,6 @@ const api = axios.create({
 
 // Token management
 const getToken = () => localStorage.getItem("adminToken");
-
 const setToken = (token) => localStorage.setItem("adminToken", token);
 const removeToken = () => localStorage.removeItem("adminToken");
 
@@ -42,7 +41,7 @@ export const login = async (username, password) => {
   const result = await handleResponse(
     api.post("/admin/login", { username, password })
   );
-  if (result.success && result.data.message === "Logged in successfully") {
+  if (result.success && result.data.token) {
     setToken(result.data.token);
   }
   return result;
@@ -59,7 +58,8 @@ export const getPlans = () => handleResponse(api.get("/admin/plans"));
 export const createItem = (itemData) =>
   handleResponse(api.post("/admin/items", itemData));
 
-export const getAllItems = () => handleResponse(api.get("/admin/items"));
+export const getAllItems = (params) =>
+  handleResponse(api.get("/admin/items", { params }));
 
 export const getItem = (id) => handleResponse(api.get(`/admin/items/${id}`));
 
@@ -72,4 +72,20 @@ export const deleteItem = (id) =>
 export const toggleItemAvailability = (id) =>
   handleResponse(api.patch(`/admin/items/${id}/toggle-availability`));
 
+// Category management functions
+export const getAllCategories = () =>
+  handleResponse(api.get("/admin/categories"));
+
+export const createCategory = (categoryData) =>
+  handleResponse(api.post("/admin/categories", categoryData));
+
+export const deleteCategory = (id) =>
+  handleResponse(api.delete(`/admin/categories/${id}`));
+
+export const getItemsByCategory = (categoryName, page = 1, limit = 10) =>
+  handleResponse(
+    api.get(`/admin/items/category/${categoryName}`, {
+      params: { page, limit },
+    })
+  );
 export default api;

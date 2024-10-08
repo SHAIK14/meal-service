@@ -1,4 +1,3 @@
-// server/models/admin/Item.js
 const mongoose = require("mongoose");
 
 const PriceSchema = new mongoose.Schema({
@@ -20,8 +19,8 @@ const ItemSchema = new mongoose.Schema(
     fat: { type: Number, required: true },
     type: { type: String, enum: ["Non Veg", "Veg"], required: true },
     category: {
-      type: String,
-      enum: ["Lunch", "Dinner", "Lunch and Dinner"],
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
       required: true,
     },
     prices: [PriceSchema],

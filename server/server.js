@@ -7,6 +7,7 @@ const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const adminAuthRoutes = require("./routes/admin/adminAuthRoutes");
 const itemRoutes = require("./routes/admin/itemRoutes");
+const categoryRoutes = require("./routes/admin/categoryRoutes");
 dotenv.config();
 
 const app = express();
@@ -19,15 +20,6 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-// // session middleware
-// app.use(
-//   session({
-//     secret: process.env.SESSION_SECRET,
-//     resave: false,
-//     saveUninitialized: false,
-//     cookie: { secure: process.env.NODE_ENV === "production" },
-//   })
-// );
 
 connectDB().catch((err) =>
   console.error("Failed to connect to database:", err)
@@ -45,6 +37,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/admin", adminAuthRoutes);
 app.use("/api/admin/items", itemRoutes);
+app.use("/api/admin/categories", categoryRoutes);
 
 const PORT = process.env.PORT || 5000;
 const HOST = "0.0.0.0";
