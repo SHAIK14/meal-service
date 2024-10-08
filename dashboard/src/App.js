@@ -19,7 +19,7 @@ import Lunchmenu from "./components/Lunchmenu";
 import Dinnermenu from "./components/Dinnermenu";
 import AddItemPage from "./components/Additem";
 import ItemsEdit from "./components/itemsEdit";
-import ItemsCategory from "./components/ItemsCategory";
+import ItemsCategories from "./components/ItemsCategories";
 
 const AuthenticatedLayout = ({ children }) => (
   <div
@@ -62,8 +62,9 @@ const App = () => {
                   <Route path="/items" element={<Items />} />
                   <Route
                     path="/category/:categoryName"
-                    element={<ItemsCategory />}
+                    element={<ItemsCategories />}
                   />
+
                   <Route path="/lunch/:id" element={<ItemsEdit />} />
                   <Route path="/add-item" element={<AddItemPage />} />
                   <Route path="/lunch" element={<Lunchmenu />} />

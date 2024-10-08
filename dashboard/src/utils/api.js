@@ -37,6 +37,7 @@ const handleResponse = async (apiCall) => {
   }
 };
 
+// Authentication
 export const login = async (username, password) => {
   const result = await handleResponse(
     api.post("/admin/login", { username, password })
@@ -52,15 +53,52 @@ export const logout = () => {
   return { success: true, message: "Logged out successfully" };
 };
 
-export const getPlans = () => handleResponse(api.get("/admin/plans"));
+// Category management functions
+export const getAllCategories = async () => {
+  try {
+    const response = await api.get("/admin/categories");
+    console.log("Raw API response:", response);
+    return { success: true, data: response.data }; // response.data is now the array of categories
+  } catch (error) {
+    console.error("Error in getAllCategories:", error);
+    return { success: false, error: error.message };
+  }
+};
+export const createCategory = (categoryData) =>
+  handleResponse(api.post("/admin/categories", categoryData));
 
 // Item management functions
 export const createItem = (itemData) =>
   handleResponse(api.post("/admin/items", itemData));
 
-export const getAllItems = (params) =>
-  handleResponse(api.get("/admin/items", { params }));
+export const getAllItems = async (params) => {
+  try {
+    const response = await api.get("/admin/items", { params });
+    return { success: true, ...response.data };
+  } catch (error) {
+    console.error("Error in getAllItems:", error);
+    return { success: false, error: error.message };
+  }
+};
 
+export const getItemsByCategory = async (
+  categoryName,
+  page = 1,
+  limit = 10
+) => {
+  try {
+    const response = await api.get(`/admin/items/category/${categoryName}`, {
+      params: { page, limit },
+    });
+    return { success: true, ...response.data };
+  } catch (error) {
+    console.error("Error in getItemsByCategory:", error);
+    return { success: false, error: error.message };
+  }
+};
+// These functions are not in our current API but might be needed in the future
+// Uncomment and implement on the server-side if needed
+/*
 export const getItem = (id) => handleResponse(api.get(`/admin/items/${id}`));
 
 export const updateItem = (id, itemData) =>
@@ -72,20 +110,8 @@ export const deleteItem = (id) =>
 export const toggleItemAvailability = (id) =>
   handleResponse(api.patch(`/admin/items/${id}/toggle-availability`));
 
-// Category management functions
-export const getAllCategories = () =>
-  handleResponse(api.get("/admin/categories"));
-
-export const createCategory = (categoryData) =>
-  handleResponse(api.post("/admin/categories", categoryData));
-
 export const deleteCategory = (id) =>
   handleResponse(api.delete(`/admin/categories/${id}`));
+*/
 
-export const getItemsByCategory = (categoryName, page = 1, limit = 10) =>
-  handleResponse(
-    api.get(`/admin/items/category/${categoryName}`, {
-      params: { page, limit },
-    })
-  );
 export default api;

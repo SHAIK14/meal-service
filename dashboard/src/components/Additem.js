@@ -3,9 +3,11 @@ import { X, Upload, Image } from "lucide-react";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "../config/firebaseConfig";
 import { createItem, getAllCategories } from "../utils/api";
+import { useNavigate } from "react-router-dom";
 import "../styles/Add-item.css";
 
 const AddItemPage = () => {
+  const navigate = useNavigate();
   const [item, setItem] = useState({
     image: null,
     nameEnglish: "",
@@ -53,7 +55,6 @@ const AddItemPage = () => {
       setCategoriesLoading(false);
     }
   };
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setItem((prevState) => ({
@@ -108,6 +109,10 @@ const AddItemPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (categories.length === 0) {
+      setError("Please add a category first before adding an item.");
+      return;
+    }
     setLoading(true);
     setError(null);
     setSuccess(false);
@@ -172,6 +177,19 @@ const AddItemPage = () => {
 
   if (error) {
     return <div className="error-message">{error}</div>;
+  }
+  if (categories.length === 0) {
+    return (
+      <div className="add-item-page">
+        <h1>Add New Item</h1>
+        <div className="error-message">
+          No categories available. Please add a category first.
+        </div>
+        <button onClick={() => navigate("/items")} className="submit-btn">
+          Go to Categories
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -301,15 +319,11 @@ const AddItemPage = () => {
                 onChange={handleInputChange}
                 required
               >
-                {categories.length > 0 ? (
-                  categories.map((category) => (
-                    <option key={category._id} value={category._id}>
-                      {category.name} (ID: {category._id})
-                    </option>
-                  ))
-                ) : (
-                  <option value="">No categories available</option>
-                )}
+                {categories.map((category) => (
+                  <option key={category._id} value={category._id}>
+                    {category.name}
+                  </option>
+                ))}
               </select>
             </div>
 

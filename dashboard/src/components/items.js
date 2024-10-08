@@ -1,27 +1,38 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getAllCategories, createCategory, deleteCategory } from "../utils/api";
+import { getAllCategories, createCategory } from "../utils/api";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { FaPlus, FaTimes } from "react-icons/fa";
+import { FaPlus } from "react-icons/fa";
 import "../styles/Items.css";
 
 const Items = () => {
   const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
   const [newCategory, setNewCategory] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchCategories();
   }, []);
 
   const fetchCategories = async () => {
-    const result = await getAllCategories();
-    if (result.success) {
-      setCategories(result.data);
-    } else {
-      console.error("Failed to fetch categories:", result.error);
-      toast.error("Failed to fetch categories");
+    setLoading(true);
+    try {
+      const result = await getAllCategories();
+      console.log("API response:", result);
+      if (result.success) {
+        setCategories(result.data);
+      } else {
+        console.error("Failed to fetch categories:", result.error);
+        setError("Failed to fetch categories");
+      }
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      setError("An error occurred while fetching categories");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -36,33 +47,30 @@ const Items = () => {
   const handleAddCategory = async (e) => {
     e.preventDefault();
     if (newCategory.trim() !== "") {
-      const result = await createCategory({ name: newCategory.trim() });
-      if (result.success) {
-        setCategories([...categories, result.data]);
-        setNewCategory("");
-        toast.success("Category added successfully");
-      } else {
-        console.error("Failed to add category:", result.error);
-        toast.error("Failed to add category");
+      try {
+        const result = await createCategory({ name: newCategory.trim() });
+        if (result.success) {
+          setCategories([...categories, result.data]);
+          setNewCategory("");
+          toast.success("Category added successfully");
+        } else {
+          console.error("Failed to add category:", result.error);
+          toast.error("Failed to add category");
+        }
+      } catch (error) {
+        console.error("Error adding category:", error);
+        toast.error("An error occurred while adding the category");
       }
     }
   };
 
-  const handleDeleteCategory = async (id) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this category?"
-    );
-    if (confirmDelete) {
-      const result = await deleteCategory(id);
-      if (result.success) {
-        setCategories(categories.filter((cat) => cat._id !== id));
-        toast.success("Category deleted successfully");
-      } else {
-        console.error("Failed to delete category:", result.error);
-        toast.error("Failed to delete category");
-      }
-    }
-  };
+  if (loading) {
+    return <div className="loading">Loading categories...</div>;
+  }
+
+  if (error) {
+    return <div className="error-message">Error: {error}</div>;
+  }
 
   return (
     <div className="items-page">
@@ -88,19 +96,17 @@ const Items = () => {
       </form>
 
       <div className="categories-grid">
-        {categories.map((category) => (
-          <div key={category._id} className="category-box">
-            <button
-              className="delete-category-btn"
-              onClick={() => handleDeleteCategory(category._id)}
-            >
-              <FaTimes />
-            </button>
-            <h3 onClick={() => handleCategoryClick(category)}>
-              {category.name}
-            </h3>
-          </div>
-        ))}
+        {categories.length > 0 ? (
+          categories.map((category) => (
+            <div key={category._id} className="category-box">
+              <h3 onClick={() => handleCategoryClick(category)}>
+                {category.name}
+              </h3>
+            </div>
+          ))
+        ) : (
+          <div>No categories available</div>
+        )}
       </div>
     </div>
   );
