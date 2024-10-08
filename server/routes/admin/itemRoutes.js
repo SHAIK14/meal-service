@@ -5,10 +5,14 @@ const adminAuth = require("../../middleware/admin/adminAuth");
 
 router.post("/", adminAuth, itemController.createItem);
 router.get("/", adminAuth, itemController.getAllItems);
+router.get("/:id", adminAuth, itemController.getItemById);
 router.get(
   "/category/:categoryName",
   adminAuth,
   itemController.getItemsByCategory
 );
+router.put("/:id", adminAuth, itemController.updateItem);
+router.delete("/:id", adminAuth, itemController.deleteItem);
+router.put("/toggle/:id", adminAuth, itemController.toggleItemAvailability);
 
 module.exports = router;

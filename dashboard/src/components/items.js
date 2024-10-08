@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getAllCategories, createCategory } from "../utils/api";
+import { getAllCategories, createCategory, deleteCategory } from "../utils/api";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { FaPlus } from "react-icons/fa";
+import { FaPlus, FaTimes } from "react-icons/fa";
 import "../styles/Items.css";
 
 const Items = () => {
@@ -21,15 +21,12 @@ const Items = () => {
     setLoading(true);
     try {
       const result = await getAllCategories();
-      console.log("API response:", result);
       if (result.success) {
         setCategories(result.data);
       } else {
-        console.error("Failed to fetch categories:", result.error);
         setError("Failed to fetch categories");
       }
     } catch (error) {
-      console.error("Error fetching categories:", error);
       setError("An error occurred while fetching categories");
     } finally {
       setLoading(false);
@@ -54,14 +51,46 @@ const Items = () => {
           setNewCategory("");
           toast.success("Category added successfully");
         } else {
-          console.error("Failed to add category:", result.error);
           toast.error("Failed to add category");
         }
       } catch (error) {
-        console.error("Error adding category:", error);
         toast.error("An error occurred while adding the category");
       }
     }
+  };
+
+  const handleDeleteCategory = async (categoryId) => {
+    const confirmDelete = async () => {
+      try {
+        const result = await deleteCategory(categoryId);
+        if (result.success) {
+          setCategories(categories.filter((cat) => cat._id !== categoryId));
+          toast.success("Category deleted successfully");
+        } else {
+          toast.error(result.error || "Failed to delete category");
+        }
+      } catch (error) {
+        toast.error("An error occurred while deleting the category");
+      }
+    };
+
+    toast.info("Are you sure you want to delete this category?", {
+      autoClose: false,
+      closeOnClick: false,
+      closeButton: false,
+      draggable: false,
+      onClick: (e) => e.stopPropagation(),
+      buttons: [
+        {
+          label: "Yes",
+          onClick: () => confirmDelete(),
+        },
+        {
+          label: "No",
+          onClick: () => toast.dismiss(),
+        },
+      ],
+    });
   };
 
   if (loading) {
@@ -96,17 +125,22 @@ const Items = () => {
       </form>
 
       <div className="categories-grid">
-        {categories.length > 0 ? (
-          categories.map((category) => (
-            <div key={category._id} className="category-box">
-              <h3 onClick={() => handleCategoryClick(category)}>
-                {category.name}
-              </h3>
-            </div>
-          ))
-        ) : (
-          <div>No categories available</div>
-        )}
+        {categories.map((category) => (
+          <div key={category._id} className="category-box">
+            <h3 onClick={() => handleCategoryClick(category)}>
+              {category.name}
+            </h3>
+            <button
+              className="delete-category-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteCategory(category._id);
+              }}
+            >
+              <FaTimes />
+            </button>
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -58,14 +58,18 @@ export const getAllCategories = async () => {
   try {
     const response = await api.get("/admin/categories");
     console.log("Raw API response:", response);
-    return { success: true, data: response.data }; // response.data is now the array of categories
+    return { success: true, data: response.data };
   } catch (error) {
     console.error("Error in getAllCategories:", error);
     return { success: false, error: error.message };
   }
 };
+
 export const createCategory = (categoryData) =>
   handleResponse(api.post("/admin/categories", categoryData));
+
+export const deleteCategory = (categoryId) =>
+  handleResponse(api.delete(`/admin/categories/${categoryId}`));
 
 // Item management functions
 export const createItem = (itemData) =>
@@ -96,22 +100,57 @@ export const getItemsByCategory = async (
     return { success: false, error: error.message };
   }
 };
-// These functions are not in our current API but might be needed in the future
-// Uncomment and implement on the server-side if needed
-/*
-export const getItem = (id) => handleResponse(api.get(`/admin/items/${id}`));
 
-export const updateItem = (id, itemData) =>
-  handleResponse(api.put(`/admin/items/${id}`, itemData));
+export const getItemById = async (itemId) => {
+  try {
+    const response = await api.get(`/admin/items/${itemId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error in getItemById:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message,
+    };
+  }
+};
 
-export const deleteItem = (id) =>
-  handleResponse(api.delete(`/admin/items/${id}`));
+export const updateItem = async (itemId, itemData) => {
+  try {
+    const response = await api.put(`/admin/items/${itemId}`, itemData);
+    return response.data;
+  } catch (error) {
+    console.error("Error in updateItem:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message,
+    };
+  }
+};
 
-export const toggleItemAvailability = (id) =>
-  handleResponse(api.patch(`/admin/items/${id}/toggle-availability`));
+export const deleteItem = async (itemId) => {
+  try {
+    const response = await api.delete(`/admin/items/${itemId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error in deleteItem:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message,
+    };
+  }
+};
 
-export const deleteCategory = (id) =>
-  handleResponse(api.delete(`/admin/categories/${id}`));
-*/
+export const toggleItemAvailability = async (id) => {
+  try {
+    const response = await axios.put(`/api/admin/items/toggle/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error toggling item availability:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "An error occurred",
+    };
+  }
+};
 
 export default api;

@@ -15,8 +15,7 @@ import Delivery from "./components/delivery";
 import Orders from "./components/orders";
 import Users from "./components/users";
 import SelectItemPage from "./components/SelectItemPage";
-import Lunchmenu from "./components/Lunchmenu";
-import Dinnermenu from "./components/Dinnermenu";
+
 import AddItemPage from "./components/Additem";
 import ItemsEdit from "./components/itemsEdit";
 import ItemsCategories from "./components/ItemsCategories";
@@ -65,10 +64,9 @@ const App = () => {
                     element={<ItemsCategories />}
                   />
 
-                  <Route path="/lunch/:id" element={<ItemsEdit />} />
+                  <Route path="/edit-item/:id" element={<ItemsEdit />} />
                   <Route path="/add-item" element={<AddItemPage />} />
-                  <Route path="/lunch" element={<Lunchmenu />} />
-                  <Route path="/dinner" element={<Dinnermenu />} />
+
                   <Route path="/delivery" element={<Delivery />} />
                   <Route path="/orders" element={<Orders />} />
                   <Route path="/users" element={<Users />} />

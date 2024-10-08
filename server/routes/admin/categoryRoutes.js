@@ -5,5 +5,6 @@ const adminAuth = require("../../middleware/admin/adminAuth");
 
 router.post("/", adminAuth, categoryController.createCategory);
 router.get("/", adminAuth, categoryController.getAllCategories);
+router.delete("/:id", adminAuth, categoryController.deleteCategory);
 
 module.exports = router;

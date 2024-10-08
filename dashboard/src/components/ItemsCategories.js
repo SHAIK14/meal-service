@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getItemsByCategory } from "../utils/api";
-import "../styles/ItemsCategories.CSS";
+import { getItemsByCategory, toggleItemAvailability } from "../utils/api";
+import { Edit2, ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
+import "../styles/ItemsCategories.css";
+
+const ITEMS_PER_PAGE = 5;
 
 const ItemsCategories = () => {
   const { categoryName } = useParams();
@@ -9,12 +12,12 @@ const ItemsCategories = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState({ veg: 1, nonVeg: 1 });
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
     try {
       const result = await getItemsByCategory(categoryName);
-      console.log("Fetched items:", result);
       if (result.success) {
         setItems(result.items);
       } else {
@@ -32,48 +35,112 @@ const ItemsCategories = () => {
     fetchItems();
   }, [fetchItems]);
 
-  if (loading) {
-    return <div className="loading">Loading items...</div>;
-  }
+  const handleToggleAvailability = async (id) => {
+    try {
+      const result = await toggleItemAvailability(id);
+      if (result.success) {
+        setItems(
+          items.map((item) =>
+            item._id === id ? { ...item, available: !item.available } : item
+          )
+        );
+      } else {
+        setError(result.error || "Failed to toggle item availability");
+      }
+    } catch (error) {
+      console.error("Error toggling item availability:", error);
+      setError("An error occurred while toggling item availability");
+    }
+  };
 
-  if (error) {
-    return <div className="error">{error}</div>;
-  }
+  const handleEdit = (id) => {
+    navigate(`/edit-item/${id}`);
+  };
+  const renderPagination = (type) => {
+    const filteredItems = items.filter((item) => item.type === type);
+    const pageCount = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
+    const currentPageType = type === "Veg" ? "veg" : "nonVeg";
+
+    return (
+      <div className="pagination">
+        <button
+          onClick={() =>
+            setCurrentPage((prev) => ({
+              ...prev,
+              [currentPageType]: Math.max(prev[currentPageType] - 1, 1),
+            }))
+          }
+          disabled={currentPage[currentPageType] === 1}
+        >
+          <ChevronLeft size={20} />
+        </button>
+        <span>
+          {currentPage[currentPageType]} / {pageCount}
+        </span>
+        <button
+          onClick={() =>
+            setCurrentPage((prev) => ({
+              ...prev,
+              [currentPageType]: Math.min(prev[currentPageType] + 1, pageCount),
+            }))
+          }
+          disabled={currentPage[currentPageType] === pageCount}
+        >
+          <ChevronRight size={20} />
+        </button>
+      </div>
+    );
+  };
+
+  const renderItems = (type) => {
+    const filteredItems = items.filter((item) => item.type === type);
+    const pageType = type === "Veg" ? "veg" : "nonVeg";
+    const startIndex = (currentPage[pageType] - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    const itemsToDisplay = filteredItems.slice(startIndex, endIndex);
+
+    return itemsToDisplay.map((item) => (
+      <div key={item._id} className="menu-item">
+        <img src={item.image} alt={item.nameEnglish} />
+        <p>{item.nameEnglish}</p>
+        <div className="item-actions">
+          <button onClick={() => handleEdit(item._id)} className="edit-btn">
+            <Edit2 size={20} />
+          </button>
+          <label className="switch">
+            <input
+              type="checkbox"
+              checked={item.available}
+              onChange={() => handleToggleAvailability(item._id)}
+            />
+            <span className="slider"></span>
+          </label>
+        </div>
+      </div>
+    ));
+  };
+
+  if (loading) return <div className="loading">Loading items...</div>;
+  if (error) return <div className="error">{error}</div>;
 
   return (
     <div className="items-categories">
-      <h1>{categoryName} Items</h1>
-      {items.length === 0 ? (
-        <div className="no-items">
-          <p>No items available in this category.</p>
-          <button
-            onClick={() => navigate("/add-item")}
-            className="add-item-btn"
-          >
-            Add Item
-          </button>
-        </div>
-      ) : (
-        <div className="items-grid">
-          {items.map((item) => (
-            <div key={item._id} className="item-card">
-              <img
-                src={item.image}
-                alt={item.nameEnglish}
-                className="item-image"
-              />
-              <h3>{item.nameEnglish}</h3>
-              <p>{item.descriptionEnglish}</p>
-              <p>
-                Price: {item.prices[0].sellingPrice} {item.prices[0].currency}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
-      <button onClick={() => navigate("/items")} className="back-btn">
-        Back to Categories
-      </button>
+      <div className="items-categories-header">
+        <button onClick={() => navigate("/items")} className="back-btn">
+          <ArrowLeft size={24} />
+        </button>
+        <h1>{categoryName} Items</h1>
+      </div>
+      <div className="menu-category">
+        <h3>Veg</h3>
+        {renderItems("Veg")}
+        {renderPagination("Veg")}
+      </div>
+      <div className="menu-category">
+        <h3>Non-Veg</h3>
+        {renderItems("Non Veg")}
+        {renderPagination("Non Veg")}
+      </div>
     </div>
   );
 };

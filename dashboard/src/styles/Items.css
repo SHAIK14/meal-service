@@ -114,6 +114,26 @@
 .delete-category-btn:hover {
   color: #c0392b;
 }
+.delete-category-btn {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: none;
+  border: none;
+  color: #e74c3c;
+  cursor: pointer;
+  font-size: 1rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.category-box:hover .delete-category-btn {
+  opacity: 1;
+}
+
+.delete-category-btn:hover {
+  color: #c0392b;
+}
 
 @media (max-width: 768px) {
   .items-header {
