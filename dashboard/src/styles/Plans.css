@@ -1,0 +1,344 @@
+/* Container */
+.plans-wrapper {
+  padding: 20px;
+  width: 100%;
+  z-index: -100;
+  height: 100vh;
+
+  border-radius: 10px;
+  text-align: center;
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+.plans-container {
+  width: fit-content;
+}
+
+/* Title */
+.plans-container h1 {
+  font-size: 32px;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+/* Create New Plan button */
+.create-plan-btn {
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: rgb(50, 175, 10);
+  border: none;
+  border-radius: 25px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Plans list */
+.plans-list {
+  display: flex;
+  justify-content: flex-start;
+  height: Auto;
+  padding: 20px;
+  margin: 20px 0;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Plan card */
+.plan-card {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Plan image */
+.plan-image {
+  margin-top: 10px;
+  width: 250px;
+  height: 250px;
+  border-radius: 8px;
+}
+
+/* Form Overlay */
+.form-overlay {
+  position: fixed;
+  height: 100%;
+  width: 100%;
+  top: 0;
+  left: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.form-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Popup Container */
+
+.form-title {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.form-title h2 {
+  font-size: 18pt;
+  margin: 0;
+  padding: 0;
+}
+.form-popup {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 50px;
+  width: auto;
+  height: auto;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  position: relative;
+}
+form {
+  display: flex;
+}
+/* Form Heading */
+
+.image-container {
+  width: 200px;
+  height: 200px;
+  border: 2px dashed;
+  display: flex;
+  border-color: #666;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin: 0 20px;
+  padding: 25px;
+  border-radius: 20px;
+}
+
+.image-container input {
+  width: 200px;
+  height: 200px;
+  overflow: hidden;
+  height: 100px;
+  display: flex;
+
+  justify-content: center;
+  align-items: center;
+}
+
+.icon-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+/* Form Group */
+
+.form-container {
+  width: 100%;
+}
+.fields-continer {
+  width: 100%;
+}
+
+/* Focus State */
+
+/* Stylish Checkboxes */
+.checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin: 30px 0;
+  justify-content: space-between;
+  width: 100%;
+
+  padding: 10px;
+}
+
+.checkbox-group label {
+  display: flex;
+  font-size: 10pt;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: space-evenly;
+  cursor: pointer;
+}
+
+.checkbox-group input {
+  margin-right: 10px;
+  width: 25px;
+  height: 25px;
+}
+.category {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.category label {
+  margin: 0;
+  display: flex;
+  justify-content: right;
+  padding: 10px;
+}
+
+.form-btn {
+  display: flex;
+  justify-content: right;
+  align-items: center;
+}
+
+.next-button {
+  padding: 10px 15px;
+  margin-right: 10px;
+  border-radius: 50px;
+  background-color: rgb(50, 175, 10);
+  border: none;
+  color: white;
+  font-size: 14pt;
+  cursor: pointer;
+}
+
+.close-button {
+  padding: 10px 15px;
+  margin-right: 10px;
+  border-radius: 50px;
+  background-color: red;
+  border: none;
+  color: white;
+  font-size: 14pt;
+  cursor: pointer;
+}
+
+/* Responsive Styles */
+
+@media (max-width: 850px) {
+  .form-container {
+    width: 100%;
+  }
+  .form-wrapper {
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .form-popup {
+    width: auto;
+    height: auto;
+  }
+
+  .fields-continer {
+    width: 100%;
+  }
+  .form-group {
+    margin: 0;
+    height: fit-content;
+  }
+  .form-group input,
+  .form-group textarea {
+    font-size: 10pt;
+    padding: 10px;
+    margin: 0px;
+  }
+
+  .image-container {
+    width: 75px;
+    height: 75px;
+    border: 2px dashed;
+    display: flex;
+    border-color: #666;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin: 0 20px;
+    padding: 25px;
+    overflow: hidden;
+    border-radius: 20px;
+  }
+
+  .image-container input {
+    width: 100px;
+    height: 100px;
+    overflow: hidden;
+    height: 100px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .icon-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+  }
+
+  .form-popup h2 {
+    font-size: 20px;
+  }
+
+  .save-plan-btn,
+  .cancel-btn {
+    width: 100%;
+  }
+  /* Stylish Checkboxes */
+  .checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 5px 0;
+    justify-content: space-between;
+    width: 100%;
+    padding: 5px;
+  }
+
+  .checkbox-group label {
+    display: flex;
+    font-size: 10pt;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: space-evenly;
+    cursor: pointer;
+  }
+
+  .checkbox-group input {
+    margin-right: 10px;
+    width: 15px;
+    height: 15px;
+  }
+  .category {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .category label {
+    font-size: 10pt;
+    margin: 0;
+    display: flex;
+    justify-content: right;
+    padding: 10px;
+  }
+  .category select {
+    width: 100%;
+    padding: 5px;
+    font-size: 10pt;
+  }
+}
+
+/* No plans */
+.no-plans {
+  font-size: 18px;
+  color: #666;
+}

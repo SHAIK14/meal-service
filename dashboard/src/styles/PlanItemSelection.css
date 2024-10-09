@@ -1,0 +1,183 @@
+/* General Styles */
+.plan-item-selection-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 20px;
+}
+
+.days-nav {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  justify-content: space-evenly;
+  margin-bottom: 50px;
+  padding: 25px;
+  align-items: center;
+}
+
+.day-button {
+  font-size: 14pt;
+  padding: 10px 20px;
+  background-color: transparent;
+  border: none;
+  color: gray;
+  font-weight: 600;
+  border-radius: 25px;
+  cursor: pointer;
+  position: relative;
+  transition: 0.3s ease;
+}
+.day-button:hover {
+  color: black;
+}
+
+.day-button.active {
+  color: red;
+}
+
+.day-button.active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -5px;
+  height: 3px;
+  background-color: red;
+}
+
+.content-wrapper {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  transition: margin-left 0.3s ease;
+}
+
+.content-wrapper.open {
+  margin-left: 250px;
+}
+
+.available-meals,
+.selected-meals {
+  flex: 1;
+  margin: 0 10px;
+}
+
+.available-meals h2,
+.selected-meals h2 {
+  font-size: 16pt;
+  margin: 20px 0;
+  background-color: white;
+  padding: 15px;
+  border-radius: 50px;
+}
+
+.meals-list,
+.selected-meals-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 15px;
+  background-color: #f9f9f9;
+  padding: 50px;
+  border-radius: 50px;
+}
+
+.meal-card,
+.selected-meal-card {
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 10px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.meal-card img,
+.selected-meal-card img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 5px;
+  margin-bottom: 10px;
+}
+
+.price {
+  margin: 0;
+  padding: 0;
+  text-align: center;
+}
+
+.meal-info {
+  display: flex;
+  justify-content: space-between;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.meal-info .price {
+  margin: 10px 0;
+}
+
+.meal-info p {
+  margin: 0;
+}
+
+.select-meal-btn,
+.add-meal-btn,
+.remove-meal-btn {
+  padding: 10px 15px;
+  color: white;
+  background-color: rgb(50, 175, 10);
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+}
+
+.remove-meal-btn {
+  background-color: #ff4d4d;
+}
+
+.total-price {
+  margin-top: 20px;
+  font-size: 1.5em;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.total-price h2 {
+  display: flex;
+  width: 70%;
+  justify-content: left;
+}
+
+.save-plan-btn {
+  padding: 15px 20px;
+  border: none;
+  background-color: rgb(50, 175, 10);
+  border-radius: 50px;
+  color: white;
+  font-size: 14pt;
+  cursor: pointer;
+}
+
+/* Media Queries for responsiveness */
+@media (max-width: 768px) {
+  .days-nav {
+    flex-direction: column;
+  }
+
+  .content-wrapper {
+    flex-direction: column;
+  }
+
+  .available-meals,
+  .selected-meals {
+    margin: 10px 0;
+  }
+}

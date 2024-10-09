@@ -7,15 +7,16 @@ import {
   FaShoppingCart,
   FaUsers,
   FaBars,
-  FaSignOutAlt,
+  FaMoneyCheckAlt, // Icon for Payments
+  FaTicketAlt, // Icon for Vouchers
 } from "react-icons/fa";
-import "../styles/Sidebar.css";
+import "../styles/Sidebar.css"; // Your custom styles
 
 const Sidebar = () => {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(true); // State to control sidebar visibility
 
   const toggleSidebar = () => {
-    setIsOpen(!isOpen);
+    setIsOpen(!isOpen); // Toggle open/closed state
   };
 
   return (
@@ -26,12 +27,13 @@ const Sidebar = () => {
       <ul>
         <li>
           <NavLink
-            to="/plans"
+            to="/plans" // This will be active for /plans and /plans/select-item
             className={({ isActive }) => (isActive ? "active" : "")}
           >
             <FaClipboardList className="icon" /> <span>Plans</span>
           </NavLink>
         </li>
+
         <li>
           <NavLink
             to="/items"
@@ -65,8 +67,19 @@ const Sidebar = () => {
           </NavLink>
         </li>
         <li>
-          <NavLink to="/logout" className="logout-button">
-            <FaSignOutAlt className="icon" /> <span>Logout</span>
+          <NavLink
+            to="/Vouchers"
+            className={({ isActive }) => (isActive ? "active" : "")}
+          >
+            <FaTicketAlt className="icon" /> <span>Vouchers</span>
+          </NavLink>
+        </li>
+        <li>
+          <NavLink
+            to="/payments"
+            className={({ isActive }) => (isActive ? "active" : "")}
+          >
+            <FaMoneyCheckAlt className="icon" /> <span>Payments</span>
           </NavLink>
         </li>
       </ul>

@@ -9,16 +9,15 @@ import Login from "./components/Login";
 import Logout from "./components/Logout";
 import Sidebar from "./components/Sidebar";
 import Plans from "./components/Plan";
-import NewPlan from "./components/NewPlan";
 import Items from "./components/items";
 import Delivery from "./components/delivery";
 import Orders from "./components/orders";
 import Users from "./components/users";
-import SelectItemPage from "./components/SelectItemPage";
-
+import PlanItemSelection from "./components/Planitemselection";
 import AddItemPage from "./components/Additem";
+import Vouchers from "./components/Vouchers";
 import ItemsEdit from "./components/itemsEdit";
-import ItemsCategories from "./components/ItemsCategories";
+import ItemsCategory from "./components/ItemsCategories";
 
 const AuthenticatedLayout = ({ children }) => (
   <div
@@ -57,22 +56,23 @@ const App = () => {
               <AuthenticatedLayout>
                 <Routes>
                   <Route path="/plans" element={<Plans />} />
-                  <Route path="/plans/new" element={<NewPlan />} />
+
                   <Route path="/items" element={<Items />} />
                   <Route
                     path="/category/:categoryName"
-                    element={<ItemsCategories />}
+                    element={<ItemsCategory />}
                   />
-
-                  <Route path="/edit-item/:id" element={<ItemsEdit />} />
+                  <Route path="/lunch/:id" element={<ItemsEdit />} />
                   <Route path="/add-item" element={<AddItemPage />} />
 
                   <Route path="/delivery" element={<Delivery />} />
                   <Route path="/orders" element={<Orders />} />
                   <Route path="/users" element={<Users />} />
+                  <Route path="/Vouchers" element={<Vouchers />} />
+
                   <Route
-                    path="/select-item-page"
-                    element={<SelectItemPage />}
+                    path="/Planitemselection"
+                    element={<PlanItemSelection />}
                   />
                   <Route path="/" element={<Navigate to="/plans" replace />} />
                 </Routes>
