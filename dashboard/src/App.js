@@ -15,10 +15,11 @@ import Delivery from "./components/delivery";
 import Orders from "./components/orders";
 import Users from "./components/users";
 import SelectItemPage from "./components/SelectItemPage";
-
 import AddItemPage from "./components/Additem";
 import ItemsEdit from "./components/itemsEdit";
 import ItemsCategories from "./components/ItemsCategories";
+import Banners from "./components/Banners";
+import PaymentPage from "./components/payment";
 
 const AuthenticatedLayout = ({ children }) => (
   <div
@@ -63,11 +64,12 @@ const App = () => {
                     path="/category/:categoryName"
                     element={<ItemsCategories />}
                   />
-
                   <Route path="/edit-item/:id" element={<ItemsEdit />} />
                   <Route path="/add-item" element={<AddItemPage />} />
 
+                  <Route path="/payment-options" element={<PaymentPage />} />
                   <Route path="/delivery" element={<Delivery />} />
+                  <Route path="/banners-container" element={<Banners />} />
                   <Route path="/orders" element={<Orders />} />
                   <Route path="/users" element={<Users />} />
                   <Route
