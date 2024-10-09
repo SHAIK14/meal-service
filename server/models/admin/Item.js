@@ -1,5 +1,11 @@
 const mongoose = require("mongoose");
 
+const PriceSchema = new mongoose.Schema({
+  currency: { type: String, required: true },
+  sellingPrice: { type: Number, required: true },
+  discountPrice: { type: Number },
+});
+
 const ItemSchema = new mongoose.Schema(
   {
     nameEnglish: { type: String, required: true },
@@ -17,13 +23,7 @@ const ItemSchema = new mongoose.Schema(
       ref: "Category",
       required: true,
     },
-    prices: [
-      {
-        currency: { type: String, required: true },
-        sellingPrice: { type: Number, required: true },
-        discountPrice: { type: Number },
-      },
-    ],
+    prices: [PriceSchema],
     available: { type: Boolean, default: true },
   },
   { timestamps: true }

@@ -8,14 +8,12 @@ exports.createItem = async (req, res) => {
     // Check if the category exists
     const category = await Category.findById(itemData.category);
     if (!category) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid category" });
+      return res.status(400).json({ message: "Invalid category" });
     }
 
     const newItem = new Item(itemData);
     await newItem.save();
-    res.status(201).json(newItem);
+    res.status(201).json({ success: true, data: newItem });
   } catch (error) {
     res.status(400).json({
       success: false,
@@ -27,7 +25,7 @@ exports.createItem = async (req, res) => {
 
 exports.getAllItems = async (req, res) => {
   try {
-    const { category, page = 1, limit = 10 } = req.query;
+    const { category, type, page = 1, limit = 10 } = req.query;
     let query = {};
 
     if (category) {
@@ -40,6 +38,10 @@ exports.getAllItems = async (req, res) => {
       query.category = categoryDoc._id;
     }
 
+    if (type) {
+      query.type = type;
+    }
+
     const items = await Item.find(query)
       .populate("category")
       .skip((page - 1) * limit)
@@ -49,7 +51,8 @@ exports.getAllItems = async (req, res) => {
     const totalItems = await Item.countDocuments(query);
 
     res.json({
-      items,
+      success: true,
+      data: items,
       currentPage: Number(page),
       totalPages: Math.ceil(totalItems / limit),
       totalItems,
@@ -60,16 +63,77 @@ exports.getAllItems = async (req, res) => {
   }
 };
 
+exports.getItem = async (req, res) => {
+  try {
+    const item = await Item.findById(req.params.id).populate("category");
+    if (!item) return res.status(404).json({ message: "Item not found" });
+    res.json({ success: true, data: item });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.updateItem = async (req, res) => {
+  try {
+    const updatedItem = await Item.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    }).populate("category");
+    if (!updatedItem)
+      return res
+        .status(404)
+        .json({ success: false, message: "Item not found" });
+    res.json({ success: true, data: updatedItem });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+exports.deleteItem = async (req, res) => {
+  try {
+    const deletedItem = await Item.findByIdAndDelete(req.params.id);
+    if (!deletedItem)
+      return res
+        .status(404)
+        .json({ success: false, message: "Item not found" });
+    res.json({ success: true, message: "Item deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.toggleItemAvailability = async (req, res) => {
+  try {
+    const item = await Item.findById(req.params.id);
+    if (!item)
+      return res
+        .status(404)
+        .json({ success: false, message: "Item not found" });
+
+    item.available = !item.available;
+    await item.save();
+
+    res.json({ success: true, data: item });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
 exports.getItemsByCategory = async (req, res) => {
   try {
     const { categoryName } = req.params;
     const { page = 1, limit = 10 } = req.query;
 
-    const category = await Category.findOne({ name: categoryName });
+    // Find the category by name (case-insensitive)
+    const category = await Category.findOne({
+      name: { $regex: new RegExp(`^${categoryName}$`, "i") },
+    });
+
     if (!category) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Category not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Category not found",
+      });
     }
 
     const items = await Item.find({ category: category._id })
@@ -81,96 +145,16 @@ exports.getItemsByCategory = async (req, res) => {
     const totalItems = await Item.countDocuments({ category: category._id });
 
     res.json({
-      items,
-      currentPage: Number(page),
-      totalPages: Math.ceil(totalItems / limit),
-      totalItems,
+      success: true,
+      data: {
+        data: items,
+        currentPage: Number(page),
+        totalPages: Math.ceil(totalItems / limit),
+        totalItems,
+      },
     });
   } catch (error) {
     console.error("Error in getItemsByCategory:", error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-};
-
-exports.updateItem = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const updateData = req.body;
-    const updatedItem = await Item.findByIdAndUpdate(id, updateData, {
-      new: true,
-    }).populate("category");
-    if (!updatedItem) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Item not found" });
-    }
-    res.json({ success: true, item: updatedItem });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: "Error updating item",
-      error: error.message,
-    });
-  }
-};
-
-exports.deleteItem = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const deletedItem = await Item.findByIdAndDelete(id);
-    if (!deletedItem) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Item not found" });
-    }
-    res.json({ success: true, message: "Item deleted successfully" });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: "Error deleting item",
-      error: error.message,
-    });
-  }
-};
-
-exports.toggleItemAvailability = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const item = await Item.findById(id);
-
-    if (!item) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Item not found" });
-    }
-
-    item.available = !item.available;
-    await item.save();
-
-    res.json({
-      success: true,
-      message: `Item availability set to ${item.available}`,
-      item,
-    });
-  } catch (error) {
-    console.error("Error in toggleItemAvailability:", error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-};
-exports.getItemById = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const item = await Item.findById(id).populate("category");
-
-    if (!item) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Item not found" });
-    }
-
-    res.json({ success: true, item });
-  } catch (error) {
-    console.error("Error in getItemById:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };

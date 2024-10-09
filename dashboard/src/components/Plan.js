@@ -1,93 +1,297 @@
-import React, { useState, useEffect } from "react"; // Import React and hooks
-import { useNavigate } from "react-router-dom"; // Import useNavigate for routing
-import { FaPlus } from "react-icons/fa"; // Import the plus icon
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import "../styles/Plans.css"; // Import your CSS
+
+import { FaEdit, FaTrash } from "react-icons/fa";
 
 const Plans = () => {
-  const navigate = useNavigate(); // Hook to programmatically navigate
-  const [loading, setLoading] = useState(true); // State for loading status
-  const [error, setError] = useState(null); // State for error messages
-  const [plans, setPlans] = useState([]); // State to hold plan data
+  const [selectedImage, setSelectedImage] = useState(null); // Declare selectedImage
+  const [plans, setPlans] = useState([]); // List of saved plans
+  const [isFormOpen, setIsFormOpen] = useState(false); // Toggle form popup
+  const [newPlan, setNewPlan] = useState({
+    nameEnglish: "",
+    nameArabic: "",
+    descriptionEnglish: "",
+    descriptionArabic: "",
+    image: null,
+    isVeg: false,
+    isNonVeg: false,
+    isIndividual: false,
+    isMultiple: false,
+    category: "Lunch", // Default category
+  });
 
-  useEffect(() => {
-    // Simulate fetching plans from an API
-    const fetchPlans = async () => {
-      try {
-        // Replace this with your actual data fetching logic
-        // Example: const response = await fetch('/api/plans');
-        // const data = await response.json();
-        const data = []; // Simulated empty data for demonstration
-        setPlans(data);
-      } catch (err) {
-        setError("Failed to load plans."); // Set error message if fetching fails
-      } finally {
-        setLoading(false); // Update loading state
-      }
-    };
+  const navigate = useNavigate(); // Initialize useNavigate
 
-    fetchPlans(); // Call the fetch function
-  }, []); // Empty dependency array means this effect runs once on mount
+  // Handle input change in the form
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setNewPlan((prevState) => ({
+      ...prevState,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
 
-  const handleNewPlan = () => {
-    navigate("/plans/new"); // Redirect to the New Plan page
+  // Handle image upload
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    setSelectedImage(URL.createObjectURL(file)); // Set the preview image
+    setNewPlan((prevState) => ({
+      ...prevState,
+      image: file,
+    }));
+  };
+
+  // Handle form submission to save the new plan and redirect
+  const handleSavePlan = (e) => {
+    e.preventDefault();
+    setPlans((prevPlans) => [...prevPlans, newPlan]); // Save the new plan
+    setIsFormOpen(false); // Close the form
+    resetForm(); // Reset the form
+    navigate("/Planitemselection"); // Redirect to Plan-item-selection page
+  };
+
+  // Reset the form
+  const resetForm = () => {
+    setNewPlan({
+      nameEnglish: "",
+      nameArabic: "",
+      descriptionEnglish: "",
+      descriptionArabic: "",
+      image: null,
+      isVeg: false,
+      isNonVeg: false,
+      isIndividual: false,
+      isMultiple: false,
+      category: "Lunch",
+    });
+    setSelectedImage(null); // Reset the selected image
+  };
+
+  const handleEdit = () => {
+    // Add your edit logic here (if needed)
+    alert("Edit functionality to be implemented");
+  };
+
+  const handleDelete = () => {
+    setSelectedImage(null); // Remove the selected image
+    setNewPlan((prevState) => ({ ...prevState, image: null })); // Clear the image in newPlan
   };
 
   return (
-    <div
-      style={{
-        padding: "50px",
-        backgroundColor: "#F4F4F4",
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-      }}
-    >
-      {loading ? (
-        <h2>Loading...</h2> // Display loading message
-      ) : error ? (
-        <h2>{error}</h2> // Display error message if there's an error
-      ) : plans.length === 0 ? (
-        <>
-          <h1>No Plans Found</h1>
-          <p>Create a new plan by clicking the button below.</p>
+    <div className="plans-wrapper">
+      <div className="plans-container">
+        <h1>Meal Plans</h1>
+
+        {/* Show "Create New Plan" button if there are existing plans */}
+        <div className="create-plan-section">
           <button
-            onClick={handleNewPlan}
-            style={buttonStyle}
-            aria-label="Create a new plan"
+            className="create-plan-btn global-btn"
+            onClick={() => setIsFormOpen(true)}
           >
-            <FaPlus style={{ marginRight: "8px" }} /> New Plan
+            Create New Plan
           </button>
-        </>
-      ) : (
-        <div>
-          <h1>Your Plans</h1>
-          {/* Render the list of plans here */}
-          <ul>
-            {plans.map((plan) => (
-              <li key={plan.id}>{plan.name}</li> // Adjust according to your data structure
-            ))}
-          </ul>
         </div>
-      )}
+
+        {/* Show list of saved plans */}
+        {plans.length > 0 ? (
+          <div className="plans-list">
+            {plans.map((plan, index) => (
+              <div key={index} className="plan-card">
+                <h2>{plan.nameEnglish}</h2>
+                <p>{plan.descriptionEnglish}</p>
+                {plan.image && (
+                  <img
+                    src={URL.createObjectURL(plan.image)}
+                    alt={plan.nameEnglish}
+                    className="plan-image"
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="no-plans">
+            <p>No plans available. Create a new one!</p>
+          </div>
+        )}
+
+        {/* Form to create a new plan (popup) */}
+        {isFormOpen && (
+          <div className="form-overlay">
+            <div className="form-wrapper">
+              <div className="form-popup">
+                <div className="form-header">
+                  <div className="form-title">
+                    <h2>Create New Plan</h2>
+                  </div>
+                </div>
+                <form onSubmit={handleSavePlan}>
+                  <div className="image-container">
+                    <label htmlFor="file-upload" className="custom-file-upload">
+                      {selectedImage ? (
+                        <img
+                          src={selectedImage}
+                          alt="Preview"
+                          style={{ width: "100%", height: "auto" }}
+                        />
+                      ) : (
+                        "Upload Photo 200x200"
+                      )}
+                    </label>
+                    <input
+                      id="file-upload"
+                      type="file"
+                      name="image"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      required
+                      style={{ display: "none" }} // Hide the default file input
+                    />
+
+                    {selectedImage && (
+                      <div className="icon-container ">
+                        <button
+                          onClick={handleEdit}
+                          className="icon-button Icon-stlye-edit"
+                        >
+                          <FaEdit />
+                        </button>
+                        <button
+                          onClick={handleDelete}
+                          className="icon-button Icon-stlye-delete"
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <div className="form-container">
+                    <div className="fields-continer">
+                      <div className="form-group">
+                        <input
+                          type="text"
+                          name="nameEnglish"
+                          placeholder="Plan Name (English)"
+                          value={newPlan.nameEnglish}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <input
+                          type="text"
+                          name="nameArabic"
+                          placeholder="Plan Name (Arabic)"
+                          value={newPlan.nameArabic}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <textarea
+                          name="descriptionEnglish"
+                          placeholder="Plan Description (English)"
+                          value={newPlan.descriptionEnglish}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <textarea
+                          name="descriptionArabic"
+                          placeholder="Plan Description (Arabic)"
+                          value={newPlan.descriptionArabic}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {/* Stylish Checkboxes */}
+
+                    <div className="checkbox-group">
+                      <div className="checkboxes">
+                        <label>
+                          <input
+                            type="checkbox"
+                            name="isVeg"
+                            checked={newPlan.isVeg}
+                            onChange={handleInputChange}
+                          />
+                          Veg-plan
+                        </label>
+                      </div>
+                      <div className="checkboxes">
+                        <label>
+                          <input
+                            type="checkbox"
+                            name="isNonVeg"
+                            checked={newPlan.isNonVeg}
+                            onChange={handleInputChange}
+                          />
+                          Non-Veg plan
+                        </label>
+                      </div>
+                      <div className="checkboxes">
+                        <label>
+                          <input
+                            type="checkbox"
+                            name="isIndividual"
+                            checked={newPlan.isIndividual}
+                            onChange={handleInputChange}
+                          />
+                          Individual Plan
+                        </label>
+                      </div>
+                      <div className="checkboxes">
+                        <label>
+                          <input
+                            type="checkbox"
+                            name="isMultiple"
+                            checked={newPlan.isMultiple}
+                            onChange={handleInputChange}
+                          />
+                          Multiple Plan
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Category Dropdown */}
+
+                    <div className="form-group category">
+                      <label>Category:</label>
+                      <select
+                        name="category"
+                        value={newPlan.category}
+                        onChange={handleInputChange}
+                        required
+                      >
+                        <option value="Lunch">Lunch</option>
+                        <option value="Dinner">Dinner</option>
+                      </select>
+                    </div>
+                    <div className="form-btn">
+                      <button
+                        type="button"
+                        className="close-button"
+                        onClick={() => setIsFormOpen(false)}
+                      >
+                        Close
+                      </button>
+                      <button type="submit" className="next-button">
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
-// Inline style for the button
-const buttonStyle = {
-  padding: "10px 20px",
-  fontSize: "16px",
-  cursor: "pointer",
-  backgroundColor: "#4CAF50", // Green background
-  color: "white", // White text
-  border: "none", // No border
-  borderRadius: "5px", // Rounded corners
-  transition: "background-color 0.3s",
-};
-
-// Optional: Add hover effect with CSS
-buttonStyle[":hover"] = {
-  backgroundColor: "#45a049", // Darker green on hover
-};
-
-export default Plans; // Export the Plans component
+export default Plans;

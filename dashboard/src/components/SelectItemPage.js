@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 import "../styles/SelectItemPage.css"; // Importing CSS file
 
 const SelectItemPage = () => {
@@ -17,6 +18,8 @@ const SelectItemPage = () => {
   const [totalAmount, setTotalAmount] = useState([0, 0, 0, 0, 0]);
   const [activeDay, setActiveDay] = useState(0);
   const [filter, setFilter] = useState("");
+
+  const navigate = useNavigate(); // Initialize useNavigate
 
   const handleAddItem = (item) => {
     const isAlreadySelected = selectedItems[activeDay].find(
@@ -59,9 +62,23 @@ const SelectItemPage = () => {
   });
 
   const handleSavePlan = () => {
-    console.log("Selected Plans:", selectedItems);
-    console.log("Total Amounts:", totalAmount);
+    const savedPlans = JSON.parse(localStorage.getItem("plans")) || [];
+
+    const newPlan = {
+      id: savedPlans.length + 1,
+      selectedItems,
+      totalAmount,
+      totalPrice: totalPriceAllDays,
+      isActive: true, // Assuming the default state is active
+    };
+
+    savedPlans.push(newPlan);
+    localStorage.setItem("plans", JSON.stringify(savedPlans));
+
     alert("Plan saved successfully!");
+
+    // Redirect to plans page after saving
+    navigate("/plans");
   };
 
   // Calculate total price of all days
