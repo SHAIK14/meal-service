@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaTrash, FaPlus } from "react-icons/fa";
+import { FaTrash, FaEdit, FaListAlt } from "react-icons/fa";
 import { getAllPlans, deletePlan, getWeekMenu } from "../utils/api";
 import "../styles/Plans.css";
 
@@ -87,27 +87,33 @@ const Plans = () => {
           <div className="admin-plans-list">
             {plans.map((plan) => (
               <div key={plan._id} className="admin-plan-card">
-                <h2>{plan.nameEnglish}</h2>
-                <p>{plan.descriptionEnglish}</p>
-                {plan.image && (
-                  <img
-                    src={plan.image}
-                    alt={plan.nameEnglish}
-                    className="admin-plan-image"
-                  />
-                )}
+                <div className="admin-plan-image-container">
+                  {plan.image && (
+                    <img
+                      src={plan.image}
+                      alt={plan.nameEnglish}
+                      className="admin-plan-image"
+                    />
+                  )}
+                </div>
+                <div className="admin-plan-details">
+                  <h2>{plan.nameEnglish}</h2>
+                  <p>{plan.descriptionEnglish}</p>
+                </div>
                 <div className="admin-plan-actions">
                   <button
                     className="admin-edit-btn"
                     onClick={() => navigate(`/plans/edit/${plan._id}`)}
+                    title="Edit Plan"
                   >
-                    Edit
+                    <FaEdit />
                   </button>
                   <button
                     className="admin-delete-btn"
                     onClick={() => handleDelete(plan._id)}
+                    title="Delete Plan"
                   >
-                    <FaTrash /> Delete
+                    <FaTrash />
                   </button>
                   <button
                     className={`admin-${
@@ -116,9 +122,11 @@ const Plans = () => {
                     onClick={() =>
                       handleAddOrEditItems(plan._id, plansWithItems[plan._id])
                     }
+                    title={
+                      plansWithItems[plan._id] ? "Edit Items" : "Add Items"
+                    }
                   >
-                    <FaPlus />{" "}
-                    {plansWithItems[plan._id] ? "Edit Items" : "Add Items"}
+                    <FaListAlt />
                   </button>
                 </div>
               </div>
