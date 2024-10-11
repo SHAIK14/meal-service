@@ -9,7 +9,10 @@ import Login from "./components/Login";
 import Logout from "./components/Logout";
 import Sidebar from "./components/Sidebar";
 import Plans from "./components/Plan";
-import NewPlan from "./components/NewPlan";
+import PlanCreate from "./components/PlanCreate";
+import PlanEdit from "./components/PlanEdit";
+import PlanItemSelection from "./components/Planitemselection";
+import PlanItemEdit from "./components/PlanItemEdit";
 import Items from "./components/items";
 import Delivery from "./components/delivery";
 import Orders from "./components/orders";
@@ -20,6 +23,7 @@ import ItemsEdit from "./components/itemsEdit";
 import ItemsCategories from "./components/ItemsCategories";
 import Banners from "./components/Banners";
 import PaymentPage from "./components/payment";
+import Vouchers from "./components/Vouchers";
 
 const AuthenticatedLayout = ({ children }) => (
   <div
@@ -58,7 +62,16 @@ const App = () => {
               <AuthenticatedLayout>
                 <Routes>
                   <Route path="/plans" element={<Plans />} />
-                  <Route path="/plans/new" element={<NewPlan />} />
+                  <Route path="/plans/create" element={<PlanCreate />} />
+                  <Route path="/plans/edit/:planId" element={<PlanEdit />} />
+                  <Route
+                    path="/plans/:planId/add-items"
+                    element={<PlanItemSelection />}
+                  />
+                  <Route
+                    path="/plans/:planId/edit-items"
+                    element={<PlanItemEdit />}
+                  />
                   <Route path="/items" element={<Items />} />
                   <Route
                     path="/category/:categoryName"
@@ -66,7 +79,6 @@ const App = () => {
                   />
                   <Route path="/edit-item/:id" element={<ItemsEdit />} />
                   <Route path="/add-item" element={<AddItemPage />} />
-
                   <Route path="/payment-options" element={<PaymentPage />} />
                   <Route path="/delivery" element={<Delivery />} />
                   <Route path="/banners-container" element={<Banners />} />
@@ -75,6 +87,11 @@ const App = () => {
                   <Route
                     path="/select-item-page"
                     element={<SelectItemPage />}
+                  />
+                  <Route path="/Vouchers" element={<Vouchers />} />
+                  <Route
+                    path="/Planitemselection/:planId"
+                    element={<PlanItemSelection />}
                   />
                   <Route path="/" element={<Navigate to="/plans" replace />} />
                 </Routes>

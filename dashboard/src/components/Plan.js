@@ -1,93 +1,137 @@
-import React, { useState, useEffect } from "react"; // Import React and hooks
-import { useNavigate } from "react-router-dom"; // Import useNavigate for routing
-import { FaPlus } from "react-icons/fa"; // Import the plus icon
+import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { FaTrash, FaPlus } from "react-icons/fa";
+import { getAllPlans, deletePlan, getWeekMenu } from "../utils/api";
+import "../styles/Plans.css";
 
 const Plans = () => {
-  const navigate = useNavigate(); // Hook to programmatically navigate
-  const [loading, setLoading] = useState(true); // State for loading status
-  const [error, setError] = useState(null); // State for error messages
-  const [plans, setPlans] = useState([]); // State to hold plan data
+  const [plans, setPlans] = useState([]);
+  const [plansWithItems, setPlansWithItems] = useState({});
+  const navigate = useNavigate();
+
+  const fetchPlans = useCallback(async () => {
+    try {
+      const result = await getAllPlans();
+      if (result.success) {
+        setPlans(result.data);
+        checkPlansWithItems(result.data);
+      } else {
+        console.error("Failed to fetch plans:", result.error);
+      }
+    } catch (error) {
+      console.error("Error fetching plans:", error);
+    }
+  }, []);
 
   useEffect(() => {
-    // Simulate fetching plans from an API
-    const fetchPlans = async () => {
+    fetchPlans();
+  }, [fetchPlans]);
+
+  const checkPlansWithItems = async (plans) => {
+    const plansItemStatus = {};
+    for (const plan of plans) {
       try {
-        // Replace this with your actual data fetching logic
-        // Example: const response = await fetch('/api/plans');
-        // const data = await response.json();
-        const data = []; // Simulated empty data for demonstration
-        setPlans(data);
-      } catch (err) {
-        setError("Failed to load plans."); // Set error message if fetching fails
-      } finally {
-        setLoading(false); // Update loading state
+        const weekMenuResult = await getWeekMenu(plan._id);
+        plansItemStatus[plan._id] =
+          weekMenuResult.success &&
+          Object.values(weekMenuResult.data.weekMenu).some(
+            (day) => day.length > 0
+          );
+      } catch (error) {
+        console.error(`Error checking items for plan ${plan._id}:`, error);
+        plansItemStatus[plan._id] = false;
       }
-    };
+    }
+    setPlansWithItems(plansItemStatus);
+  };
 
-    fetchPlans(); // Call the fetch function
-  }, []); // Empty dependency array means this effect runs once on mount
+  const handleDelete = async (planId) => {
+    if (window.confirm("Are you sure you want to delete this plan?")) {
+      try {
+        const result = await deletePlan(planId);
+        if (result.success) {
+          console.log("Plan deleted successfully");
+          fetchPlans();
+        } else {
+          console.error("Failed to delete plan:", result.error);
+        }
+      } catch (error) {
+        console.error("Error deleting plan:", error);
+      }
+    }
+  };
 
-  const handleNewPlan = () => {
-    navigate("/plans/new"); // Redirect to the New Plan page
+  const handleAddOrEditItems = (planId, hasItems) => {
+    if (hasItems) {
+      navigate(`/plans/${planId}/edit-items`);
+    } else {
+      navigate(`/plans/${planId}/add-items`);
+    }
   };
 
   return (
-    <div
-      style={{
-        padding: "50px",
-        backgroundColor: "#F4F4F4",
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-      }}
-    >
-      {loading ? (
-        <h2>Loading...</h2> // Display loading message
-      ) : error ? (
-        <h2>{error}</h2> // Display error message if there's an error
-      ) : plans.length === 0 ? (
-        <>
-          <h1>No Plans Found</h1>
-          <p>Create a new plan by clicking the button below.</p>
+    <div className="admin-plans-wrapper">
+      <div className="admin-plans-container">
+        <h1>Meal Plans</h1>
+
+        <div className="admin-create-plan-section">
           <button
-            onClick={handleNewPlan}
-            style={buttonStyle}
-            aria-label="Create a new plan"
+            className="admin-create-plan-btn"
+            onClick={() => navigate("/plans/create")}
           >
-            <FaPlus style={{ marginRight: "8px" }} /> New Plan
+            Create New Plan
           </button>
-        </>
-      ) : (
-        <div>
-          <h1>Your Plans</h1>
-          {/* Render the list of plans here */}
-          <ul>
-            {plans.map((plan) => (
-              <li key={plan.id}>{plan.name}</li> // Adjust according to your data structure
-            ))}
-          </ul>
         </div>
-      )}
+
+        {plans.length > 0 ? (
+          <div className="admin-plans-list">
+            {plans.map((plan) => (
+              <div key={plan._id} className="admin-plan-card">
+                <h2>{plan.nameEnglish}</h2>
+                <p>{plan.descriptionEnglish}</p>
+                {plan.image && (
+                  <img
+                    src={plan.image}
+                    alt={plan.nameEnglish}
+                    className="admin-plan-image"
+                  />
+                )}
+                <div className="admin-plan-actions">
+                  <button
+                    className="admin-edit-btn"
+                    onClick={() => navigate(`/plans/edit/${plan._id}`)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className="admin-delete-btn"
+                    onClick={() => handleDelete(plan._id)}
+                  >
+                    <FaTrash /> Delete
+                  </button>
+                  <button
+                    className={`admin-${
+                      plansWithItems[plan._id] ? "edit" : "add"
+                    }-items-btn`}
+                    onClick={() =>
+                      handleAddOrEditItems(plan._id, plansWithItems[plan._id])
+                    }
+                  >
+                    <FaPlus />{" "}
+                    {plansWithItems[plan._id] ? "Edit Items" : "Add Items"}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="admin-no-plans">
+            <p>No plans available. Create a new one!</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
-// Inline style for the button
-const buttonStyle = {
-  padding: "10px 20px",
-  fontSize: "16px",
-  cursor: "pointer",
-  backgroundColor: "#4CAF50", // Green background
-  color: "white", // White text
-  border: "none", // No border
-  borderRadius: "5px", // Rounded corners
-  transition: "background-color 0.3s",
-};
-
-// Optional: Add hover effect with CSS
-buttonStyle[":hover"] = {
-  backgroundColor: "#45a049", // Darker green on hover
-};
-
-export default Plans; // Export the Plans component
+export default Plans;

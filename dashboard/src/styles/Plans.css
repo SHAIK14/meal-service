@@ -1,0 +1,146 @@
+.admin-plans-wrapper {
+  padding: 20px;
+}
+
+.admin-plans-container {
+  padding: 20px;
+  margin: 0 auto;
+  background-color: #f9f9f9;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.admin-plans-container h1 {
+  font-size: 32px;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.admin-create-plan-section {
+  margin-bottom: 20px;
+}
+
+.admin-create-plan-btn {
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.admin-create-plan-btn:hover {
+  background-color: #45a049;
+}
+
+.admin-plans-list {
+  display: flex;
+  justify-content: flex-start;
+  height: auto;
+  padding: 20px;
+  margin: 20px 0;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.admin-plan-card {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  text-align: left;
+}
+
+.admin-plan-card h2 {
+  margin-top: 0;
+  color: #333;
+}
+
+.admin-plan-image {
+  margin-top: 10px;
+  width: 250px;
+  height: 250px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.admin-plan-actions {
+  margin-top: 15px;
+  display: flex;
+  gap: 10px;
+}
+
+.admin-edit-btn,
+.admin-delete-btn {
+  padding: 8px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.admin-edit-btn {
+  background-color: #4caf50;
+  color: white;
+}
+
+.admin-edit-btn:hover {
+  background-color: #45a049;
+}
+
+.admin-delete-btn {
+  background-color: #f44336;
+  color: white;
+}
+
+.admin-delete-btn:hover {
+  background-color: #d32f2f;
+}
+
+.admin-no-plans {
+  font-size: 18px;
+  color: #666;
+  margin-top: 20px;
+}
+.admin-add-items-btn {
+  padding: 8px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background-color: #4a90e2;
+  color: white;
+}
+
+.admin-add-items-btn:hover {
+  background-color: #3a7bc8;
+}
+
+@media (max-width: 850px) {
+  .admin-plans-container h1 {
+    font-size: 24px;
+  }
+
+  .admin-plan-card {
+    padding: 15px;
+  }
+
+  .admin-plan-image {
+    width: 100%;
+    height: auto;
+  }
+
+  .admin-edit-btn,
+  .admin-delete-btn {
+    padding: 6px 12px;
+    font-size: 14px;
+  }
+}

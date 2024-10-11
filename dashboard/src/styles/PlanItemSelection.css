@@ -1,0 +1,204 @@
+/* PlanItemSelection.css */
+
+.plan-item-selection-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 20px;
+}
+
+.days-nav {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  justify-content: space-evenly;
+  margin-bottom: 50px;
+  padding: 25px;
+  align-items: center;
+}
+.day-button {
+  font-size: 14pt;
+  padding: 10px 20px;
+  background-color: transparent; /* Make the background transparent */
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  position: relative; /* Position for the pseudo-element */
+}
+
+.day-button.active {
+  color: red; /* Change the text color to red */
+}
+
+.day-button.active::after {
+  content: ""; /* Add an empty content for the underline */
+  position: absolute; /* Position it absolutely within the button */
+  left: 0; /* Align it to the left */
+  right: 0; /* Stretch it to the right */
+  bottom: -5px; /* Position it below the button */
+  height: 3px; /* Set the height of the underline */
+  background-color: red; /* Set the color of the underline */
+}
+
+.content-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.available-meals,
+.selected-meals {
+  flex: 1 1 45%; /* Adjusts flex basis for responsiveness */
+  margin: 0 10px;
+  min-width: 300px; /* Ensures a minimum width */
+}
+
+.available-meals h2,
+.selected-meals h2 {
+  font-size: 16pt;
+  margin: 20px 0;
+  background-color: white;
+  padding: 15px;
+  border-radius: 50px;
+}
+
+.meals-list,
+.selected-meals-list {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(120px, 1fr)
+  ); /* Responsive grid */
+  gap: 15px;
+  background-color: #f9f9f9;
+  padding: 50px;
+  border-radius: 50px;
+}
+
+.selected-meals h2 {
+  font-size: 16pt;
+  margin: 20px 0;
+  background-color: white;
+  padding: 15px;
+  border-radius: 50px;
+}
+
+.meal-card,
+.selected-meal-card {
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 10px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  transition: transform 0.2s; /* Added transition effect */
+}
+
+.meal-card:hover,
+.selected-meal-card:hover {
+  transform: scale(1.05); /* Slightly scale up on hover */
+}
+
+.meal-card img,
+.selected-meal-card img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 5px;
+  margin-bottom: 10px;
+}
+
+.price {
+  margin: 0;
+  padding: 0;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.meal-info {
+  display: flex;
+  justify-content: space-between;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.meal-info .price {
+  margin: 10px 0;
+}
+
+.meal-info p {
+  margin: 0;
+}
+
+.select-meal-btn {
+  padding: 10px 15px;
+}
+
+.add-meal-btn,
+.remove-meal-btn {
+  padding: 10px 15px;
+  color: white;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+}
+
+.remove-meal-btn {
+  background-color: #ff4d4d;
+}
+
+.total-price {
+  margin-top: 20px;
+  font-size: 1.5em;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.total-price h2 {
+  display: flex;
+  width: 70%;
+  justify-content: left;
+}
+
+.save-plan-btn {
+  padding: 15px 20px;
+  border: none;
+  background-color: rgb(50, 175, 10);
+  border-radius: 50px;
+  color: white;
+  font-size: 14pt;
+  cursor: pointer;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .content-wrapper {
+    flex-direction: column;
+    align-items: center; /* Center content on small screens */
+  }
+
+  .available-meals,
+  .selected-meals {
+    flex: 1 1 100%; /* Stack them vertically */
+    margin: 10px 0; /* Add margin for spacing */
+  }
+
+  .meals-list,
+  .selected-meals-list {
+    padding: 20px; /* Reduce padding on smaller screens */
+  }
+
+  .day-button {
+    font-size: 12pt; /* Adjust font size for smaller screens */
+    padding: 8px 15px; /* Adjust padding */
+  }
+}
