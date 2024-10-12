@@ -1,0 +1,168 @@
+.admin-plan-create-wrapper {
+  padding: 20px;
+  margin: 0 auto;
+  max-width: 800px;
+}
+
+.admin-plan-create-wrapper h1 {
+  font-size: 32px;
+  margin-bottom: 20px;
+  color: #333;
+  text-align: center;
+}
+
+.admin-plan-create-form {
+  display: flex;
+  flex-direction: column;
+  background-color: #fff;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.admin-image-container {
+  width: 200px;
+  height: 200px;
+  border: 2px dashed #666;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto 20px;
+  padding: 10px;
+  border-radius: 20px;
+  cursor: pointer;
+}
+
+.admin-image-container img {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 8px;
+}
+
+.admin-icon-button {
+  background: none;
+  border: none;
+  color: #f44336;
+  cursor: pointer;
+  font-size: 20px;
+  margin-top: 10px;
+}
+
+.admin-form-container {
+  width: 100%;
+}
+
+.admin-form-container input[type="text"],
+.admin-form-container textarea,
+.admin-form-container select {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.admin-form-container textarea {
+  height: 100px;
+  resize: vertical;
+}
+
+.admin-checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin: 20px 0;
+}
+
+.admin-checkbox-group label {
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.admin-checkbox-group input[type="checkbox"] {
+  margin-right: 10px;
+  width: 20px;
+  height: 20px;
+}
+
+.admin-form-group-category {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.admin-form-group-category label {
+  margin-right: 10px;
+}
+
+.admin-form-btn {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.admin-cancel-button,
+.admin-save-button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.admin-cancel-button {
+  background-color: #f44336;
+  color: white;
+}
+
+.admin-save-button {
+  background-color: #4caf50;
+  color: white;
+}
+
+.admin-cancel-button:hover {
+  background-color: #d32f2f;
+}
+
+.admin-save-button:hover {
+  background-color: #45a049;
+}
+
+@media (max-width: 850px) {
+  .admin-plan-create-wrapper {
+    padding: 10px;
+  }
+
+  .admin-plan-create-wrapper h1 {
+    font-size: 24px;
+  }
+
+  .admin-plan-create-form {
+    padding: 20px;
+  }
+
+  .admin-image-container {
+    width: 150px;
+    height: 150px;
+  }
+
+  .admin-checkbox-group label {
+    font-size: 14px;
+  }
+
+  .admin-checkbox-group input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+  }
+
+  .admin-cancel-button,
+  .admin-save-button {
+    padding: 8px 15px;
+    font-size: 14px;
+  }
+}
