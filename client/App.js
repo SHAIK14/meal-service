@@ -5,6 +5,7 @@ import LoginScreen from "./src/screens/LoginScreen";
 import OtpScreen from "./src/screens/OtpScreen";
 import InformationScreen from "./src/screens/InformationScreen";
 import AddressScreen from "./src/screens/AddressScreen";
+import UserPlans from "./src/screens/UserPlans";
 
 const Stack = createNativeStackNavigator();
 // this is the change in the code
@@ -32,6 +33,7 @@ export default function App() {
           component={AddressScreen}
           options={{ headerShown: false }}
         />
+        <Stack.Screen name="UserPlans" component={UserPlans} />
       </Stack.Navigator>
     </NavigationContainer>
   );
