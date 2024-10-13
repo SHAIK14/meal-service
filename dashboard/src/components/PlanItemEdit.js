@@ -225,23 +225,22 @@ const PlanItemEdit = () => {
                   className="meal-card"
                   draggable
                   onDragStart={(event) => handleDragStart(event, meal)}
+                  onClick={() => handleAddMeal(meal)}
                 >
-                  {meal.image && (
-                    <img src={meal.image} alt={meal.nameEnglish} />
-                  )}
-                  <h3>{meal.nameEnglish}</h3>
-                  <div className="meal-info">
-                    <p>{meal.calories || "N/A"} kcal</p>
-                    <p className="price">
-                      {meal.prices?.[0]?.sellingPrice || "N/A"} SAR
-                    </p>
+                  <div className="meal-image-container">
+                    <img
+                      src={meal.image}
+                      alt={meal.nameEnglish}
+                      className="meal-image"
+                    />
+                    <div className="meal-overlay">
+                      <p className="meal-calories">{meal.calories} kcal</p>
+                      <p className="meal-price">
+                        {meal.prices[0]?.sellingPrice} SAR
+                      </p>
+                    </div>
                   </div>
-                  <button
-                    className="select-meal-btn global-btn"
-                    onClick={() => handleAddMeal(meal)}
-                  >
-                    Select
-                  </button>
+                  <h3 className="meal-name">{meal.nameEnglish}</h3>
                 </div>
               ))
             ) : (
@@ -260,39 +259,35 @@ const PlanItemEdit = () => {
             {weekMenu[selectedDay] && weekMenu[selectedDay].length > 0 ? (
               weekMenu[selectedDay].map((meal) => (
                 <div key={meal._id} className="selected-meal-card">
-                  {meal.image && (
-                    <img src={meal.image} alt={meal.nameEnglish} />
-                  )}
-                  <div className="meal-info">
-                    <h3>{meal.nameEnglish}</h3>
-                    <p>{meal.calories || "N/A"} kcal</p>
-                    <p className="price">
-                      {meal.prices?.[0]?.sellingPrice || "N/A"} SAR
-                    </p>
+                  <div className="meal-image-container">
+                    <img
+                      src={meal.image}
+                      alt={meal.nameEnglish}
+                      className="meal-image"
+                    />
+                    <div className="meal-overlay">
+                      <p className="meal-calories">{meal.calories} kcal</p>
+                      <p className="meal-price">
+                        {meal.prices[0]?.sellingPrice} SAR
+                      </p>
+                    </div>
+                    <button
+                      className="remove-button"
+                      onClick={() => handleRemoveMeal(meal._id)} // Pass meal._id for removal
+                    >
+                      <span className="remove-icon">-</span>
+                    </button>
                   </div>
-                  <button
-                    className="remove-meal-btn"
-                    onClick={() => handleRemoveMeal(meal._id)}
-                  >
-                    Remove
-                  </button>
+                  <h3 className="meal-name">{meal.nameEnglish}</h3>
                 </div>
               ))
             ) : (
-              <p>
-                No meals selected for this day. Drag items here to add meals, or
-                select a meal from the left.
-              </p>
+              <p> No meals selected for this day. Drag or Select the Meal </p>
             )}
           </div>
           <div className="total-price">
-            <h2>
-              <span className="side-heading">Total Price: </span>
-              {calculateTotalPrice()} SAR
-            </h2>
-            <button className="save-plan-btn" onClick={handleSavePlan}>
-              Update Plan
-            </button>
+            <h3>Total Price: {calculateTotalPrice()} SAR</h3>
+            <button onClick={handleSavePlan}>Save Plan</button>
           </div>
         </div>
       </div>
