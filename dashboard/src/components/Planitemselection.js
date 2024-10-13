@@ -147,7 +147,6 @@ const PlanItemSelection = () => {
         weekMenu,
         totalPrice: calculateTotalPrice(),
       });
-
       if (result.success) {
         alert("Plan items saved successfully");
         navigate("/plans");
