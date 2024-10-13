@@ -8,6 +8,10 @@ import {
   FaUsers,
   FaBars,
   FaSignOutAlt,
+  FaUtensilSpoon,
+  FaCreditCard,
+  FaTicketAlt,
+  FaMoneyCheckAlt,
 } from "react-icons/fa";
 import "../styles/Sidebar.css";
 
@@ -42,6 +46,14 @@ const Sidebar = () => {
         </li>
         <li>
           <NavLink
+            to="/payment-options"
+            className={({ isActive }) => (isActive ? "active" : "")}
+          >
+            <FaCreditCard className="icon" /> <span>Payment</span>
+          </NavLink>
+        </li>
+        <li>
+          <NavLink
             to="/delivery"
             className={({ isActive }) => (isActive ? "active" : "")}
           >
@@ -58,10 +70,34 @@ const Sidebar = () => {
         </li>
         <li>
           <NavLink
+            to="/banners-container"
+            className={({ isActive }) => (isActive ? "active" : "")}
+          >
+            <FaUtensilSpoon className="icon" /> <span>Banners</span>
+          </NavLink>
+        </li>
+        <li>
+          <NavLink
             to="/users"
             className={({ isActive }) => (isActive ? "active" : "")}
           >
             <FaUsers className="icon" /> <span>Users</span>
+          </NavLink>
+        </li>
+        <li>
+          <NavLink
+            to="/Vouchers"
+            className={({ isActive }) => (isActive ? "active" : "")}
+          >
+            <FaTicketAlt className="icon" /> <span>Vouchers</span>
+          </NavLink>
+        </li>
+        <li>
+          <NavLink
+            to="/payments"
+            className={({ isActive }) => (isActive ? "active" : "")}
+          >
+            <FaMoneyCheckAlt className="icon" /> <span>Payments</span>
           </NavLink>
         </li>
         <li>

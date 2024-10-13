@@ -151,5 +151,85 @@ export const toggleItemAvailability = async (itemId) => {
     };
   }
 };
+// Plan management functions
+export const createPlan = (planData) =>
+  handleResponse(api.post("/admin/plans", planData));
 
+export const getAllPlans = async () => {
+  try {
+    const response = await api.get("/admin/plans");
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Error in getAllPlans:", error);
+    return { success: false, error: error.message };
+  }
+};
+
+export const getPlanById = async (planId) => {
+  try {
+    const response = await api.get(`/admin/plans/${planId}`);
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Error in getPlanById:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message,
+    };
+  }
+};
+
+export const updatePlan = async (planId, planData) => {
+  try {
+    const response = await api.put(`/admin/plans/${planId}`, planData);
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Error in updatePlan:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message,
+    };
+  }
+};
+
+export const deletePlan = async (planId) => {
+  try {
+    const response = await api.delete(`/admin/plans/${planId}`);
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Error in deletePlan:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message,
+    };
+  }
+};
+
+export const updateWeekMenu = async (planId, weekMenuData) => {
+  try {
+    const response = await api.patch(
+      `/admin/plans/${planId}/week-menu`,
+      weekMenuData
+    );
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Error in updateWeekMenu:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "An unexpected error occurred",
+    };
+  }
+};
+
+export const getWeekMenu = async (planId) => {
+  try {
+    const response = await api.get(`/admin/plans/${planId}/week-menu`);
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Error in getWeekMenu:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "An unexpected error occurred",
+    };
+  }
+};
 export default api;

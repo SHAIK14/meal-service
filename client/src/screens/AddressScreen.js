@@ -15,6 +15,7 @@ import {
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native"; // Import useNavigation
 import { updateUserAddress } from "../utils/api";
 
 const { width, height } = Dimensions.get("window");
@@ -27,6 +28,7 @@ const AddressScreen = () => {
   const [selectedSaveAs, setSelectedSaveAs] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const mapRef = useRef(null);
+  const navigation = useNavigation(); // Use useNavigation hook
 
   useEffect(() => {
     (async () => {
@@ -109,6 +111,7 @@ const AddressScreen = () => {
     setRegion(newRegion);
     fetchAddress(newRegion.latitude, newRegion.longitude);
   };
+
   const handleSaveAddress = async () => {
     if (!selectedSaveAs) {
       Alert.alert(
@@ -132,7 +135,10 @@ const AddressScreen = () => {
       const response = await updateUserAddress(addressData);
 
       Alert.alert("Success", "Address saved successfully", [
-        { text: "OK", onPress: () => console.log("OK Pressed") },
+        {
+          text: "OK",
+          onPress: () => navigation.navigate("UserPlans"),
+        },
       ]);
     } catch (error) {
       console.error("Error saving address:", error);
@@ -141,6 +147,7 @@ const AddressScreen = () => {
       setIsLoading(false);
     }
   };
+
   if (errorMsg) {
     return (
       <SafeAreaView style={styles.container}>
