@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 
-const Plans = () => {
+const AddPartner = () => {
   const navigation = useNavigation();
   const [expandedPlan, setExpandedPlan] = useState(null);
   const [isAddressExpanded, setIsAddressExpanded] = useState(false);
@@ -100,26 +100,6 @@ const Plans = () => {
 
   return (
     <View style={styles.container}>
-      {/* Profile Icon */}
-      <View style={styles.addressContainer}>
-        <TouchableOpacity
-          style={styles.addMealPartnerButton}
-          onPress={() => navigation.navigate("AddPartner")}
-        >
-          <Text style={styles.addMealPartnerButtonText}>Add Meal Partner</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.profileIcon}
-          onPress={() => navigation.navigate("Profile")}
-        >
-          <Image
-            source={require("../../assets/profile-user.png")}
-            style={styles.iconImage}
-          />
-        </TouchableOpacity>
-      </View>
-
       {/* Ad Banner */}
       <Image
         source={require("../../assets/ad-banner.jpg")}
@@ -392,4 +372,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Plans;
+export default AddPartner;

@@ -1,4 +1,5 @@
 import React from "react";
+import { AppRegistry } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import LoginScreen from "./src/screens/LoginScreen";
@@ -6,9 +7,14 @@ import OtpScreen from "./src/screens/OtpScreen";
 import InformationScreen from "./src/screens/InformationScreen";
 import AddressScreen from "./src/screens/AddressScreen";
 import UserPlans from "./src/screens/UserPlans";
+import UserPlanDuration from "./src/screens/UserPlanDuration";
+import Profile from "./src/screens/Profile";
+import AddPartner from "./src/screens/AddPartner";
+import Payment from "./src/screens/Payment";
+import OrderPlacedSplash from "./src/screens/OrderPlacedSplash";
 
 const Stack = createNativeStackNavigator();
-// this is the change in the code
+
 export default function App() {
   return (
     <NavigationContainer>
@@ -34,9 +40,14 @@ export default function App() {
           options={{ headerShown: false }}
         />
         <Stack.Screen name="UserPlans" component={UserPlans} />
+        <Stack.Screen name="UserPlanDuration" component={UserPlanDuration} />
+        <Stack.Screen name="Profile" component={Profile} />
+        <Stack.Screen name="AddPartner" component={AddPartner} />
+        <Stack.Screen name="Payment" component={Payment} />
+        <Stack.Screen name="OrderPlacedSplash" component={OrderPlacedSplash} />
       </Stack.Navigator>
     </NavigationContainer>
   );
 }
 
-// this is the change in the code
+// Make sure to check your imports and registrations.
