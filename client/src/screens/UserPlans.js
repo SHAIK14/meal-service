@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,154 +7,194 @@ import {
   StyleSheet,
   ScrollView,
   FlatList,
+  ActivityIndicator,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  getAllPlans,
+  getPlanById,
+  getPlanWeeklyMenu,
+  getItemsBatch,
+} from "../utils/api";
+import profileUserIcon from "../../assets/profile-user.png";
+import adBannerImage from "../../assets/ad-banner.jpg";
 
 const Plans = () => {
   const navigation = useNavigation();
   const [expandedPlan, setExpandedPlan] = useState(null);
-  const [isAddressExpanded, setIsAddressExpanded] = useState(false);
-  const [selectedAddress, setSelectedAddress] = useState("Select Address");
   const [selectedDay, setSelectedDay] = useState(1);
+  const [plans, setPlans] = useState([]);
+  const [weekMenu, setWeekMenu] = useState({});
+  const [planItems, setPlanItems] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const plans = [
-    {
-      id: 1,
-      name: "Basic Plan",
-      description: "A basic meal plan for 2 meals a day.",
-      image: require("../../assets/background.png"),
-      details: "This plan includes  lunch, and dinner with healthy meals.",
-      imagesForDays: [
-        [
-          { src: require("../../assets/image_1.jpg"), name: "Meal 1" },
-          { src: require("../../assets/image_1.jpg"), name: "Meal 2" },
-          { src: require("../../assets/image_1.jpg"), name: "Meal 3" },
-          { src: require("../../assets/image_1.jpg"), name: "Meal 4" },
-          { src: require("../../assets/image_1.jpg"), name: "Meal 5" },
-        ],
-        // Add images for Day 2, Day 3, etc.
-        [
-          { src: require("../../assets/image_1.jpg"), name: "Meal 1" },
-          { src: require("../../assets/image_1.jpg"), name: "Meal 2" },
-          { src: require("../../assets/image_1.jpg"), name: "Meal 3" },
-          { src: require("../../assets/image_1.jpg"), name: "Meal 4" },
-          { src: require("../../assets/image_1.jpg"), name: "Meal 5" },
-        ],
-        [
-          { src: require("../../assets/image_1.jpg"), name: "Meal 1" },
-          { src: require("../../assets/image_1.jpg"), name: "Meal 2" },
-          { src: require("../../assets/image_1.jpg"), name: "Meal 3" },
-          { src: require("../../assets/image_1.jpg"), name: "Meal 4" },
-          { src: require("../../assets/image_1.jpg"), name: "Meal 5" },
-        ],
-        [
-          { src: require("../../assets/image_1.jpg"), name: "Meal 1" },
-          { src: require("../../assets/image_1.jpg"), name: "Meal 2" },
-          { src: require("../../assets/image_1.jpg"), name: "Meal 3" },
-          { src: require("../../assets/image_1.jpg"), name: "Meal 4" },
-          { src: require("../../assets/image_1.jpg"), name: "Meal 5" },
-        ],
-        [
-          { src: require("../../assets/image_1.jpg"), name: "Meal 1" },
-          { src: require("../../assets/image_1.jpg"), name: "Meal 2" },
-          { src: require("../../assets/image_1.jpg"), name: "Meal 3" },
-          { src: require("../../assets/image_1.jpg"), name: "Meal 4" },
-          { src: require("../../assets/image_1.jpg"), name: "Meal 5" },
-        ],
-      ],
-    },
-    {
-      id: 2,
-      name: "Premium Plan",
-      description: "A premium plan with customized meals.",
-      image: require("../../assets/background.png"),
-      details: "Includes breakfast, lunch, dinner, and snack options.",
-      imagesForDays: [
-        [
-          { src: require("../../assets/image_1.jpg"), name: "Meal 1" },
-          { src: require("../../assets/image_1.jpg"), name: "Meal 2" },
-          { src: require("../../assets/image_1.jpg"), name: "Meal 3" },
-          { src: require("../../assets/image_1.jpg"), name: "Meal 4" },
-          { src: require("../../assets/image_1.jpg"), name: "Meal 5" },
-        ],
-        // Add images for Day 2, Day 3, etc.
-        [
-          { src: require("../../assets/image_1.jpg"), name: "Meal 1" },
-          { src: require("../../assets/image_1.jpg"), name: "Meal 2" },
-          { src: require("../../assets/image_1.jpg"), name: "Meal 3" },
-          { src: require("../../assets/image_1.jpg"), name: "Meal 4" },
-          { src: require("../../assets/image_1.jpg"), name: "Meal 5" },
-        ],
-      ],
-    },
-  ];
+  useEffect(() => {
+    fetchPlans();
+  }, []);
 
-  // Handles plan expansion
-  const toggleExpand = (planId) => {
-    setExpandedPlan(planId === expandedPlan ? null : planId);
-    setSelectedDay(1); // Reset selected day when changing plan
+  const fetchPlans = async () => {
+    console.log("Fetching plans...");
+    try {
+      const data = await getAllPlans();
+      console.log("Fetched plans:", data);
+      setPlans(data.data);
+      setLoading(false);
+    } catch (err) {
+      console.error("Error fetching plans:", err);
+      setError(err.message);
+      setLoading(false);
+    }
   };
 
-  // Handles address bar expansion
-  const toggleAddressExpand = () => {
-    setIsAddressExpanded(!isAddressExpanded);
+  const fetchWeekMenu = async (planId) => {
+    console.log(`Fetching week menu for plan ${planId}...`);
+    try {
+      const data = await getPlanWeeklyMenu(planId);
+      console.log("Fetched week menu:", data);
+      setWeekMenu((prevWeekMenu) => ({ ...prevWeekMenu, [planId]: data.data }));
+    } catch (err) {
+      console.error("Error fetching week menu:", err);
+    }
   };
+  const fetchPlanItems = async (planId, weekMenuData) => {
+    console.log(`Fetching items for plan ${planId}...`);
+    try {
+      if (!weekMenuData || !weekMenuData.weekMenu) {
+        console.log("No week menu data available for fetching items");
+        return;
+      }
+
+      // Flatten the array of arrays into a single array of item IDs
+      const itemIds = Object.values(weekMenuData.weekMenu).flat();
+      console.log("Item IDs to fetch:", itemIds);
+
+      if (itemIds.length === 0) {
+        console.log("No item IDs found in the week menu");
+        setPlanItems((prevPlanItems) => ({ ...prevPlanItems, [planId]: [] }));
+        return;
+      }
+
+      const data = await getItemsBatch(itemIds);
+      console.log("Fetched plan items:", data);
+
+      if (data.success && Array.isArray(data.data)) {
+        setPlanItems((prevPlanItems) => ({
+          ...prevPlanItems,
+          [planId]: data.data,
+        }));
+      } else {
+        console.log("Unexpected data structure from getItemsBatch:", data);
+        setPlanItems((prevPlanItems) => ({ ...prevPlanItems, [planId]: [] }));
+      }
+    } catch (err) {
+      console.error("Error fetching plan items:", err);
+      setPlanItems((prevPlanItems) => ({ ...prevPlanItems, [planId]: [] }));
+    }
+  };
+
+  const toggleExpand = async (planId) => {
+    console.log(`Toggling expand for plan ${planId}`);
+    if (expandedPlan === planId) {
+      setExpandedPlan(null);
+    } else {
+      setExpandedPlan(planId);
+      setSelectedDay(1);
+
+      if (!weekMenu[planId]) {
+        console.log(`Fetching week menu for plan ${planId}...`);
+        try {
+          const data = await getPlanWeeklyMenu(planId);
+          console.log("Fetched week menu:", data);
+          setWeekMenu((prevWeekMenu) => {
+            const updatedWeekMenu = { ...prevWeekMenu, [planId]: data.data };
+
+            // Now that we have the week menu, fetch the plan items
+            fetchPlanItems(planId, updatedWeekMenu[planId]);
+
+            return updatedWeekMenu;
+          });
+        } catch (err) {
+          console.error("Error fetching week menu:", err);
+        }
+      } else {
+        // If we already have the week menu, just fetch the plan items
+        fetchPlanItems(planId, weekMenu[planId]);
+      }
+    }
+  };
+
+  const renderWeekMenuItem = ({ item, index }) => {
+    console.log("Rendering week menu item:", item);
+    return (
+      <View style={styles.carouselItem}>
+        <Image source={{ uri: item.image }} style={styles.carouselImage} />
+        <Text style={styles.carouselImageText}>{item.nameEnglish}</Text>
+      </View>
+    );
+  };
+
+  const renderPlanItem = ({ item, index }) => {
+    console.log("Rendering plan item:", item);
+    return (
+      <View style={styles.itemCard}>
+        <Image source={{ uri: item.image }} style={styles.itemImage} />
+        <Text style={styles.itemName}>{item.nameEnglish}</Text>
+      </View>
+    );
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#4CAF50" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.centerContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      {/* Address Bar and Profile Icon */}
       <View style={styles.addressContainer}>
         <TouchableOpacity
           style={styles.profileIcon}
           onPress={() => navigation.navigate("Profile")}
         >
-          <Image
-            source={require("../../assets/profile-user.png")}
-            style={styles.iconImage}
-          />
+          <Image source={profileUserIcon} style={styles.iconImage} />
         </TouchableOpacity>
       </View>
 
-      {/* Expanded Address Options */}
-      {isAddressExpanded && (
-        <View style={styles.addressOptions}>
-          <TouchableOpacity onPress={() => setSelectedAddress("Address 1")}>
-            <Text style={styles.optionText}>Address 1</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setSelectedAddress("Address 2")}>
-            <Text style={styles.optionText}>Address 2</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => setSelectedAddress("Add New Address")}
-          >
-            <Text style={styles.optionText}>Add New Address</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      <Image source={adBannerImage} style={styles.adBanner} />
 
-      {/* Ad Banner */}
-      <Image
-        source={require("../../assets/ad-banner.jpg")}
-        style={styles.adBanner}
-      />
-
-      {/* Plans List */}
       <ScrollView>
         {plans.map((plan) => (
-          <TouchableOpacity key={plan.id} onPress={() => toggleExpand(plan.id)}>
+          <TouchableOpacity
+            key={plan._id}
+            onPress={() => toggleExpand(plan._id)}
+          >
             <View style={styles.planCard}>
-              <Image source={plan.image} style={styles.planImage} />
+              <Image source={{ uri: plan.image }} style={styles.planImage} />
               <View style={styles.planTextContainer}>
-                <Text style={styles.planName}>{plan.name}</Text>
-                <Text style={styles.planDescription}>{plan.description}</Text>
+                <Text style={styles.planName}>{plan.nameEnglish}</Text>
+                <Text style={styles.planDescription}>
+                  {plan.descriptionEnglish}
+                </Text>
               </View>
             </View>
-            {/* Expanded Plan Details */}
-            {expandedPlan === plan.id && (
+            {expandedPlan === plan._id && (
               <View style={styles.expandedDetails}>
-                <Text style={styles.planDetails}>{plan.details}</Text>
+                <Text style={styles.planDetails}>
+                  {plan.descriptionEnglish}
+                </Text>
 
-                {/* Days Navigation */}
                 <View style={styles.daysNavigation}>
                   {[1, 2, 3, 4, 5].map((day) => (
                     <TouchableOpacity
@@ -175,25 +215,42 @@ const Plans = () => {
                   ))}
                 </View>
 
-                {/* Horizontal Sliding Carousel */}
-                <FlatList
-                  data={plan.imagesForDays[selectedDay - 1]}
-                  renderItem={({ item }) => (
-                    <View style={styles.carouselItem}>
-                      <Image source={item.src} style={styles.carouselImage} />
-                      <Text style={styles.carouselImageText}>{item.name}</Text>
-                    </View>
-                  )}
-                  keyExtractor={(item) => item.name}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  style={styles.carousel}
-                />
+                {weekMenu[plan._id] && weekMenu[plan._id].weekMenu && (
+                  <FlatList
+                    data={weekMenu[plan._id].weekMenu[selectedDay] || []}
+                    renderItem={({ item }) => {
+                      const itemDetails = planItems[plan._id]?.find(
+                        (i) => i._id === item
+                      );
+                      return itemDetails ? (
+                        <View style={styles.carouselItem}>
+                          <Image
+                            source={{ uri: itemDetails.image }}
+                            style={styles.carouselImage}
+                          />
+                          <Text style={styles.carouselImageText}>
+                            {itemDetails.nameEnglish}
+                          </Text>
+                        </View>
+                      ) : null;
+                    }}
+                    keyExtractor={(item, index) => `weekmenu-${item || index}`}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={styles.carousel}
+                  />
+                )}
+
+                {(!planItems[plan._id] || planItems[plan._id].length === 0) && (
+                  <Text style={styles.noItemsText}>
+                    No items available for this plan
+                  </Text>
+                )}
 
                 <TouchableOpacity
                   style={styles.selectButton}
                   onPress={() =>
-                    navigation.navigate("PlanDetails", { planId: plan.id })
+                    navigation.navigate("PlanDetails", { planId: plan._id })
                   }
                 >
                   <Text style={styles.selectButtonText}>Select Plan</Text>
@@ -202,7 +259,6 @@ const Plans = () => {
             )}
           </TouchableOpacity>
         ))}
-        {/* Custom Plan Button */}
         <TouchableOpacity
           style={styles.customPlanButton}
           onPress={() => navigation.navigate("SelectMeals")}
@@ -220,65 +276,38 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     padding: 10,
   },
-
+  centerContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  errorText: {
+    fontSize: 18,
+    color: "red",
+  },
   addressContainer: {
     flexDirection: "row",
     alignItems: "center",
     margin: 10,
   },
-
-  addressBar: {
-    flex: 1,
-    justifyContent: "center",
-    padding: 10,
-    backgroundColor: "#e0e0e0",
-
-    borderRadius: 20,
-  },
-
-  addressText: {
-    fontSize: 16,
-    color: "#333",
-    marginLeft: 15,
-  },
-
   profileIcon: {
     marginLeft: 10,
     width: "95%",
-    left: 320,
+    alignItems: "flex-end",
   },
-
   iconImage: {
     width: 35,
     height: 35,
     borderRadius: 20,
   },
-
   adBanner: {
     height: undefined,
     aspectRatio: 16 / 9,
     marginTop: 10,
     width: "95%",
-    marginHorizontal: "auto",
+    alignSelf: "center",
     borderRadius: 25,
   },
-
-  addressOptions: {
-    backgroundColor: "#f0f0f0",
-    borderRadius: 5,
-    marginBottom: 10,
-    padding: 10,
-    width: "95%",
-    borderRadius: 15,
-    margin: "auto",
-  },
-
-  optionText: {
-    fontSize: 14,
-    color: "red",
-    paddingVertical: 5,
-  },
-
   planCard: {
     flexDirection: "row",
     backgroundColor: "#ececec",
@@ -286,45 +315,96 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 10,
     width: "95%",
-    marginHorizontal: "auto",
+    alignSelf: "center",
     marginVertical: 10,
     alignItems: "center",
   },
-
   planImage: {
     width: 60,
     height: 60,
     borderRadius: 10,
   },
-
   planTextContainer: {
     marginLeft: 10,
     flex: 1,
   },
-
   planName: {
     fontSize: 18,
     fontWeight: "bold",
   },
-
   planDescription: {
     fontSize: 14,
     color: "#666",
   },
-
   expandedDetails: {
     padding: 10,
     backgroundColor: "#e0e0e0",
     borderRadius: 10,
     width: "95%",
-    margin: "auto",
+    alignSelf: "center",
   },
-
   planDetails: {
     fontSize: 14,
-    color: "#e0e0e0",
+    color: "#333",
   },
-
+  daysNavigation: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginVertical: 10,
+  },
+  dayButton: {
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 15,
+    backgroundColor: "#f0f0f0",
+  },
+  activeDayText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#4CAF50",
+  },
+  dayText: {
+    fontSize: 16,
+    color: "#333",
+  },
+  carousel: {
+    marginVertical: 10,
+  },
+  carouselItem: {
+    alignItems: "center",
+    marginRight: 10,
+  },
+  carouselImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 10,
+  },
+  carouselImageText: {
+    marginTop: 5,
+    textAlign: "center",
+  },
+  itemCarousel: {
+    marginTop: 10,
+  },
+  itemCard: {
+    alignItems: "center",
+    marginRight: 10,
+  },
+  itemImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 10,
+  },
+  itemName: {
+    marginTop: 5,
+    textAlign: "center",
+    fontSize: 12,
+  },
+  noItemsText: {
+    textAlign: "center",
+    marginTop: 10,
+    color: "#666",
+  },
   selectButton: {
     marginTop: 10,
     paddingVertical: 8,
@@ -332,64 +412,22 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     alignItems: "center",
   },
-
   selectButtonText: {
     color: "#fff",
     fontWeight: "bold",
   },
-
-  daysNavigation: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginVertical: 10,
-  },
-
-  dayButton: {
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: 15,
-    backgroundColor: "#e0e0e0",
-  },
-
-  activeDayText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#4CAF50",
-  },
-
-  dayText: {
-    fontSize: 16,
-    color: "#333",
-  },
-
-  carousel: {
-    marginVertical: 10,
-  },
-
-  carouselItem: {
-    alignItems: "center",
-    marginRight: 10,
-  },
-
-  carouselImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 10,
-  },
-
-  carouselImageText: {
-    marginTop: 5,
-    textAlign: "center",
-  },
-
   customPlanButton: {
     marginTop: 10,
     backgroundColor: "#ececec",
     borderRadius: 20,
-    width: "fit-content",
     padding: 20,
     alignItems: "center",
-    margin: "auto",
+    alignSelf: "center",
+  },
+  customPlanButtonText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#4CAF50",
   },
 });
 

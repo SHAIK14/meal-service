@@ -110,3 +110,91 @@ export const updateUserAddress = async (addressData) => {
 
   return response.json();
 };
+
+//  plan-related API calls
+export const getAllPlans = async () => {
+  const token = await AsyncStorage.getItem("userToken");
+  try {
+    const response = await fetch(`${API_URL}/plans`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to fetch plans");
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error in getAllPlans:", error);
+    throw error;
+  }
+};
+
+export const getPlanById = async (planId) => {
+  const token = await AsyncStorage.getItem("userToken");
+  try {
+    const response = await fetch(`${API_URL}/plans/${planId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to fetch plan");
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error in getPlanById:", error);
+    throw error;
+  }
+};
+
+export const getPlanWeeklyMenu = async (planId) => {
+  const token = await AsyncStorage.getItem("userToken");
+  try {
+    const response = await fetch(`${API_URL}/plans/${planId}/weekly-menu`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to fetch weekly menu");
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error in getPlanWeeklyMenu:", error);
+    throw error;
+  }
+};
+
+export const getItemsBatch = async (itemIds) => {
+  const token = await AsyncStorage.getItem("userToken");
+  try {
+    const response = await fetch(`${API_URL}/plans/items/batch`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ itemIds }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to fetch items");
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error in getItemsBatch:", error);
+    throw error;
+  }
+};

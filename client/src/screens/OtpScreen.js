@@ -56,15 +56,13 @@ const OtpScreen = ({ route, navigation }) => {
       if (response.message === "OTP verified successfully" && response.token) {
         await AsyncStorage.setItem("userToken", response.token);
         Alert.alert("Success", "OTP verified successfully");
-        if (phoneNumber === "+919876543210") {
-          navigation.navigate("Information");
-        } else {
+        
           if (response.status === "INFO_COMPLETE") {
             navigation.navigate("Address");
           } else {
             navigation.navigate("Information");
           }
-        }
+        
       }
     } catch (err) {
       setError(err.message);
