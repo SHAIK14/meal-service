@@ -23,6 +23,7 @@ import adBannerImage from "../../assets/ad-banner.jpg";
 const Plans = () => {
   const navigation = useNavigation();
   const [expandedPlan, setExpandedPlan] = useState(null);
+  const [isAddressExpanded, setIsAddressExpanded] = useState(false);
   const [selectedDay, setSelectedDay] = useState(1);
   const [plans, setPlans] = useState([]);
   const [weekMenu, setWeekMenu] = useState({});
@@ -58,6 +59,7 @@ const Plans = () => {
       console.error("Error fetching week menu:", err);
     }
   };
+
   const fetchPlanItems = async (planId, weekMenuData) => {
     console.log(`Fetching items for plan ${planId}...`);
     try {
@@ -66,7 +68,6 @@ const Plans = () => {
         return;
       }
 
-      // Flatten the array of arrays into a single array of item IDs
       const itemIds = Object.values(weekMenuData.weekMenu).flat();
       console.log("Item IDs to fetch:", itemIds);
 
@@ -109,17 +110,13 @@ const Plans = () => {
           console.log("Fetched week menu:", data);
           setWeekMenu((prevWeekMenu) => {
             const updatedWeekMenu = { ...prevWeekMenu, [planId]: data.data };
-
-            // Now that we have the week menu, fetch the plan items
             fetchPlanItems(planId, updatedWeekMenu[planId]);
-
             return updatedWeekMenu;
           });
         } catch (err) {
           console.error("Error fetching week menu:", err);
         }
       } else {
-        // If we already have the week menu, just fetch the plan items
         fetchPlanItems(planId, weekMenu[planId]);
       }
     }
@@ -164,6 +161,13 @@ const Plans = () => {
   return (
     <View style={styles.container}>
       <View style={styles.addressContainer}>
+        <TouchableOpacity
+          style={styles.addMealPartnerButton}
+          onPress={() => navigation.navigate("AddPartner")}
+        >
+          <Text style={styles.addMealPartnerButtonText}>Add Meal Partner</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.profileIcon}
           onPress={() => navigation.navigate("Profile")}
@@ -287,13 +291,21 @@ const styles = StyleSheet.create({
   },
   addressContainer: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
     margin: 10,
   },
+  addMealPartnerButton: {
+    backgroundColor: "green",
+    padding: 10,
+    borderRadius: 5,
+  },
+  addMealPartnerButtonText: {
+    color: "white",
+    fontWeight: "bold",
+  },
   profileIcon: {
-    marginLeft: 10,
-    width: "95%",
-    alignItems: "flex-end",
+    padding: 10,
   },
   iconImage: {
     width: 35,
