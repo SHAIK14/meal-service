@@ -1,9 +1,5 @@
 const User = require("../models/User");
-const {
-  DUMMY_PHONE_NUMBER,
-  DUMMY_OTP,
-  isOTPExpired,
-} = require("../utils/otpUtils");
+const { DUMMY_OTP, isOTPExpired } = require("../utils/otpUtils");
 const { generateToken } = require("../utils/jwtUtils");
 
 exports.requestOTP = async (req, res) => {
@@ -18,8 +14,7 @@ exports.requestOTP = async (req, res) => {
     if (!user) {
       user = new User({
         phoneNumber,
-        status:
-          phoneNumber === DUMMY_PHONE_NUMBER ? "TEST_ACCOUNT" : "NEW_USER",
+        status: "NEW_USER",
       });
     }
 
@@ -53,10 +48,9 @@ exports.verifyOTP = async (req, res) => {
     user.otpExpires = undefined;
     user.lastLogin = new Date();
 
-    if (user.status === "NEW_USER" && phoneNumber !== DUMMY_PHONE_NUMBER) {
+    if (user.status === "NEW_USER") {
       user.status = "INFO_REQUIRED";
     }
-
     await user.save();
 
     const token = generateToken(user._id);

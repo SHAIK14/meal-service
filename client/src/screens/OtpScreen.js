@@ -55,14 +55,22 @@ const OtpScreen = ({ route, navigation }) => {
       const response = await verifyOTP(phoneNumber, otpString);
       if (response.message === "OTP verified successfully" && response.token) {
         await AsyncStorage.setItem("userToken", response.token);
-        Alert.alert("Success", "OTP verified successfully");
-        
-          if (response.status === "INFO_COMPLETE") {
-            navigation.navigate("Address");
-          } else {
+        // Alert.alert("Success", "OTP verified successfully");
+
+        switch (response.status) {
+          case "NEW_USER":
+          case "INFO_REQUIRED":
             navigation.navigate("Information");
-          }
-        
+            break;
+          case "INFO_COMPLETE":
+            navigation.navigate("Address");
+            break;
+          case "ADDRESS_COMPLETE":
+            navigation.navigate("UserPlans");
+            break;
+          default:
+            navigation.navigate("Information");
+        }
       }
     } catch (err) {
       setError(err.message);
