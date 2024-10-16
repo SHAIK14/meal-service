@@ -385,6 +385,7 @@ const styles = StyleSheet.create({
   carouselItem: {
     alignItems: "center",
     marginRight: 10,
+    zIndex: 10,
   },
   carouselImage: {
     width: 100,

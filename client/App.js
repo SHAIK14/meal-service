@@ -12,6 +12,9 @@ import Profile from "./src/screens/Profile";
 import AddPartner from "./src/screens/AddPartner";
 import Payment from "./src/screens/Payment";
 import OrderPlacedSplash from "./src/screens/OrderPlacedSplash";
+import PartnerAddress from "./src/screens/PartnerAddress";
+import PartnerPlan from "./src/screens/PartnerPlan";
+import PartnerPayment from "./src/screens/PartnerPayment";
 
 const Stack = createNativeStackNavigator();
 
@@ -45,6 +48,9 @@ export default function App() {
         <Stack.Screen name="AddPartner" component={AddPartner} />
         <Stack.Screen name="Payment" component={Payment} />
         <Stack.Screen name="OrderPlacedSplash" component={OrderPlacedSplash} />
+        <Stack.Screen name="PartnerAddress" component={PartnerAddress} />
+        <Stack.Screen name="PartnerPlan" component={PartnerPlan} />
+        <Stack.Screen name="PartnerPayment" component={PartnerPayment} />
       </Stack.Navigator>
     </NavigationContainer>
   );
