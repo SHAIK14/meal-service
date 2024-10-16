@@ -1,10 +1,22 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { View, Text, StyleSheet } from "react-native";
+import * as Animatable from "react-native-animatable";
 
-const Profile = () => {
+const SplashScreen = ({ navigation }) => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      navigation.navigate("NextScreen"); // Change to your next screen
+    }, 3000); // Change duration as needed
+
+    return () => clearTimeout(timer);
+  }, [navigation]);
+
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>This is Profile</Text>
+      <Animatable.View animation="bounceIn" style={styles.tickContainer}>
+        <Text style={styles.tick}>✔</Text>
+      </Animatable.View>
+      <Text style={styles.successText}>Subscribed Successfully!</Text>
     </View>
   );
 };
@@ -14,13 +26,22 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "white",
+    backgroundColor: "#fff", // Change background color as needed
   },
-  heading: {
+  tickContainer: {
+    marginBottom: 20,
+    fontSize: 100, // Adjust size of tick mark
+    color: "#4CAF50", // Change color as needed
+  },
+  tick: {
+    fontSize: 100,
+    color: "#4CAF50",
+  },
+  successText: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "black",
+    color: "#333",
   },
 });
 
-export default Profile;
+export default SplashScreen;

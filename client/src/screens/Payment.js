@@ -18,6 +18,9 @@ const Payment = ({ route, navigation }) => {
   const [expiryDate, setExpiryDate] = useState("");
   const [stcPhoneNumber, setStcPhoneNumber] = useState("");
   const [isFormValid, setIsFormValid] = useState(false); // New state for form validation
+  const [promoCode, setPromoCode] = useState(""); // State for Promo Code
+  const [discount, setDiscount] = useState(0); // State for discount based on promo code
+
   const { selectedPlan, selectedDays, planName } = route.params;
 
   const handleExpiryChange = (text) => {
@@ -65,6 +68,7 @@ const Payment = ({ route, navigation }) => {
         ...(paymentMethod === "Visa/Mastercard"
           ? { cardHolderName, cardNumber, cvv, expiryDate }
           : { stcPhoneNumber }),
+        promoCode, // Pass the promo code to the next screen
       });
     } else {
       alert("Please accept the Privacy and Policy.");
@@ -75,9 +79,35 @@ const Payment = ({ route, navigation }) => {
     alert("Card details saved successfully!");
   };
 
+  const applyPromoCode = () => {
+    // Validate the promo code and apply discount
+    if (promoCode === "DISCOUNT10") {
+      setDiscount(10); // 10% discount for example
+      alert("Promo code applied: 10% discount");
+    } else {
+      alert("Invalid promo code");
+      setDiscount(0);
+    }
+  };
+
   useEffect(() => {
     validateForm(); // Validate form on mount
   }, [isChecked, cardHolderName, cardNumber, cvv, expiryDate, stcPhoneNumber]);
+
+  // Calculate total price with discount
+  const calculatePrice = () => {
+    let basePrice;
+    if (selectedPlan === "1 Week") {
+      basePrice = selectedDays === "5 Days" ? 500 : 600;
+    } else if (selectedPlan === "2 Weeks") {
+      basePrice = selectedDays === "5 Days" ? 900 : 1100;
+    } else {
+      basePrice = selectedDays === "5 Days" ? 1600 : 1900;
+    }
+
+    const discountedPrice = basePrice - (basePrice * discount) / 100;
+    return `${discountedPrice} SAR`;
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -94,20 +124,19 @@ const Payment = ({ route, navigation }) => {
         <Text style={styles.planText}>
           {planName} - {selectedPlan} ({selectedDays})
         </Text>
-        <Text style={styles.planPrice}>
-          {selectedPlan === "1 Week"
-            ? selectedDays === "5 Days"
-              ? "500 SAR"
-              : "600 SAR"
-            : selectedPlan === "2 Weeks"
-            ? selectedDays === "5 Days"
-              ? "900 SAR"
-              : "1100 SAR"
-            : selectedDays === "5 Days"
-            ? "1600 SAR"
-            : "1900 SAR"}
-        </Text>
+        <Text style={styles.planPrice}>{calculatePrice()}</Text>
       </View>
+
+      <Text style={styles.subHeading}>Promo Code</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Enter Promo Code"
+        value={promoCode}
+        onChangeText={(text) => setPromoCode(text)}
+      />
+      <TouchableOpacity style={styles.applyButton} onPress={applyPromoCode}>
+        <Text style={styles.applyButtonText}>Apply Promo Code</Text>
+      </TouchableOpacity>
 
       <Text style={styles.subHeading}>Choose Payment Method</Text>
       <View style={styles.paymentMethodContainer}>
@@ -358,6 +387,18 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
     fontSize: 18,
+  },
+
+  applyButton: {
+    backgroundColor: "#4CAF50",
+    padding: 10,
+    borderRadius: 5,
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  applyButtonText: {
+    color: "#fff",
+    fontSize: 16,
   },
 });
 

@@ -156,7 +156,6 @@ const styles = StyleSheet.create({
   },
   outlineButton: {
     borderWidth: 1,
-
     borderColor: "#4CAF50",
     backgroundColor: "#fff",
   },
