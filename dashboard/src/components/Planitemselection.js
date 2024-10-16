@@ -41,6 +41,7 @@ const PlanItemSelection = () => {
   const fetchWeekMenu = useCallback(async () => {
     try {
       const result = await getWeekMenu(planId);
+
       if (result.success) {
         const weekMenuData = result.data.weekMenu || {};
         const processedWeekMenu = Object.fromEntries(
@@ -49,6 +50,7 @@ const PlanItemSelection = () => {
             Array.isArray(value) ? value : [],
           ])
         );
+
         setWeekMenu(processedWeekMenu);
       } else {
         setError(result.error || "Failed to fetch week menu");
@@ -110,6 +112,7 @@ const PlanItemSelection = () => {
         ...prevWeekMenu,
         [selectedDay]: [...dayMenu, meal],
       };
+
       return updatedMenu;
     });
   };
@@ -122,6 +125,7 @@ const PlanItemSelection = () => {
           (meal) => meal._id !== mealId
         ),
       };
+
       return updatedMenu;
     });
   };

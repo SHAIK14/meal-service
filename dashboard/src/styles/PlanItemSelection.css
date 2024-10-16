@@ -66,7 +66,10 @@
 .meals-list,
 .selected-meals-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(120px, 1fr)
+  ); /* Responsive grid */
   gap: 15px;
   height: 45vh;
 
@@ -239,6 +242,8 @@
   margin-top: 8px; /* Space between image and name */
   font-size: 1.1em; /* Adjust font size as needed */
 }
+
+.add-meal-btn,
 .remove-meal-btn {
   padding: 10px 15px;
   color: white;
@@ -259,19 +264,7 @@
   align-items: center;
   justify-content: space-between;
 }
-.total-price button {
-  padding: 15px 20px;
-  font-size: 12pt;
-  border-radius: 12px;
-  background-color: rgb(50, 175, 10);
-  color: white;
-  font-weight: 500;
-  border: none;
-}
-.total-price button:hover {
-  background-color: rgb(33, 126, 2);
-  cursor: pointer;
-}
+
 .total-price h2 {
   display: flex;
   width: 70%;

@@ -1,5 +1,4 @@
 const User = require("../models/User");
-const { DUMMY_PHONE_NUMBER } = require("../utils/otpUtils");
 
 exports.updateUserInfo = async (req, res) => {
   try {
@@ -11,7 +10,7 @@ exports.updateUserInfo = async (req, res) => {
     user.email = email;
     user.gender = gender;
 
-    if (user.status !== "TEST_ACCOUNT") {
+    if (user.status === "NEW_USER" || user.status === "INFO_REQUIRED") {
       user.status = "INFO_COMPLETE";
     }
 
@@ -27,12 +26,17 @@ exports.updateUserInfo = async (req, res) => {
         gender: user.gender,
         status: user.status,
       },
+      isInfoComplete: ["INFO_COMPLETE", "ADDRESS_COMPLETE"].includes(
+        user.status
+      ),
+      isAddressComplete: user.status === "ADDRESS_COMPLETE",
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
   }
 };
+
 exports.updateUserAddress = async (req, res) => {
   try {
     const { fullAddress, saveAs, coordinates } = req.body;
@@ -51,7 +55,7 @@ exports.updateUserAddress = async (req, res) => {
       },
     };
 
-    if (user.status !== "TEST_ACCOUNT") {
+    if (user.status === "INFO_COMPLETE") {
       user.status = "ADDRESS_COMPLETE";
     }
 
@@ -68,23 +72,26 @@ exports.updateUserAddress = async (req, res) => {
         address: user.address,
         status: user.status,
       },
+      isInfoComplete: ["INFO_COMPLETE", "ADDRESS_COMPLETE"].includes(
+        user.status
+      ),
+      isAddressComplete: user.status === "ADDRESS_COMPLETE",
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
   }
 };
+
 exports.getUserStatus = async (req, res) => {
   try {
     const user = req.user;
     res.json({
       status: user.status,
-      isInfoComplete:
-        user.status === "INFO_COMPLETE" ||
-        user.status === "ADDRESS_COMPLETE" ||
-        user.status === "TEST_ACCOUNT",
-      isAddressComplete:
-        user.status === "ADDRESS_COMPLETE" || user.status === "TEST_ACCOUNT",
+      isInfoComplete: ["INFO_COMPLETE", "ADDRESS_COMPLETE"].includes(
+        user.status
+      ),
+      isAddressComplete: user.status === "ADDRESS_COMPLETE",
     });
   } catch (error) {
     console.error(error);

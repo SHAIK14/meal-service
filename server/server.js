@@ -9,6 +9,7 @@ const adminAuthRoutes = require("./routes/admin/adminAuthRoutes");
 const itemRoutes = require("./routes/admin/itemRoutes");
 const categoryRoutes = require("./routes/admin/categoryRoutes");
 const planRoutes = require("./routes/admin/planRoutes");
+const userPlanRoutes = require("./routes/UserPlanRoutes");
 dotenv.config();
 
 const app = express();
@@ -41,6 +42,7 @@ app.use("/api/admin", adminAuthRoutes);
 app.use("/api/admin/items", itemRoutes);
 app.use("/api/admin/categories", categoryRoutes);
 app.use("/api/admin/plans", planRoutes);
+app.use("/api/plans", userPlanRoutes);
 
 const PORT = process.env.PORT || 5000;
 const HOST = "0.0.0.0";
