@@ -254,7 +254,9 @@ const Plans = () => {
                 <TouchableOpacity
                   style={styles.selectButton}
                   onPress={() =>
-                    navigation.navigate("PlanDetails", { planId: plan._id })
+                    navigation.navigate("UserPlanDuration", {
+                      planId: plan._id,
+                    })
                   }
                 >
                   <Text style={styles.selectButtonText}>Select Plan</Text>
