@@ -198,7 +198,13 @@ const Plans = () => {
             style={styles.selectButton}
             onPress={() =>
               navigation.navigate("UserPlanDuration", {
-                planId: plan._id,
+                plan: {
+                  id: plan._id,
+                  name: plan.nameEnglish,
+                  description: plan.descriptionEnglish,
+                  duration: plan.duration,
+                  totalPrice: plan.totalPrice,
+                },
               })
             }
           >

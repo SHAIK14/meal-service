@@ -98,3 +98,22 @@ exports.getUserStatus = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+exports.getUserAddress = async (req, res) => {
+  try {
+    console.log("getUserAddress called");
+    const user = req.user;
+    console.log("User:", user);
+    if (user.address) {
+      console.log("Sending address:", user.address);
+      res.json({
+        address: user.address,
+      });
+    } else {
+      console.log("No address found for user");
+      res.status(404).json({ message: "User address not found" });
+    }
+  } catch (error) {
+    console.error("Error in getUserAddress:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};

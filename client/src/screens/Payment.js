@@ -8,6 +8,7 @@ import {
   StyleSheet,
   ScrollView,
 } from "react-native";
+import { getUserAddress } from "../utils/api"; // Assume this function exists to fetch user address
 
 const Payment = ({ route, navigation }) => {
   const [isChecked, setIsChecked] = useState(false);
@@ -17,11 +18,39 @@ const Payment = ({ route, navigation }) => {
   const [cvv, setCvv] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
   const [stcPhoneNumber, setStcPhoneNumber] = useState("");
-  const [isFormValid, setIsFormValid] = useState(false); // New state for form validation
-  const [promoCode, setPromoCode] = useState(""); // State for Promo Code
-  const [discount, setDiscount] = useState(0); // State for discount based on promo code
+  const [isFormValid, setIsFormValid] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
+  const [discount, setDiscount] = useState(0);
+  const [userAddress, setUserAddress] = useState(null);
 
-  const { selectedPlan, selectedDays, planName } = route.params;
+  const { plan } = route.params;
+
+  useEffect(() => {
+    fetchUserAddress();
+    validateForm();
+  }, [isChecked, cardHolderName, cardNumber, cvv, expiryDate, stcPhoneNumber]);
+
+  const fetchUserAddress = async () => {
+    try {
+      const response = await getUserAddress();
+      if (response && response.address) {
+        setUserAddress(response.address);
+      } else {
+        setUserAddress(null);
+      }
+    } catch (error) {
+      console.error("Error fetching user address:", error);
+      setUserAddress(null);
+    }
+  };
+  const formatAddress = (fullAddress) => {
+    if (!fullAddress) return "";
+    const parts = fullAddress.split(", ");
+    const building = parts[0];
+    const street = parts[1] || "";
+    const country = parts[parts.length - 1];
+    return `${building}, ${street}, ${country}`;
+  };
 
   const handleExpiryChange = (text) => {
     const cleaned = text.replace(/\D/g, "");
@@ -30,7 +59,7 @@ const Payment = ({ route, navigation }) => {
     } else {
       setExpiryDate(cleaned);
     }
-    validateForm(); // Validate form on expiry date change
+    validateForm();
   };
 
   const handleCardNumberChange = (text) => {
@@ -40,7 +69,7 @@ const Payment = ({ route, navigation }) => {
       .trim()
       .slice(0, 19);
     setCardNumber(formatted);
-    validateForm(); // Validate form on card number change
+    validateForm();
   };
 
   const validateForm = () => {
@@ -55,20 +84,19 @@ const Payment = ({ route, navigation }) => {
     } else if (paymentMethod === "STC Pay") {
       setIsFormValid(isChecked && stcPhoneNumber.trim());
     } else {
-      setIsFormValid(isChecked); // Only checkbox checked
+      setIsFormValid(isChecked);
     }
   };
 
   const handleCheckout = () => {
     if (isChecked) {
       navigation.navigate("OrderSummary", {
-        selectedPlan,
-        selectedDays,
+        plan,
         paymentMethod,
         ...(paymentMethod === "Visa/Mastercard"
           ? { cardHolderName, cardNumber, cvv, expiryDate }
           : { stcPhoneNumber }),
-        promoCode, // Pass the promo code to the next screen
+        promoCode,
       });
     } else {
       alert("Please accept the Privacy and Policy.");
@@ -80,9 +108,8 @@ const Payment = ({ route, navigation }) => {
   };
 
   const applyPromoCode = () => {
-    // Validate the promo code and apply discount
     if (promoCode === "DISCOUNT10") {
-      setDiscount(10); // 10% discount for example
+      setDiscount(10);
       alert("Promo code applied: 10% discount");
     } else {
       alert("Invalid promo code");
@@ -90,39 +117,42 @@ const Payment = ({ route, navigation }) => {
     }
   };
 
-  useEffect(() => {
-    validateForm(); // Validate form on mount
-  }, [isChecked, cardHolderName, cardNumber, cvv, expiryDate, stcPhoneNumber]);
-
-  // Calculate total price with discount
   const calculatePrice = () => {
-    let basePrice;
-    if (selectedPlan === "1 Week") {
-      basePrice = selectedDays === "5 Days" ? 500 : 600;
-    } else if (selectedPlan === "2 Weeks") {
-      basePrice = selectedDays === "5 Days" ? 900 : 1100;
-    } else {
-      basePrice = selectedDays === "5 Days" ? 1600 : 1900;
+    let basePrice = plan.totalPrice;
+    if (plan.selectedDuration === "2 Weeks") {
+      basePrice *= 2;
+    } else if (plan.selectedDuration === "1 Month") {
+      basePrice *= 4;
     }
-
     const discountedPrice = basePrice - (basePrice * discount) / 100;
-    return `${discountedPrice} SAR`;
+    return `${discountedPrice.toFixed(2)} SAR`;
   };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.heading}>Select Your Address</Text>
+      <Text style={styles.heading}>Delivery Address</Text>
+      {userAddress ? (
+        <View style={styles.addressContainer}>
+          <Text style={styles.addressText}>
+            {formatAddress(userAddress.fullAddress)}
+          </Text>
+          <Text style={styles.addressText}>{userAddress.saveAs}</Text>
+        </View>
+      ) : (
+        <Text style={styles.noAddressText}>No address found</Text>
+      )}
       <TouchableOpacity
-        style={styles.selectButton}
+        style={styles.addAddressButton}
         onPress={() => navigation.navigate("UserAddress")}
       >
-        <Text style={styles.selectButtonText}>Choose Address</Text>
+        <Text style={styles.addAddressButtonText}>
+          {userAddress ? "Change Address" : "Add Address"}
+        </Text>
       </TouchableOpacity>
-
       <Text style={styles.subHeading}>Your Payment Plan</Text>
       <View style={styles.planContainer}>
         <Text style={styles.planText}>
-          {planName} - {selectedPlan} ({selectedDays})
+          {plan.name} - {plan.selectedDuration} ({plan.duration} days/week)
         </Text>
         <Text style={styles.planPrice}>{calculatePrice()}</Text>
       </View>
@@ -160,7 +190,7 @@ const Payment = ({ route, navigation }) => {
               value={cardHolderName}
               onChangeText={(text) => {
                 setCardHolderName(text);
-                validateForm(); // Validate form on card holder name change
+                validateForm();
               }}
             />
             <TextInput
@@ -178,7 +208,7 @@ const Payment = ({ route, navigation }) => {
                 value={cvv}
                 onChangeText={(text) => {
                   setCvv(text);
-                  validateForm(); // Validate form on CVV change
+                  validateForm();
                 }}
                 maxLength={3}
                 secureTextEntry
@@ -231,7 +261,7 @@ const Payment = ({ route, navigation }) => {
           value={isChecked}
           onValueChange={(value) => {
             setIsChecked(value);
-            validateForm(); // Validate form on checkbox change
+            validateForm();
           }}
           style={styles.checkbox}
         />
@@ -245,8 +275,8 @@ const Payment = ({ route, navigation }) => {
           styles.checkoutButton,
           isFormValid ? styles.activeButton : styles.disabledButton,
         ]}
-        onPress={() => navigation.navigate("OrderPlacedSplash")}
-        disabled={!isFormValid} // Use isFormValid to control the disabled state
+        onPress={handleCheckout}
+        disabled={!isFormValid}
       >
         <Text style={styles.checkoutButtonText}>Checkout</Text>
       </TouchableOpacity>
@@ -273,14 +303,33 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     color: "#333",
   },
-  selectButton: {
+  addressContainer: {
+    marginBottom: 20,
+    padding: 15,
+    backgroundColor: "#f9f9f9",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  addressText: {
+    fontSize: 16,
+    color: "#333",
+    marginBottom: 5,
+  },
+  noAddressText: {
+    fontSize: 16,
+    color: "#666",
+    fontStyle: "italic",
+    marginBottom: 20,
+  },
+  addAddressButton: {
     backgroundColor: "#4CAF50",
     padding: 15,
     borderRadius: 5,
     alignItems: "center",
     marginBottom: 20,
   },
-  selectButtonText: {
+  addAddressButtonText: {
     color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
@@ -388,7 +437,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 18,
   },
-
   applyButton: {
     backgroundColor: "#4CAF50",
     padding: 10,
