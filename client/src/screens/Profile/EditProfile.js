@@ -101,7 +101,7 @@ const EditProfile = () => {
         {/* Name Field */}
         <View style={styles.userInfo}>
           <AntDesign name="user" size={20} color="black" />
-          <Text style={styles.label}>Name:</Text>
+          <Text style={styles.label}></Text>
           {isEditingField.name ? (
             <TextInput
               style={styles.input}
@@ -129,7 +129,7 @@ const EditProfile = () => {
         {/* Phone Field */}
         <View style={styles.userInfo}>
           <AntDesign name="phone" size={20} color="black" />
-          <Text style={styles.label}>Phone:</Text>
+          <Text style={styles.label}></Text>
           {isEditingField.phone ? (
             <TextInput
               style={styles.input}
@@ -161,7 +161,7 @@ const EditProfile = () => {
         {/* Email Field */}
         <View style={styles.userInfo}>
           <AntDesign name="mail" size={20} color="black" />
-          <Text style={styles.label}>Email:</Text>
+          <Text style={styles.label}></Text>
           {isEditingField.email ? (
             <TextInput
               style={styles.input}
