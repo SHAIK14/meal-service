@@ -176,9 +176,8 @@ const Plans = () => {
         </TouchableOpacity>
       </View>
 
-      <Image source={adBannerImage} style={styles.adBanner} />
-
       <ScrollView>
+        <Image source={adBannerImage} style={styles.adBanner} />
         {plans.map((plan) => (
           <TouchableOpacity
             key={plan._id}
