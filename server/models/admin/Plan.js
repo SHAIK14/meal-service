@@ -13,6 +13,7 @@ const PlanSchema = new mongoose.Schema(
     isMultiple: { type: Boolean, default: false },
     category: { type: String, required: true },
     totalPrice: { type: Number, default: 0 },
+    duration: { type: Number, required: true, min: 1, max: 7 },
   },
   { timestamps: true }
 );

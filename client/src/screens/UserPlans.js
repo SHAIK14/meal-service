@@ -8,9 +8,9 @@ import {
   ScrollView,
   FlatList,
   ActivityIndicator,
+  Dimensions,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   getAllPlans,
   getPlanById,
@@ -20,10 +20,11 @@ import {
 import profileUserIcon from "../../assets/profile-user.png";
 import adBannerImage from "../../assets/ad-banner.jpg";
 
+const { width } = Dimensions.get("window");
+
 const Plans = () => {
   const navigation = useNavigation();
   const [expandedPlan, setExpandedPlan] = useState(null);
-  const [isAddressExpanded, setIsAddressExpanded] = useState(false);
   const [selectedDay, setSelectedDay] = useState(1);
   const [plans, setPlans] = useState([]);
   const [weekMenu, setWeekMenu] = useState({});
@@ -122,25 +123,91 @@ const Plans = () => {
     }
   };
 
-  const renderWeekMenuItem = ({ item, index }) => {
-    console.log("Rendering week menu item:", item);
-    return (
+  const renderDayTab = ({ item }) => (
+    <TouchableOpacity
+      style={[
+        styles.dayButton,
+        selectedDay === item ? styles.activeDayButton : null,
+      ]}
+      onPress={() => setSelectedDay(item)}
+    >
+      <Text
+        style={selectedDay === item ? styles.activeDayText : styles.dayText}
+      >
+        Day {item}
+      </Text>
+    </TouchableOpacity>
+  );
+
+  const renderMenuItem = ({ item }) => {
+    const itemDetails = planItems[expandedPlan]?.find((i) => i._id === item);
+    return itemDetails ? (
       <View style={styles.carouselItem}>
-        <Image source={{ uri: item.image }} style={styles.carouselImage} />
-        <Text style={styles.carouselImageText}>{item.nameEnglish}</Text>
+        <Image
+          source={{ uri: itemDetails.image }}
+          style={styles.carouselImage}
+        />
+        <Text style={styles.carouselImageText}>{itemDetails.nameEnglish}</Text>
       </View>
-    );
+    ) : null;
   };
 
-  const renderPlanItem = ({ item, index }) => {
-    console.log("Rendering plan item:", item);
-    return (
-      <View style={styles.itemCard}>
-        <Image source={{ uri: item.image }} style={styles.itemImage} />
-        <Text style={styles.itemName}>{item.nameEnglish}</Text>
+  const renderPlanCard = (plan) => (
+    <TouchableOpacity key={plan._id} onPress={() => toggleExpand(plan._id)}>
+      <View style={styles.planCard}>
+        <Image source={{ uri: plan.image }} style={styles.planImage} />
+        <View style={styles.planTextContainer}>
+          <Text style={styles.planName}>{plan.nameEnglish}</Text>
+          <Text style={styles.planDescription}>{plan.descriptionEnglish}</Text>
+        </View>
       </View>
-    );
-  };
+      {expandedPlan === plan._id && (
+        <View style={styles.expandedDetails}>
+          <Text style={styles.planDetails}>{plan.descriptionEnglish}</Text>
+
+          <FlatList
+            data={Array.from({ length: plan.duration }, (_, i) => i + 1)}
+            renderItem={renderDayTab}
+            keyExtractor={(item) => `day-${item}`}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.daysNavigation}
+          />
+
+          {weekMenu[plan._id] && weekMenu[plan._id].weekMenu && (
+            <FlatList
+              data={weekMenu[plan._id].weekMenu[selectedDay] || []}
+              renderItem={renderMenuItem}
+              keyExtractor={(item, index) => `weekmenu-${item || index}`}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.carousel}
+              snapToInterval={width * 0.4} // Snap to each item
+              decelerationRate="fast" // Makes the snapping feel more natural
+              contentContainerStyle={styles.carouselContent}
+            />
+          )}
+
+          {(!planItems[plan._id] || planItems[plan._id].length === 0) && (
+            <Text style={styles.noItemsText}>
+              No items available for this plan
+            </Text>
+          )}
+
+          <TouchableOpacity
+            style={styles.selectButton}
+            onPress={() =>
+              navigation.navigate("UserPlanDuration", {
+                planId: plan._id,
+              })
+            }
+          >
+            <Text style={styles.selectButtonText}>Select Plan</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
 
   if (loading) {
     return (
@@ -178,92 +245,7 @@ const Plans = () => {
 
       <ScrollView>
         <Image source={adBannerImage} style={styles.adBanner} />
-        {plans.map((plan) => (
-          <TouchableOpacity
-            key={plan._id}
-            onPress={() => toggleExpand(plan._id)}
-          >
-            <View style={styles.planCard}>
-              <Image source={{ uri: plan.image }} style={styles.planImage} />
-              <View style={styles.planTextContainer}>
-                <Text style={styles.planName}>{plan.nameEnglish}</Text>
-                <Text style={styles.planDescription}>
-                  {plan.descriptionEnglish}
-                </Text>
-              </View>
-            </View>
-            {expandedPlan === plan._id && (
-              <View style={styles.expandedDetails}>
-                <Text style={styles.planDetails}>
-                  {plan.descriptionEnglish}
-                </Text>
-
-                <View style={styles.daysNavigation}>
-                  {[1, 2, 3, 4, 5].map((day) => (
-                    <TouchableOpacity
-                      key={day}
-                      style={styles.dayButton}
-                      onPress={() => setSelectedDay(day)}
-                    >
-                      <Text
-                        style={
-                          selectedDay === day
-                            ? styles.activeDayText
-                            : styles.dayText
-                        }
-                      >
-                        Day {day}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-
-                {weekMenu[plan._id] && weekMenu[plan._id].weekMenu && (
-                  <FlatList
-                    data={weekMenu[plan._id].weekMenu[selectedDay] || []}
-                    renderItem={({ item }) => {
-                      const itemDetails = planItems[plan._id]?.find(
-                        (i) => i._id === item
-                      );
-                      return itemDetails ? (
-                        <View style={styles.carouselItem}>
-                          <Image
-                            source={{ uri: itemDetails.image }}
-                            style={styles.carouselImage}
-                          />
-                          <Text style={styles.carouselImageText}>
-                            {itemDetails.nameEnglish}
-                          </Text>
-                        </View>
-                      ) : null;
-                    }}
-                    keyExtractor={(item, index) => `weekmenu-${item || index}`}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    style={styles.carousel}
-                  />
-                )}
-
-                {(!planItems[plan._id] || planItems[plan._id].length === 0) && (
-                  <Text style={styles.noItemsText}>
-                    No items available for this plan
-                  </Text>
-                )}
-
-                <TouchableOpacity
-                  style={styles.selectButton}
-                  onPress={() =>
-                    navigation.navigate("UserPlanDuration", {
-                      planId: plan._id,
-                    })
-                  }
-                >
-                  <Text style={styles.selectButtonText}>Select Plan</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </TouchableOpacity>
-        ))}
+        {plans.map(renderPlanCard)}
         <TouchableOpacity
           style={styles.customPlanButton}
           onPress={() => navigation.navigate("SelectMeals")}
@@ -274,7 +256,6 @@ const Plans = () => {
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -361,8 +342,6 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   daysNavigation: {
-    flexDirection: "row",
-    justifyContent: "space-around",
     marginVertical: 10,
   },
   dayButton: {
@@ -370,11 +349,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 15,
     backgroundColor: "#f0f0f0",
+    marginRight: 10,
+  },
+  activeDayButton: {
+    backgroundColor: "#4CAF50",
   },
   activeDayText: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#4CAF50",
+    color: "#fff",
   },
   dayText: {
     fontSize: 16,
@@ -383,33 +366,20 @@ const styles = StyleSheet.create({
   carousel: {
     marginVertical: 10,
   },
+  carouselContent: {
+    paddingRight: width * 0.6, // Add extra space at the end for better scrolling
+  },
   carouselItem: {
     alignItems: "center",
+    width: width * 0.4, // Fixed width for each item
     marginRight: 10,
-    zIndex: 10,
   },
   carouselImage: {
-    width: 100,
-    height: 100,
+    width: width * 0.35,
+    height: width * 0.35,
     borderRadius: 10,
   },
   carouselImageText: {
-    marginTop: 5,
-    textAlign: "center",
-  },
-  itemCarousel: {
-    marginTop: 10,
-  },
-  itemCard: {
-    alignItems: "center",
-    marginRight: 10,
-  },
-  itemImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 10,
-  },
-  itemName: {
     marginTop: 5,
     textAlign: "center",
     fontSize: 12,

@@ -21,6 +21,7 @@ const PlanEdit = () => {
     isIndividual: false,
     isMultiple: false,
     category: "Lunch",
+    duration: null,
   });
 
   useEffect(() => {
@@ -213,6 +214,22 @@ const PlanEdit = () => {
             >
               <option value="Lunch">Lunch</option>
               <option value="Dinner">Dinner</option>
+            </select>
+          </div>
+          <div className="admin-form-group-category">
+            <label className="admin-select-label">Duration (days):</label>
+            <select
+              name="duration"
+              value={plan.duration}
+              onChange={handleInputChange}
+              required
+              className="admin-select"
+            >
+              {[1, 2, 3, 4, 5, 6, 7].map((day) => (
+                <option key={day} value={day}>
+                  {day}
+                </option>
+              ))}
             </select>
           </div>
           <div className="admin-form-btn">

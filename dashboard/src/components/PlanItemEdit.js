@@ -15,13 +15,7 @@ const PlanItemEdit = () => {
 
   const [plan, setPlan] = useState(null);
   const [selectedDay, setSelectedDay] = useState("1");
-  const [weekMenu, setWeekMenu] = useState({
-    1: [],
-    2: [],
-    3: [],
-    4: [],
-    5: [],
-  });
+  const [weekMenu, setWeekMenu] = useState({});
   const [availableMeals, setAvailableMeals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -31,6 +25,12 @@ const PlanItemEdit = () => {
       const result = await getPlanById(planId);
       if (result.success) {
         setPlan(result.data.plan);
+        // Initialize weekMenu based on plan duration
+        const initialWeekMenu = {};
+        for (let i = 1; i <= result.data.plan.duration; i++) {
+          initialWeekMenu[i] = [];
+        }
+        setWeekMenu(initialWeekMenu);
       } else {
         setError(result.error || "Failed to fetch plan details");
       }
@@ -43,7 +43,7 @@ const PlanItemEdit = () => {
     try {
       const result = await getItemById(mealId);
       if (result.success) {
-        return result.item; // Changed from result.data.item to result.item
+        return result.item;
       } else {
         console.error(
           `Failed to fetch meal details for ID ${mealId}: ${
@@ -203,15 +203,18 @@ const PlanItemEdit = () => {
     <div className="plan-item-selection-container">
       <h1>Edit Items for {plan.nameEnglish}</h1>
       <div className="days-nav">
-        {["1", "2", "3", "4", "5"].map((day) => (
-          <button
-            key={day}
-            className={`day-button ${selectedDay === day ? "active" : ""}`}
-            onClick={() => setSelectedDay(day)}
-          >
-            Day {day}
-          </button>
-        ))}
+        {[...Array(plan.duration)].map((_, index) => {
+          const day = (index + 1).toString();
+          return (
+            <button
+              key={day}
+              className={`day-button ${selectedDay === day ? "active" : ""}`}
+              onClick={() => setSelectedDay(day)}
+            >
+              Day {day}
+            </button>
+          );
+        })}
       </div>
 
       <div className="content-wrapper">
@@ -273,7 +276,7 @@ const PlanItemEdit = () => {
                     </div>
                     <button
                       className="remove-button"
-                      onClick={() => handleRemoveMeal(meal._id)} // Pass meal._id for removal
+                      onClick={() => handleRemoveMeal(meal._id)}
                     >
                       <span className="remove-icon">-</span>
                     </button>
@@ -282,7 +285,7 @@ const PlanItemEdit = () => {
                 </div>
               ))
             ) : (
-              <p> No meals selected for this day. Drag or Select the Meal </p>
+              <p>No meals selected for this day. Drag or Select the Meal</p>
             )}
           </div>
           <div className="total-price">

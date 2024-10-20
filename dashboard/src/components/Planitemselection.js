@@ -14,13 +14,7 @@ const PlanItemSelection = () => {
 
   const [plan, setPlan] = useState(null);
   const [selectedDay, setSelectedDay] = useState("1");
-  const [weekMenu, setWeekMenu] = useState({
-    1: [],
-    2: [],
-    3: [],
-    4: [],
-    5: [],
-  });
+  const [weekMenu, setWeekMenu] = useState({});
   const [availableMeals, setAvailableMeals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -30,13 +24,19 @@ const PlanItemSelection = () => {
       const result = await getPlanById(planId);
       if (result.success) {
         setPlan(result.data.plan);
+        // Initialize weekMenu based on plan duration
+        const initialWeekMenu = {};
+        for (let i = 1; i <= result.data.plan.duration; i++) {
+          initialWeekMenu[i] = [];
+        }
+        setWeekMenu(initialWeekMenu);
       } else {
         setError(result.error || "Failed to fetch plan details");
       }
     } catch (error) {
       setError("An error occurred while fetching plan details");
     }
-  }, [planId]); // Added planId to dependencies
+  }, [planId]);
 
   const fetchWeekMenu = useCallback(async () => {
     try {
@@ -44,21 +44,14 @@ const PlanItemSelection = () => {
 
       if (result.success) {
         const weekMenuData = result.data.weekMenu || {};
-        const processedWeekMenu = Object.fromEntries(
-          Object.entries(weekMenuData).map(([key, value]) => [
-            key,
-            Array.isArray(value) ? value : [],
-          ])
-        );
-
-        setWeekMenu(processedWeekMenu);
+        setWeekMenu(weekMenuData);
       } else {
         setError(result.error || "Failed to fetch week menu");
       }
     } catch (error) {
       setError("An error occurred while fetching week menu");
     }
-  }, [planId]); // planId is necessary here
+  }, [planId]);
 
   const fetchAvailableMeals = useCallback(async () => {
     try {
@@ -71,7 +64,7 @@ const PlanItemSelection = () => {
     } catch (error) {
       setError("An error occurred while fetching available meals");
     }
-  }, []); // No dependency
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -107,27 +100,19 @@ const PlanItemSelection = () => {
       return;
     }
 
-    setWeekMenu((prevWeekMenu) => {
-      const updatedMenu = {
-        ...prevWeekMenu,
-        [selectedDay]: [...dayMenu, meal],
-      };
-
-      return updatedMenu;
-    });
+    setWeekMenu((prevWeekMenu) => ({
+      ...prevWeekMenu,
+      [selectedDay]: [...dayMenu, meal],
+    }));
   };
 
   const handleRemoveMeal = (mealId) => {
-    setWeekMenu((prevWeekMenu) => {
-      const updatedMenu = {
-        ...prevWeekMenu,
-        [selectedDay]: (prevWeekMenu[selectedDay] || []).filter(
-          (meal) => meal._id !== mealId
-        ),
-      };
-
-      return updatedMenu;
-    });
+    setWeekMenu((prevWeekMenu) => ({
+      ...prevWeekMenu,
+      [selectedDay]: (prevWeekMenu[selectedDay] || []).filter(
+        (meal) => meal._id !== mealId
+      ),
+    }));
   };
 
   const calculateTotalPrice = () => {
@@ -174,15 +159,18 @@ const PlanItemSelection = () => {
     <div className="plan-item-selection-container">
       <h1>Select Items for {plan.nameEnglish}</h1>
       <div className="days-nav">
-        {["1", "2", "3", "4", "5"].map((day) => (
-          <button
-            key={day}
-            className={`day-button ${selectedDay === day ? "active" : ""}`}
-            onClick={() => setSelectedDay(day)}
-          >
-            Day {day}
-          </button>
-        ))}
+        {[...Array(plan.duration)].map((_, index) => {
+          const day = (index + 1).toString();
+          return (
+            <button
+              key={day}
+              className={`day-button ${selectedDay === day ? "active" : ""}`}
+              onClick={() => setSelectedDay(day)}
+            >
+              Day {day}
+            </button>
+          );
+        })}
       </div>
 
       <div className="content-wrapper">
@@ -244,7 +232,7 @@ const PlanItemSelection = () => {
                     </div>
                     <button
                       className="remove-button"
-                      onClick={() => handleRemoveMeal(meal._id)} // Pass meal._id for removal
+                      onClick={() => handleRemoveMeal(meal._id)}
                     >
                       <span className="remove-icon">-</span>
                     </button>

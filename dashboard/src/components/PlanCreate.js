@@ -20,6 +20,7 @@ const PlanCreate = () => {
     isIndividual: false,
     isMultiple: false,
     category: "Lunch",
+    duration: 5,
   });
 
   const handleInputChange = (e) => {
@@ -195,6 +196,22 @@ const PlanCreate = () => {
             >
               <option value="Lunch">Lunch</option>
               <option value="Dinner">Dinner</option>
+            </select>
+          </div>
+          <div className="admin-form-group-category">
+            <label className="admin-select-label">Duration (days):</label>
+            <select
+              name="duration"
+              value={newPlan.duration}
+              onChange={handleInputChange}
+              required
+              className="admin-select"
+            >
+              {[1, 2, 3, 4, 5, 6, 7].map((day) => (
+                <option key={day} value={day}>
+                  {day}
+                </option>
+              ))}
             </select>
           </div>
           <div className="admin-form-btn">
