@@ -11,7 +11,21 @@ const PlanSchema = new mongoose.Schema(
     isNonVeg: { type: Boolean, default: false },
     isIndividual: { type: Boolean, default: false },
     isMultiple: { type: Boolean, default: false },
-    category: { type: String, required: true },
+    package: {
+      type: [
+        {
+          type: String,
+          enum: ["breakfast", "lunch", "dinner", "evening_snacks"],
+        },
+      ],
+      required: true,
+      validate: {
+        validator: function (v) {
+          return v.length > 0;
+        },
+        message: "At least one package option must be selected",
+      },
+    },
     totalPrice: { type: Number, default: 0 },
     duration: { type: Number, required: true, min: 1, max: 7 },
   },
