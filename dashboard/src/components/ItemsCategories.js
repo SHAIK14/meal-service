@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getItemsByCategory, toggleItemAvailability } from "../utils/api";
 import { Edit2, ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
-import "../styles/ItemsCategories.css";
+import "../styles/ItemsCategories.CSS";
 
 const ITEMS_PER_PAGE = 5;
 
