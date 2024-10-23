@@ -1,231 +1,181 @@
-import React, { useState, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
+import { useNavigation } from "@react-navigation/native";
 import {
   View,
   Text,
-  Image,
-  TouchableOpacity,
   StyleSheet,
-  ScrollView,
-  FlatList,
-  ActivityIndicator,
+  TouchableOpacity,
+  Image,
+  Animated,
+  PanResponder,
   Dimensions,
+  ScrollView,
+  ActivityIndicator,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
 import {
   getAllPlans,
   getPlanById,
   getPlanWeeklyMenu,
   getItemsBatch,
 } from "../utils/api";
-import profileUserIcon from "../../assets/profile-user.png";
-import adBannerImage from "../../assets/ad-banner.jpg";
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 
-const Plans = () => {
+const UserPlan = () => {
   const navigation = useNavigation();
-  const [expandedPlan, setExpandedPlan] = useState(null);
-  const [selectedDay, setSelectedDay] = useState(1);
   const [plans, setPlans] = useState([]);
   const [weekMenu, setWeekMenu] = useState({});
   const [planItems, setPlanItems] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Animation and UI states
+  const scrollX = useRef(new Animated.Value(0)).current;
+  const modalAnimation = useRef(new Animated.Value(height * 0.4)).current;
+  const [selectedDayIndex, setSelectedDayIndex] = useState(0);
+  const [modalHeight, setModalHeight] = useState(height * 0.6);
+  const [selectedMeal, setSelectedMeal] = useState("");
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+
+  // Ads data (keep this if you still want to show ads)
+  const ads = [
+    {
+      id: 1,
+      image: {
+        uri: "https://parsonsnose.co.uk/dyn/bMDmN5SiQHNuq56KFMOMH6UYufV1XxRNZqiJxs5hLjU~/crop/width:1600-fit/uploads/components/newsarticle/AdobeStock_654390147-6630d5df12f56.jpg",
+      },
+    },
+  ];
+
   useEffect(() => {
     fetchPlans();
+
+    // Ad rotation interval
+    const interval = setInterval(() => {
+      scrollX.setValue((prev) => (prev + width) % (width * ads.length));
+    }, 3000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const fetchPlans = async () => {
-    console.log("Fetching plans...");
     try {
       const data = await getAllPlans();
-      console.log("Fetched plans:", data);
       setPlans(data.data);
       setLoading(false);
     } catch (err) {
-      console.error("Error fetching plans:", err);
       setError(err.message);
       setLoading(false);
     }
   };
 
   const fetchWeekMenu = async (planId) => {
-    console.log(`Fetching week menu for plan ${planId}...`);
     try {
       const data = await getPlanWeeklyMenu(planId);
-      console.log("Fetched week menu:", data);
-      setWeekMenu((prevWeekMenu) => ({ ...prevWeekMenu, [planId]: data.data }));
+      setWeekMenu((prev) => ({ ...prev, [planId]: data.data }));
+      return data.data;
     } catch (err) {
       console.error("Error fetching week menu:", err);
+      return null;
     }
   };
 
   const fetchPlanItems = async (planId, weekMenuData) => {
-    console.log(`Fetching items for plan ${planId}...`);
     try {
-      if (!weekMenuData || !weekMenuData.weekMenu) {
-        console.log("No week menu data available for fetching items");
+      if (!weekMenuData?.weekMenu) return;
+
+      const itemIds = new Set();
+      Object.values(weekMenuData.weekMenu).forEach((dayData) => {
+        Object.values(dayData).forEach((packageItems) => {
+          packageItems.forEach((itemId) => itemIds.add(itemId));
+        });
+      });
+
+      const itemIdsArray = Array.from(itemIds);
+      if (itemIdsArray.length === 0) {
+        setPlanItems((prev) => ({ ...prev, [planId]: [] }));
         return;
       }
 
-      const itemIds = Object.values(weekMenuData.weekMenu).flat();
-      console.log("Item IDs to fetch:", itemIds);
-
-      if (itemIds.length === 0) {
-        console.log("No item IDs found in the week menu");
-        setPlanItems((prevPlanItems) => ({ ...prevPlanItems, [planId]: [] }));
-        return;
-      }
-
-      const data = await getItemsBatch(itemIds);
-      console.log("Fetched plan items:", data);
-
+      const data = await getItemsBatch(itemIdsArray);
       if (data.success && Array.isArray(data.data)) {
-        setPlanItems((prevPlanItems) => ({
-          ...prevPlanItems,
-          [planId]: data.data,
-        }));
-      } else {
-        console.log("Unexpected data structure from getItemsBatch:", data);
-        setPlanItems((prevPlanItems) => ({ ...prevPlanItems, [planId]: [] }));
+        setPlanItems((prev) => ({ ...prev, [planId]: data.data }));
       }
     } catch (err) {
       console.error("Error fetching plan items:", err);
-      setPlanItems((prevPlanItems) => ({ ...prevPlanItems, [planId]: [] }));
+      setPlanItems((prev) => ({ ...prev, [planId]: [] }));
     }
   };
 
-  const toggleExpand = async (planId) => {
-    console.log(`Toggling expand for plan ${planId}`);
-    if (expandedPlan === planId) {
-      setExpandedPlan(null);
-    } else {
-      setExpandedPlan(planId);
-      setSelectedDay(1);
+  const handlePlanSelect = async (plan) => {
+    setSelectedPlan(plan);
+    setSelectedCategory(plan.package[0]); // Select first package by default
+    setSelectedDayIndex(0);
 
-      if (!weekMenu[planId]) {
-        console.log(`Fetching week menu for plan ${planId}...`);
-        try {
-          const data = await getPlanWeeklyMenu(planId);
-          console.log("Fetched week menu:", data);
-          setWeekMenu((prevWeekMenu) => {
-            const updatedWeekMenu = { ...prevWeekMenu, [planId]: data.data };
-            fetchPlanItems(planId, updatedWeekMenu[planId]);
-            return updatedWeekMenu;
-          });
-        } catch (err) {
-          console.error("Error fetching week menu:", err);
-        }
-      } else {
-        fetchPlanItems(planId, weekMenu[planId]);
+    // Fetch menu data if not already fetched
+    if (!weekMenu[plan._id]) {
+      const menuData = await fetchWeekMenu(plan._id);
+      if (menuData) {
+        await fetchPlanItems(plan._id, menuData);
       }
     }
+
+    // Animate modal
+    Animated.spring(modalAnimation, {
+      toValue: 0,
+      useNativeDriver: true,
+    }).start();
   };
 
-  const renderDayTab = ({ item }) => (
-    <TouchableOpacity
-      style={[
-        styles.dayButton,
-        selectedDay === item ? styles.activeDayButton : null,
-      ]}
-      onPress={() => setSelectedDay(item)}
-    >
-      <Text
-        style={selectedDay === item ? styles.activeDayText : styles.dayText}
-      >
-        Day {item}
-      </Text>
-    </TouchableOpacity>
-  );
-
-  const renderMenuItem = ({ item }) => {
-    const itemDetails = planItems[expandedPlan]?.find((i) => i._id === item);
-    return itemDetails ? (
-      <View style={styles.carouselItem}>
-        <Image
-          source={{ uri: itemDetails.image }}
-          style={styles.carouselImage}
-        />
-        <Text style={styles.carouselImageText}>{itemDetails.nameEnglish}</Text>
-      </View>
-    ) : null;
+  const closeModal = () => {
+    Animated.spring(modalAnimation, {
+      toValue: height,
+      useNativeDriver: true,
+    }).start(() => {
+      setSelectedPlan(null);
+      setSelectedCategory(null);
+    });
   };
 
-  const renderPlanCard = (plan) => (
-    <TouchableOpacity key={plan._id} onPress={() => toggleExpand(plan._id)}>
-      <View style={styles.planCard}>
-        <Image source={{ uri: plan.image }} style={styles.planImage} />
-        <View style={styles.planTextContainer}>
-          <Text style={styles.planName}>{plan.nameEnglish}</Text>
-          <Text style={styles.planDescription}>{plan.descriptionEnglish}</Text>
-        </View>
-      </View>
-      {expandedPlan === plan._id && (
-        <View style={styles.expandedDetails}>
-          <Text style={styles.planDetails}>{plan.descriptionEnglish}</Text>
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return Math.abs(gestureState.dy) > 10;
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 50) {
+          closeModal();
+        }
+      },
+    })
+  ).current;
 
-          <FlatList
-            data={Array.from({ length: plan.duration }, (_, i) => i + 1)}
-            renderItem={renderDayTab}
-            keyExtractor={(item) => `day-${item}`}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.daysNavigation}
-          />
+  const getFilteredItems = () => {
+    if (!selectedPlan || !weekMenu[selectedPlan._id]) return [];
 
-          {weekMenu[plan._id] && weekMenu[plan._id].weekMenu && (
-            <FlatList
-              data={weekMenu[plan._id].weekMenu[selectedDay] || []}
-              renderItem={renderMenuItem}
-              keyExtractor={(item, index) => `weekmenu-${item || index}`}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.carousel}
-              snapToInterval={width * 0.4} // Snap to each item
-              decelerationRate="fast" // Makes the snapping feel more natural
-              contentContainerStyle={styles.carouselContent}
-            />
-          )}
+    const dayMenu = weekMenu[selectedPlan._id].weekMenu[selectedDayIndex + 1];
+    if (!dayMenu || !dayMenu[selectedCategory]) return [];
 
-          {(!planItems[plan._id] || planItems[plan._id].length === 0) && (
-            <Text style={styles.noItemsText}>
-              No items available for this plan
-            </Text>
-          )}
-
-          <TouchableOpacity
-            style={styles.selectButton}
-            onPress={() =>
-              navigation.navigate("UserPlanDuration", {
-                plan: {
-                  id: plan._id,
-                  name: plan.nameEnglish,
-                  description: plan.descriptionEnglish,
-                  duration: plan.duration,
-                  totalPrice: plan.totalPrice,
-                },
-              })
-            }
-          >
-            <Text style={styles.selectButtonText}>Select Plan</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </TouchableOpacity>
-  );
+    return dayMenu[selectedCategory]
+      .map((itemId) =>
+        planItems[selectedPlan._id]?.find((item) => item._id === itemId)
+      )
+      .filter(Boolean);
+  };
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#4CAF50" />
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#C5A85F" />
       </View>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.centerContainer}>
+      <View style={styles.errorContainer}>
         <Text style={styles.errorText}>{error}</Text>
       </View>
     );
@@ -233,192 +183,453 @@ const Plans = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.addressContainer}>
+      <View style={styles.header}>
         <TouchableOpacity
-          style={styles.addMealPartnerButton}
+          style={styles.button}
           onPress={() => navigation.navigate("AddPartner")}
         >
-          <Text style={styles.addMealPartnerButtonText}>Add Meal Partner</Text>
+          <Text style={styles.buttonText}>Add Meal Partner</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.profileIcon}
-          onPress={() => navigation.navigate("Profile")}
-        >
-          <Image source={profileUserIcon} style={styles.iconImage} />
+        <TouchableOpacity style={styles.profileIcon}>
+          <Ionicons name="person-circle-outline" size={40} color="#000" />
         </TouchableOpacity>
       </View>
 
-      <ScrollView>
-        <Image source={adBannerImage} style={styles.adBanner} />
-        {plans.map(renderPlanCard)}
-        <TouchableOpacity
-          style={styles.customPlanButton}
-          onPress={() => navigation.navigate("SelectMeals")}
-        >
-          <Text style={styles.customPlanButtonText}>Create Custom Plan</Text>
-        </TouchableOpacity>
+      <ScrollView contentContainerStyle={styles.planWrapper}>
+        <View style={styles.carousel}>
+          <Animated.ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            pagingEnabled
+            scrollEventThrottle={16}
+            onScroll={Animated.event(
+              [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+              { useNativeDriver: false }
+            )}
+            style={styles.scrollView}
+          >
+            {ads.map((ad) => (
+              <View key={ad.id} style={styles.adContainer}>
+                <Image source={ad.image} style={styles.adImage} />
+              </View>
+            ))}
+          </Animated.ScrollView>
+        </View>
+
+        {plans.map((plan) => (
+          <TouchableOpacity
+            key={plan._id}
+            style={styles.planCard}
+            onPress={() => handlePlanSelect(plan)}
+          >
+            <Image source={{ uri: plan.image }} style={styles.planImage} />
+            <Text style={styles.planName}>{plan.nameEnglish}</Text>
+            <Text style={styles.planDescription}>
+              {plan.descriptionEnglish}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </ScrollView>
+
+      {selectedPlan && (
+        <TouchableOpacity
+          style={styles.overlay}
+          activeOpacity={1}
+          onPress={closeModal}
+        >
+          <Animated.View
+            style={[
+              styles.modalContainer,
+              {
+                height: modalHeight,
+                transform: [{ translateY: modalAnimation }],
+              },
+            ]}
+            {...panResponder.panHandlers}
+          >
+            <ScrollView>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>
+                  {selectedPlan.nameEnglish}
+                </Text>
+                <Text style={styles.modalDescription}>
+                  {selectedPlan.descriptionEnglish}
+                </Text>
+
+                <View style={styles.categoryContainer}>
+                  {selectedPlan.package.map((pkg) => (
+                    <TouchableOpacity
+                      key={pkg}
+                      style={[
+                        styles.categoryButton,
+                        selectedCategory === pkg && styles.selectedCategory,
+                      ]}
+                      onPress={() => setSelectedCategory(pkg)}
+                    >
+                      <Text style={styles.categoryText}>
+                        {pkg.charAt(0).toUpperCase() +
+                          pkg.slice(1).replace("_", " ")}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <View style={styles.daysWrapper}>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    {Array.from({ length: selectedPlan.duration }, (_, i) => (
+                      <TouchableOpacity
+                        key={i}
+                        style={[
+                          styles.dayButton,
+                          selectedDayIndex === i && styles.activeDayButton,
+                        ]}
+                        onPress={() => setSelectedDayIndex(i)}
+                      >
+                        <Text
+                          style={[
+                            styles.dayText,
+                            selectedDayIndex === i
+                              ? styles.activeDayText
+                              : styles.inactiveDayText,
+                          ]}
+                        >
+                          Day {i + 1}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+
+                <View style={styles.itemsWrapper}>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    {getFilteredItems().map((item) => (
+                      <View key={item._id} style={styles.itemCard}>
+                        <Image
+                          source={{ uri: item.image }}
+                          style={styles.itemImage}
+                        />
+                        <Text style={styles.itemName}>{item.nameEnglish}</Text>
+                      </View>
+                    ))}
+                  </ScrollView>
+                </View>
+
+                <View style={styles.radioContainer}>
+                  <TouchableOpacity
+                    style={[
+                      styles.radioButton,
+                      selectedMeal === "One Meal" && styles.activeButton,
+                    ]}
+                    onPress={() => setSelectedMeal("One Meal")}
+                  >
+                    <Text
+                      style={[
+                        styles.radioText,
+                        selectedMeal === "One Meal" && styles.activeButtonText,
+                      ]}
+                    >
+                      One Meal
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.radioButton,
+                      selectedMeal === "Full Day Meal" && styles.activeButton,
+                    ]}
+                    onPress={() => setSelectedMeal("Full Day Meal")}
+                  >
+                    <Text
+                      style={[
+                        styles.radioText,
+                        selectedMeal === "Full Day Meal" &&
+                          styles.activeButtonText,
+                      ]}
+                    >
+                      Full Day Meal
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.selectButton}
+                  onPress={() =>
+                    navigation.navigate("UserPlanDuration", {
+                      plan: {
+                        id: selectedPlan._id,
+                        name: selectedPlan.nameEnglish,
+                        description: selectedPlan.descriptionEnglish,
+                        duration: selectedPlan.duration,
+                        totalPrice: selectedPlan.totalPrice,
+                        package: selectedPlan.package,
+                      },
+                    })
+                  }
+                >
+                  <Text style={styles.selectButtonText}>Select This Plan</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </Animated.View>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "white",
-    padding: 10,
+    backgroundColor: "#f5f5f5",
   },
-  centerContainer: {
+  // Loading and Error States
+  loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#f5f5f5",
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+    padding: 20,
   },
   errorText: {
-    fontSize: 18,
+    fontSize: 16,
     color: "red",
+    textAlign: "center",
   },
-  addressContainer: {
+  // Header
+  header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    margin: 10,
+    padding: 20,
+    backgroundColor: "#fff",
   },
-  addMealPartnerButton: {
-    backgroundColor: "green",
-    padding: 10,
+  button: {
+    backgroundColor: "#C5A85F",
     borderRadius: 5,
+    padding: 10,
   },
-  addMealPartnerButtonText: {
-    color: "white",
+  buttonText: {
+    color: "#fff",
     fontWeight: "bold",
   },
   profileIcon: {
     padding: 10,
   },
-  iconImage: {
-    width: 35,
-    height: 35,
-    borderRadius: 20,
-  },
-  adBanner: {
-    height: undefined,
-    aspectRatio: 16 / 9,
-    marginTop: 10,
-    width: "95%",
+  // Carousel
+  carousel: {
+    height: height * 0.2,
     alignSelf: "center",
-    borderRadius: 25,
   },
-  planCard: {
-    flexDirection: "row",
-    backgroundColor: "#ececec",
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 10,
-    width: "95%",
-    alignSelf: "center",
-    marginVertical: 10,
+  scrollView: {
+    flexGrow: 1,
+  },
+  adContainer: {
+    width: width,
+    justifyContent: "center",
     alignItems: "center",
   },
-  planImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 10,
+  adImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 25,
+    resizeMode: "cover",
   },
-  planTextContainer: {
-    marginLeft: 10,
-    flex: 1,
+  // Plan List
+  planWrapper: {
+    padding: 25,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  planCard: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    marginVertical: 10,
+    marginHorizontal: 5,
+    padding: 10,
+    width: width * 0.9,
+    elevation: 3,
+  },
+  planImage: {
+    width: "100%",
+    height: 150,
+    borderRadius: 10,
   },
   planName: {
     fontSize: 18,
     fontWeight: "bold",
+    marginVertical: 5,
   },
   planDescription: {
     fontSize: 14,
     color: "#666",
   },
-  expandedDetails: {
-    padding: 10,
-    backgroundColor: "#e0e0e0",
-    borderRadius: 10,
-    width: "95%",
-    alignSelf: "center",
+  // Modal
+  overlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
   },
-  planDetails: {
-    fontSize: 14,
-    color: "#333",
+  modalContainer: {
+    width: width,
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
   },
-  daysNavigation: {
-    marginVertical: 10,
+  modalContent: {
+    flex: 1,
+  },
+  modalTitle: {
+    fontSize: 32,
+    fontWeight: "bold",
+    marginBottom: 5,
+  },
+  modalDescription: {
+    fontSize: 16,
+    color: "#666",
+    marginBottom: 20,
+  },
+  // Categories
+  categoryContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginBottom: 10,
+  },
+  categoryButton: {
+    backgroundColor: "#D3D3D3",
+    borderRadius: 5,
+    marginRight: 10,
+    marginBottom: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+  },
+  selectedCategory: {
+    backgroundColor: "#C5A85F",
+  },
+  categoryText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  // Days Navigation
+  daysWrapper: {
+    height: 60,
+  },
+  daysScroll: {
+    marginBottom: 5,
+    paddingVertical: 10,
+    height: 10,
   },
   dayButton: {
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: 15,
-    backgroundColor: "#f0f0f0",
-    marginRight: 10,
-  },
-  activeDayButton: {
-    backgroundColor: "#4CAF50",
-  },
-  activeDayText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#fff",
+    borderRadius: 5,
+    padding: 10,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    marginHorizontal: 5,
   },
   dayText: {
-    fontSize: 16,
-    color: "#333",
+    fontWeight: "bold",
   },
-  carousel: {
+  activeDayText: {
+    color: "#C5A85F",
+    fontWeight: "bold",
+  },
+  inactiveDayText: {
+    color: "#666",
+    fontWeight: "normal",
+  },
+  // Items Display
+  itemsWrapper: {
+    justifyContent: "center",
+    alignItems: "center",
     marginVertical: 10,
   },
-  carouselContent: {
-    paddingRight: width * 0.6, // Add extra space at the end for better scrolling
+  itemsContainer: {
+    marginBottom: 20,
+    alignSelf: "flex-start",
   },
-  carouselItem: {
-    alignItems: "center",
-    width: width * 0.4, // Fixed width for each item
+  itemCard: {
+    borderRadius: 10,
     marginRight: 10,
+    padding: 5,
+    alignItems: "center",
+    justifyContent: "center",
+    width: 100,
+    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
-  carouselImage: {
-    width: width * 0.35,
-    height: width * 0.35,
+  itemImage: {
+    width: 80,
+    height: 80,
     borderRadius: 10,
   },
-  carouselImageText: {
+  itemName: {
+    fontSize: 12,
+    fontWeight: "bold",
     marginTop: 5,
     textAlign: "center",
-    fontSize: 12,
   },
-  noItemsText: {
-    textAlign: "center",
-    marginTop: 10,
-    color: "#666",
-  },
-  selectButton: {
-    marginTop: 10,
-    paddingVertical: 8,
-    backgroundColor: "#4CAF50",
-    borderRadius: 5,
+  // Radio Buttons
+  radioContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
     alignItems: "center",
+    marginVertical: 20,
+  },
+  radioButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 25,
+    backgroundColor: "#f0f0f0",
+    borderRadius: 5,
+    marginRight: 10,
+    marginBottom: 25,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  activeButton: {
+    backgroundColor: "#C5A85F",
+  },
+  radioText: {
+    color: "#000",
+    fontWeight: "bold",
+  },
+  activeButtonText: {
+    color: "white",
+  },
+  // Select Button
+  selectButton: {
+    backgroundColor: "#C5A85F",
+    padding: 15,
+    borderRadius: 25,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 10,
+    marginBottom: 20,
   },
   selectButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-  customPlanButton: {
-    marginTop: 10,
-    backgroundColor: "#ececec",
-    borderRadius: 20,
-    padding: 20,
-    alignItems: "center",
-    alignSelf: "center",
-  },
-  customPlanButtonText: {
+    color: "white",
     fontSize: 16,
     fontWeight: "bold",
-    color: "#4CAF50",
   },
 });
 
-export default Plans;
+export default UserPlan;
