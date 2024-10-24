@@ -121,6 +121,7 @@ const AddItemPage = () => {
       let imageUrl = "";
       if (item.image) {
         imageUrl = await uploadImage(item.image);
+        // console.log(imageUrl)
       }
 
       const itemData = {

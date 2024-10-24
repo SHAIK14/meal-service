@@ -19,17 +19,28 @@ const PlanCreate = () => {
     isNonVeg: false,
     isIndividual: false,
     isMultiple: false,
-    category: "Lunch",
+    package: [],
+    duration: 5,
   });
+  const [showPackageWarning, setShowPackageWarning] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setNewPlan((prevState) => ({
-      ...prevState,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+    if (name === "package") {
+      setNewPlan((prevState) => ({
+        ...prevState,
+        package: checked
+          ? [...prevState.package, value]
+          : prevState.package.filter((item) => item !== value),
+      }));
+      setShowPackageWarning(true);
+    } else {
+      setNewPlan((prevState) => ({
+        ...prevState,
+        [name]: type === "checkbox" ? checked : value,
+      }));
+    }
   };
-
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     setSelectedImage(URL.createObjectURL(file));
@@ -41,7 +52,10 @@ const PlanCreate = () => {
 
   const handleSavePlan = async (e) => {
     e.preventDefault();
-
+    if (newPlan.package.length === 0) {
+      alert("Please select at least one package option.");
+      return;
+    }
     try {
       let imageUrl = "";
       if (newPlan.image) {
@@ -184,17 +198,42 @@ const PlanCreate = () => {
               Multiple Plan
             </label>
           </div>
+          <div className="admin-checkbox-group">
+            <label className="admin-checkbox-label">Package:</label>
+            {["breakfast", "lunch", "dinner", "snacks"].map((option) => (
+              <label key={option} className="admin-checkbox-label">
+                <input
+                  type="checkbox"
+                  name="package"
+                  value={option}
+                  checked={newPlan.package.includes(option)}
+                  onChange={handleInputChange}
+                  className="admin-checkbox"
+                />
+                {option.charAt(0).toUpperCase() + option.slice(1)}
+              </label>
+            ))}
+          </div>
+          {showPackageWarning && (
+            <div className="package-warning">
+              Warning: Please select packages carefully. Cannot modify later to
+              prevent data loss.
+            </div>
+          )}
           <div className="admin-form-group-category">
-            <label className="admin-select-label">Category:</label>
+            <label className="admin-select-label">Duration (days):</label>
             <select
-              name="category"
-              value={newPlan.category}
+              name="duration"
+              value={newPlan.duration}
               onChange={handleInputChange}
               required
               className="admin-select"
             >
-              <option value="Lunch">Lunch</option>
-              <option value="Dinner">Dinner</option>
+              {[1, 2, 3, 4, 5, 6, 7].map((day) => (
+                <option key={day} value={day}>
+                  {day}
+                </option>
+              ))}
             </select>
           </div>
           <div className="admin-form-btn">

@@ -15,13 +15,8 @@ const PlanItemEdit = () => {
 
   const [plan, setPlan] = useState(null);
   const [selectedDay, setSelectedDay] = useState("1");
-  const [weekMenu, setWeekMenu] = useState({
-    1: [],
-    2: [],
-    3: [],
-    4: [],
-    5: [],
-  });
+  const [selectedPackage, setSelectedPackage] = useState(null);
+  const [weekMenu, setWeekMenu] = useState({});
   const [availableMeals, setAvailableMeals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -31,6 +26,7 @@ const PlanItemEdit = () => {
       const result = await getPlanById(planId);
       if (result.success) {
         setPlan(result.data.plan);
+        setSelectedPackage(result.data.plan.package[0]);
       } else {
         setError(result.error || "Failed to fetch plan details");
       }
@@ -43,7 +39,7 @@ const PlanItemEdit = () => {
     try {
       const result = await getItemById(mealId);
       if (result.success) {
-        return result.item; // Changed from result.data.item to result.item
+        return result.item;
       } else {
         console.error(
           `Failed to fetch meal details for ID ${mealId}: ${
@@ -65,19 +61,22 @@ const PlanItemEdit = () => {
         const weekMenuData = result.data.weekMenu || {};
         const processedWeekMenu = {};
 
-        for (const [day, meals] of Object.entries(weekMenuData)) {
-          processedWeekMenu[day] = await Promise.all(
-            meals.map(async (mealId) => {
-              const meal = await fetchMealDetails(mealId);
-              return (
-                meal || {
-                  _id: mealId,
-                  nameEnglish: "Meal not found",
-                  image: "",
-                }
-              );
-            })
-          );
+        for (const [day, packages] of Object.entries(weekMenuData)) {
+          processedWeekMenu[day] = {};
+          for (const [pkg, meals] of Object.entries(packages)) {
+            processedWeekMenu[day][pkg] = await Promise.all(
+              meals.map(async (mealId) => {
+                const meal = await fetchMealDetails(mealId);
+                return (
+                  meal || {
+                    _id: mealId,
+                    nameEnglish: "Meal not found",
+                    image: "",
+                  }
+                );
+              })
+            );
+          }
         }
 
         setWeekMenu(processedWeekMenu);
@@ -126,50 +125,61 @@ const PlanItemEdit = () => {
   };
 
   const handleAddMeal = (meal) => {
-    const dayMenu = weekMenu[selectedDay] || [];
+    const dayMenu = weekMenu[selectedDay]?.[selectedPackage] || [];
     const isMealSelected = dayMenu.some(
       (selectedMeal) => selectedMeal._id === meal._id
     );
 
     if (isMealSelected) {
-      alert("This meal has already been selected for the current day.");
+      alert(
+        "This meal has already been selected for the current package and day."
+      );
       return;
     }
 
     setWeekMenu((prevWeekMenu) => ({
       ...prevWeekMenu,
-      [selectedDay]: [...dayMenu, meal],
+      [selectedDay]: {
+        ...prevWeekMenu[selectedDay],
+        [selectedPackage]: [...dayMenu, meal],
+      },
     }));
   };
 
   const handleRemoveMeal = (mealId) => {
     setWeekMenu((prevWeekMenu) => ({
       ...prevWeekMenu,
-      [selectedDay]: (prevWeekMenu[selectedDay] || []).filter(
-        (meal) => meal._id !== mealId
-      ),
+      [selectedDay]: {
+        ...prevWeekMenu[selectedDay],
+        [selectedPackage]: (
+          prevWeekMenu[selectedDay]?.[selectedPackage] || []
+        ).filter((meal) => meal._id !== mealId),
+      },
     }));
   };
 
   const calculateTotalPrice = () => {
     let total = 0;
     for (let day in weekMenu) {
-      total += (weekMenu[day] || []).reduce(
-        (acc, meal) => acc + (meal?.prices?.[0]?.sellingPrice || 0),
-        0
-      );
+      for (let pkg in weekMenu[day]) {
+        total += (weekMenu[day][pkg] || []).reduce(
+          (acc, meal) => acc + (meal?.prices?.[0]?.sellingPrice || 0),
+          0
+        );
+      }
     }
     return total.toFixed(2);
   };
 
   const handleSavePlan = async () => {
     try {
-      const weekMenuIds = Object.fromEntries(
-        Object.entries(weekMenu).map(([day, meals]) => [
-          day,
-          meals.map((meal) => meal._id),
-        ])
-      );
+      const weekMenuIds = {};
+      for (const [day, packages] of Object.entries(weekMenu)) {
+        weekMenuIds[day] = {};
+        for (const [pkg, meals] of Object.entries(packages)) {
+          weekMenuIds[day][pkg] = meals.map((meal) => meal._id);
+        }
+      }
 
       const result = await updateWeekMenu(planId, {
         weekMenu: weekMenuIds,
@@ -203,13 +213,30 @@ const PlanItemEdit = () => {
     <div className="plan-item-selection-container">
       <h1>Edit Items for {plan.nameEnglish}</h1>
       <div className="days-nav">
-        {["1", "2", "3", "4", "5"].map((day) => (
+        {[...Array(plan.duration)].map((_, index) => {
+          const day = (index + 1).toString();
+          return (
+            <button
+              key={day}
+              className={`day-button ${selectedDay === day ? "active" : ""}`}
+              onClick={() => setSelectedDay(day)}
+            >
+              Day {day}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="package-nav">
+        {plan.package.map((pkg) => (
           <button
-            key={day}
-            className={`day-button ${selectedDay === day ? "active" : ""}`}
-            onClick={() => setSelectedDay(day)}
+            key={pkg}
+            className={`package-button ${
+              selectedPackage === pkg ? "active" : ""
+            }`}
+            onClick={() => setSelectedPackage(pkg)}
           >
-            Day {day}
+            {pkg.charAt(0).toUpperCase() + pkg.slice(1)}
           </button>
         ))}
       </div>
@@ -236,7 +263,7 @@ const PlanItemEdit = () => {
                     <div className="meal-overlay">
                       <p className="meal-calories">{meal.calories} kcal</p>
                       <p className="meal-price">
-                        {meal.prices[0]?.sellingPrice} SAR
+                        {meal.prices?.[0]?.sellingPrice || 0} SAR
                       </p>
                     </div>
                   </div>
@@ -254,10 +281,14 @@ const PlanItemEdit = () => {
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleDrop}
         >
-          <h2>Selected Meals for Day {selectedDay}</h2>
+          <h2>
+            Selected Meals for Day {selectedDay} -{" "}
+            {selectedPackage?.charAt(0).toUpperCase() +
+              selectedPackage?.slice(1)}
+          </h2>
           <div className="selected-meals-list">
-            {weekMenu[selectedDay] && weekMenu[selectedDay].length > 0 ? (
-              weekMenu[selectedDay].map((meal) => (
+            {weekMenu[selectedDay]?.[selectedPackage]?.length > 0 ? (
+              weekMenu[selectedDay][selectedPackage].map((meal) => (
                 <div key={meal._id} className="selected-meal-card">
                   <div className="meal-image-container">
                     <img
@@ -268,12 +299,12 @@ const PlanItemEdit = () => {
                     <div className="meal-overlay">
                       <p className="meal-calories">{meal.calories} kcal</p>
                       <p className="meal-price">
-                        {meal.prices[0]?.sellingPrice} SAR
+                        {meal.prices?.[0]?.sellingPrice || 0} SAR
                       </p>
                     </div>
                     <button
                       className="remove-button"
-                      onClick={() => handleRemoveMeal(meal._id)} // Pass meal._id for removal
+                      onClick={() => handleRemoveMeal(meal._id)}
                     >
                       <span className="remove-icon">-</span>
                     </button>
@@ -282,7 +313,10 @@ const PlanItemEdit = () => {
                 </div>
               ))
             ) : (
-              <p> No meals selected for this day. Drag or Select the Meal </p>
+              <p>
+                No meals selected for this package and day. Drag or Select the
+                Meal
+              </p>
             )}
           </div>
           <div className="total-price">

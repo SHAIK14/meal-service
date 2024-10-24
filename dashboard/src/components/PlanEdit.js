@@ -20,7 +20,8 @@ const PlanEdit = () => {
     isNonVeg: false,
     isIndividual: false,
     isMultiple: false,
-    category: "Lunch",
+    package: [],
+    duration: null,
   });
 
   useEffect(() => {
@@ -43,12 +44,20 @@ const PlanEdit = () => {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setPlan((prevState) => ({
-      ...prevState,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+    if (name === "package") {
+      setPlan((prevState) => ({
+        ...prevState,
+        package: checked
+          ? [...prevState.package, value]
+          : prevState.package.filter((item) => item !== value),
+      }));
+    } else {
+      setPlan((prevState) => ({
+        ...prevState,
+        [name]: type === "checkbox" ? checked : value,
+      }));
+    }
   };
-
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     setSelectedImage(URL.createObjectURL(file));
@@ -202,17 +211,40 @@ const PlanEdit = () => {
               Multiple Plan
             </label>
           </div>
+          <div className="admin-checkbox-group">
+            <label className="admin-checkbox-label">Package:</label>
+            {["breakfast", "lunch", "dinner", "snacks"].map((option) => (
+              <label key={option} className="admin-checkbox-label">
+                <input
+                  type="checkbox"
+                  name="package"
+                  value={option}
+                  checked={plan.package.includes(option)}
+                  disabled
+                  className="admin-checkbox"
+                />
+                {option.charAt(0).toUpperCase() + option.slice(1)}
+              </label>
+            ))}
+          </div>
+          <div className="package-warning">
+            Packages cannot be modified. Create a new plan for different
+            packages.
+          </div>
           <div className="admin-form-group-category">
-            <label className="admin-select-label">Category:</label>
+            <label className="admin-select-label">Duration (days):</label>
             <select
-              name="category"
-              value={plan.category}
+              name="duration"
+              value={plan.duration}
               onChange={handleInputChange}
               required
               className="admin-select"
             >
-              <option value="Lunch">Lunch</option>
-              <option value="Dinner">Dinner</option>
+              {[1, 2, 3, 4, 5, 6, 7].map((day) => (
+                <option key={day} value={day}>
+                  {day}
+                </option>
+              ))}
             </select>
           </div>
           <div className="admin-form-btn">

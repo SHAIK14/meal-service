@@ -7,37 +7,42 @@
   margin: 20px;
 }
 
-.days-nav {
+.days-nav,
+.package-nav {
   display: flex;
   gap: 10px;
   width: 100%;
   justify-content: space-evenly;
-  margin-bottom: 50px;
-  padding: 25px;
+  margin-bottom: 20px;
+  padding: 15px;
   align-items: center;
 }
-.day-button {
+
+.day-button,
+.package-button {
   font-size: 14pt;
   padding: 10px 20px;
-  background-color: transparent; /* Make the background transparent */
+  background-color: transparent;
   border: none;
   border-radius: 25px;
   cursor: pointer;
-  position: relative; /* Position for the pseudo-element */
+  position: relative;
 }
 
-.day-button.active {
-  color: red; /* Change the text color to red */
+.day-button.active,
+.package-button.active {
+  color: red;
 }
 
-.day-button.active::after {
-  content: ""; /* Add an empty content for the underline */
-  position: absolute; /* Position it absolutely within the button */
-  left: 0; /* Align it to the left */
-  right: 0; /* Stretch it to the right */
-  bottom: -5px; /* Position it below the button */
-  height: 3px; /* Set the height of the underline */
-  background-color: red; /* Set the color of the underline */
+.day-button.active::after,
+.package-button.active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -5px;
+  height: 3px;
+  background-color: red;
 }
 
 .content-wrapper {
@@ -49,9 +54,9 @@
 
 .available-meals,
 .selected-meals {
-  flex: 1 1 45%; /* Adjusts flex basis for responsiveness */
+  flex: 1 1 45%;
   margin: 0 10px;
-  min-width: 300px; /* Ensures a minimum width */
+  min-width: 300px;
 }
 
 .available-meals h2,
@@ -66,128 +71,20 @@
 .meals-list,
 .selected-meals-list {
   display: grid;
-  grid-template-columns: repeat(
-    auto-fill,
-    minmax(120px, 1fr)
-  ); /* Responsive grid */
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 15px;
   height: 45vh;
-
   background-color: white;
   padding: 50px;
   border-radius: 50px 0 0 50px;
-  overflow-y: auto; /* Add vertical scrollbar if content overflows */
+  overflow-y: auto;
   overflow-x: hidden;
 }
-/* Scrollbar width */
-::-webkit-scrollbar {
-  width: 12px; /* Width of the vertical scrollbar */
-  height: 12px; /* Height of the horizontal scrollbar */
-}
 
-/* Track (the background of the scrollbar) */
-::-webkit-scrollbar-track {
-  background: #f1f1f1; /* Track color */
-}
+/* Scrollbar styles remain the same */
 
-/* Handle (the draggable part of the scrollbar) */
-::-webkit-scrollbar-thumb {
-  background: #c4c4c4; /* Handle color */
-}
-
-/* Handle on hover */
-::-webkit-scrollbar-thumb:hover {
-  background: #ff0000; /* Darker color when hovered */
-}
-
-.selected-meals h2 {
-  font-size: 16pt;
-  margin: 20px 0;
-  background-color: white;
-  padding: 15px;
-  border-radius: 50px;
-}
-
+.meal-card,
 .selected-meal-card {
-  position: relative;
-  width: 150px; /* Adjust width as needed */
-  text-align: center;
-  margin: 10px;
-  cursor: pointer;
-  transition: transform 0.3s;
-}
-
-.selected-meal-card:hover {
-  transform: scale(1.05); /* Slight zoom effect on hover */
-}
-
-.meal-image-container {
-  position: relative;
-  width: 100%;
-  height: 150px; /* Fixed height */
-  overflow: hidden;
-  border-radius: 25px;
-}
-
-.meal-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover; /* Ensures the image covers the area */
-}
-
-.meal-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent overlay */
-  color: white;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.selected-meal-card:hover .meal-overlay {
-  opacity: 1; /* Show overlay on hover */
-}
-
-.meal-calories,
-.meal-price {
-  margin: 0; /* Reset margin */
-  font-weight: 600;
-}
-
-.meal-name {
-  margin-top: 8px; /* Space between image and name */
-}
-
-.remove-button {
-  position: absolute;
-  top: 5px; /* Position the button */
-  right: 5px;
-  background-color: red; /* Circle background color */
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 25px; /* Circle size */
-  height: 25px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-  font-size: 1.2em; /* Adjust size of the minus sign */
-  transition: transform 0.3s;
-}
-
-.remove-button:hover {
-  transform: scale(1.1); /* Slight zoom effect on hover */
-}
-
-.meal-card {
   position: relative;
   width: 150px;
   text-align: center;
@@ -196,21 +93,23 @@
   transition: transform 0.3s;
 }
 
-.meal-card:hover {
-  transform: scale(1.05); /* Slight zoom effect on hover */
+.meal-card:hover,
+.selected-meal-card:hover {
+  transform: scale(1.05);
 }
 
 .meal-image-container {
   position: relative;
   width: 100%;
-  height: 150px; /* Fixed height */
+  height: 150px;
   overflow: hidden;
+  border-radius: 25px;
 }
 
 .meal-image {
   width: 100%;
   height: 100%;
-  object-fit: cover; /* Ensures the image covers the area */
+  object-fit: cover;
 }
 
 .meal-overlay {
@@ -219,7 +118,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent overlay */
+  background-color: rgba(0, 0, 0, 0.6);
   color: white;
   display: flex;
   flex-direction: column;
@@ -229,31 +128,42 @@
   transition: opacity 0.3s;
 }
 
-.meal-card:hover .meal-overlay {
-  opacity: 1; /* Show overlay on hover */
+.meal-card:hover .meal-overlay,
+.selected-meal-card:hover .meal-overlay {
+  opacity: 1;
 }
 
 .meal-calories,
 .meal-price {
-  margin: 0; /* Reset margin */
+  margin: 0;
+  font-weight: 600;
 }
 
 .meal-name {
-  margin-top: 8px; /* Space between image and name */
-  font-size: 1.1em; /* Adjust font size as needed */
+  margin-top: 8px;
+  font-size: 1.1em;
 }
 
-.add-meal-btn,
-.remove-meal-btn {
-  padding: 10px 15px;
+.remove-button {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background-color: red;
   color: white;
   border: none;
-  border-radius: 25px;
+  border-radius: 50%;
+  width: 25px;
+  height: 25px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   cursor: pointer;
+  font-size: 1.2em;
+  transition: transform 0.3s;
 }
 
-.remove-meal-btn {
-  background-color: #ff4d4d;
+.remove-button:hover {
+  transform: scale(1.1);
 }
 
 .total-price {
@@ -285,17 +195,23 @@
 @media (max-width: 768px) {
   .content-wrapper {
     flex-direction: column;
-    align-items: center; /* Center content on small screens */
+    align-items: center;
   }
 
   .available-meals,
   .selected-meals {
-    flex: 1 1 100%; /* Stack them vertically */
-    margin: 10px 0; /* Add margin for spacing */
+    flex: 1 1 100%;
+    margin: 10px 0;
   }
 
-  .day-button {
-    font-size: 12pt; /* Adjust font size for smaller screens */
-    padding: 8px 15px; /* Adjust padding */
+  .day-button,
+  .package-button {
+    font-size: 12pt;
+    padding: 8px 15px;
+  }
+
+  .days-nav,
+  .package-nav {
+    flex-wrap: wrap;
   }
 }
