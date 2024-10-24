@@ -1,9 +1,14 @@
 const mongoose = require("mongoose");
 
-const WeeklyMenuSchema = new mongoose.Schema(
-  {
-    plan: { type: mongoose.Schema.Types.ObjectId, ref: "Plan", required: true },
-    weekMenu: {
+const WeeklyMenuSchema = new mongoose.Schema({
+  plan: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Plan",
+    required: true,
+  },
+  weekMenu: {
+    type: Map,
+    of: {
       type: Map,
       of: [
         {
@@ -13,7 +18,6 @@ const WeeklyMenuSchema = new mongoose.Schema(
       ],
     },
   },
-  { timestamps: true }
-);
+});
 
 module.exports = mongoose.model("WeeklyMenu", WeeklyMenuSchema);

@@ -52,6 +52,15 @@
 .admin-form-container {
   width: 100%;
 }
+.package-warning {
+  background-color: #fff3cd;
+  border: 1px solid #ffeeba;
+  color: #856404;
+  padding: 10px;
+  margin-top: 10px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
 
 .admin-form-container input[type="text"],
 .admin-form-container textarea,

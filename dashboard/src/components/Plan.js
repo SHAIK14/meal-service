@@ -12,6 +12,7 @@ const Plans = () => {
   const fetchPlans = useCallback(async () => {
     try {
       const result = await getAllPlans();
+      console.log("Fetched plans:", result); // Debug log
       if (result.success) {
         setPlans(result.data);
         checkPlansWithItems(result.data);
@@ -32,16 +33,19 @@ const Plans = () => {
     for (const plan of plans) {
       try {
         const weekMenuResult = await getWeekMenu(plan._id);
+        console.log(`Week menu for plan ${plan._id}:`, weekMenuResult); // Debug log
         plansItemStatus[plan._id] =
           weekMenuResult.success &&
-          Object.values(weekMenuResult.data.weekMenu).some(
-            (day) => day.length > 0
+          Object.values(weekMenuResult.data.weekMenu).some((day) =>
+            Object.values(day).some((packageMeals) => packageMeals.length > 0)
           );
+        console.log(`Plan ${plan._id} has items:`, plansItemStatus[plan._id]); // Debug log
       } catch (error) {
         console.error(`Error checking items for plan ${plan._id}:`, error);
         plansItemStatus[plan._id] = false;
       }
     }
+    console.log("Final plansWithItems:", plansItemStatus); // Debug log
     setPlansWithItems(plansItemStatus);
   };
 
@@ -62,6 +66,7 @@ const Plans = () => {
   };
 
   const handleAddOrEditItems = (planId, hasItems) => {
+    console.log(`Handling add/edit for plan ${planId}, hasItems: ${hasItems}`); // Debug log
     if (hasItems) {
       navigate(`/plans/${planId}/edit-items`);
     } else {
@@ -98,7 +103,6 @@ const Plans = () => {
                 </div>
                 <div className="admin-plan-details">
                   <h2>{plan.nameEnglish}</h2>
-                  <p>{plan.descriptionEnglish}</p>
                 </div>
                 <div className="admin-plan-actions">
                   <button

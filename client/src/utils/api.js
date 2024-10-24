@@ -5,7 +5,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 // const API_URL = "http://localhost:5000/api";
 const getApiUrl = () => {
   if (__DEV__) {
-    const localIpAddress = "192.168.1.104"; // Replace with your actual IP address if different
+    const localIpAddress = "192.168.1.17"; // Replace with your actual IP address if different
     return `http://${localIpAddress}:5000/api`;
   } else {
     return "https://your-production-api-url.com/api";
@@ -110,6 +110,33 @@ export const updateUserAddress = async (addressData) => {
   }
 
   return response.json();
+};
+export const getUserAddress = async () => {
+  const token = await AsyncStorage.getItem("userToken");
+  try {
+    const response = await fetch(`${API_URL}/users/address`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const responseText = await response.text();
+    console.log("Raw response:", responseText);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    try {
+      return JSON.parse(responseText);
+    } catch (e) {
+      console.error("Error parsing JSON:", e);
+      throw new Error("Invalid JSON response from server");
+    }
+  } catch (error) {
+    console.error("Error in getUserAddress:", error);
+    throw error;
+  }
 };
 
 //  plan-related API calls

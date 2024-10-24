@@ -11,7 +11,7 @@ import {
   FaUtensilSpoon,
   FaCreditCard,
   FaTicketAlt,
-  FaMoneyCheckAlt,
+  // FaMoneyCheckAlt,
 } from "react-icons/fa";
 import "../styles/Sidebar.css";
 
@@ -92,14 +92,14 @@ const Sidebar = () => {
             <FaTicketAlt className="icon" /> <span>Vouchers</span>
           </NavLink>
         </li>
-        <li>
+        {/* <li>
           <NavLink
             to="/payments"
             className={({ isActive }) => (isActive ? "active" : "")}
           >
             <FaMoneyCheckAlt className="icon" /> <span>Payments</span>
           </NavLink>
-        </li>
+        </li> */}
         <li>
           <NavLink to="/logout" className="logout-button">
             <FaSignOutAlt className="icon" /> <span>Logout</span>
