@@ -223,10 +223,13 @@ const UserPlan = () => {
             onPress={() => handlePlanSelect(plan)}
           >
             <Image source={{ uri: plan.image }} style={styles.planImage} />
-            <Text style={styles.planName}>{plan.nameEnglish}</Text>
-            <Text style={styles.planDescription}>
-              {plan.descriptionEnglish}
-            </Text>
+
+            <View style={styles.planTextContainer}>
+              <Text style={styles.planName}>{plan.nameEnglish}</Text>
+              <Text style={styles.planDescription}>
+                {plan.descriptionEnglish}
+              </Text>
+            </View>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -440,6 +443,12 @@ const styles = StyleSheet.create({
     resizeMode: "cover",
   },
   // Plan List
+
+  planTextContainer: {
+    justifyContent: "center",
+    marginLeft: 20,
+  },
+
   planWrapper: {
     padding: 25,
     alignItems: "center",
@@ -451,15 +460,19 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowRadius: 5,
+
+    flexDirection: "row",
     marginVertical: 10,
     marginHorizontal: 5,
-    padding: 10,
+    padding: 15,
+
     width: width * 0.9,
     elevation: 3,
   },
   planImage: {
-    width: "100%",
-    height: 150,
+    width: 70,
+    height: 70,
+
     borderRadius: 10,
   },
   planName: {
@@ -566,7 +579,9 @@ const styles = StyleSheet.create({
     padding: 5,
     alignItems: "center",
     justifyContent: "center",
-    width: 100,
+
+    width: 120,
+
     backgroundColor: "#fff",
     shadowColor: "#000",
     shadowOffset: {
@@ -578,8 +593,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   itemImage: {
-    width: 80,
-    height: 80,
+    width: 100,
+    height: 100,
+
     borderRadius: 10,
   },
   itemName: {
