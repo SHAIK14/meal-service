@@ -5,6 +5,7 @@ import { storage } from "../config/firebaseConfig";
 import { createItem, getAllCategories } from "../utils/api";
 import { useNavigate } from "react-router-dom";
 import "../styles/Add-item.css";
+import { FaFileExcel } from "react-icons/fa";
 
 const AddItemPage = () => {
   const navigate = useNavigate();
@@ -55,6 +56,7 @@ const AddItemPage = () => {
       setCategoriesLoading(false);
     }
   };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setItem((prevState) => ({
@@ -107,6 +109,10 @@ const AddItemPage = () => {
     return getDownloadURL(snapshot.ref);
   };
 
+  const handleExcelUploadClick = () => {
+    navigate("/excel-upload"); // Navigate to the Excel upload page
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (categories.length === 0) {
@@ -146,7 +152,6 @@ const AddItemPage = () => {
       if (result.success) {
         console.log("Item added:", result.data);
         setSuccess(true);
-        // Reset form
         setItem({
           image: null,
           nameEnglish: "",
@@ -195,7 +200,12 @@ const AddItemPage = () => {
 
   return (
     <div className="add-item-page">
-      <h1>Add New Item</h1>
+      <div className="header">
+        <h1>Add New Item</h1>
+        <button type="button" className="excel-button" onClick={handleExcelUploadClick}>
+        <FaFileExcel /> Upload Excel Sheet 
+        </button>
+      </div>
       {error && <div className="error-message">{error}</div>}
       {success && (
         <div className="success-message">Item added successfully!</div>

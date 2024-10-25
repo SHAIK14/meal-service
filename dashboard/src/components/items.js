@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getAllCategories, createCategory, deleteCategory } from "../utils/api";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { FaPlus, FaTimes } from "react-icons/fa";
+import { FaMinus, FaPlus, FaTimes } from "react-icons/fa";
 import "../styles/Items.css";
 
 const Items = () => {

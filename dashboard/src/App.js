@@ -24,6 +24,7 @@ import ItemsCategories from "./components/ItemsCategories";
 import Banners from "./components/Banners";
 import PaymentPage from "./components/payment";
 import Vouchers from "./components/Vouchers";
+import Excelupload from "./components/itemsExcel";
 
 const AuthenticatedLayout = ({ children }) => (
   <div
@@ -79,6 +80,7 @@ const App = () => {
                   />
                   <Route path="/edit-item/:id" element={<ItemsEdit />} />
                   <Route path="/add-item" element={<AddItemPage />} />
+                  <Route path="/excel-upload" element={<Excelupload />} />
                   <Route path="/payment-options" element={<PaymentPage />} />
                   <Route path="/delivery" element={<Delivery />} />
                   <Route path="/banners-container" element={<Banners />} />
