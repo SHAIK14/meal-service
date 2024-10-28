@@ -223,11 +223,25 @@ const PlanItemSelection = () => {
         0
       );
 
-      const result = await updateWeekMenu(planId, {
+      // Structure the data to match the MongoDB schema
+      const updateData = {
         weekMenu,
-        packageDetails,
+        packagePricing: {}, // This will contain the properly structured package pricing data
         totalPrice: grandTotal,
-      });
+      };
+
+      // Restructure package details to match the MongoDB schema
+      for (const [pkg, details] of Object.entries(packageDetails)) {
+        updateData.packagePricing[pkg] = {
+          totalPrice: details.totalPrice,
+          discountPercentage:
+            parseFloat(packageDiscounts[pkg]?.discountValue) || 0,
+          finalPrice: details.finalPrice,
+          isCouponEligible: packageDiscounts[pkg]?.isCouponEligible || false,
+        };
+      }
+
+      const result = await updateWeekMenu(planId, updateData);
 
       if (result.success) {
         alert("Plan items saved successfully");

@@ -6,7 +6,6 @@ exports.createPlan = async (req, res) => {
     const newPlan = new Plan(req.body);
     const savedPlan = await newPlan.save();
 
-    // Create an empty WeeklyMenu for the new plan based on the plan's duration and packages
     const weekMenu = {};
     for (let i = 1; i <= savedPlan.duration; i++) {
       weekMenu[i] = {};
@@ -45,7 +44,6 @@ exports.getPlan = async (req, res) => {
       "weekMenu.$*.$*"
     );
 
-    // Convert Map to object for JSON serialization
     const weekMenuObject = Object.fromEntries(weeklyMenu.weekMenu);
     for (let day in weekMenuObject) {
       weekMenuObject[day] = Object.fromEntries(weekMenuObject[day]);
@@ -76,7 +74,6 @@ exports.deletePlan = async (req, res) => {
     if (!deletedPlan)
       return res.status(404).json({ message: "Plan not found" });
 
-    // Also delete the associated WeeklyMenu
     await WeeklyMenu.findOneAndDelete({ plan: req.params.id });
 
     res.status(200).json({ message: "Plan deleted successfully" });
@@ -88,9 +85,15 @@ exports.deletePlan = async (req, res) => {
 exports.updateWeekMenu = async (req, res) => {
   try {
     const { id } = req.params;
-    const { weekMenu, packageDetails, totalPrice } = req.body;
+    const { weekMenu, packagePricing, totalPrice } = req.body;
 
-    // Update weekly menu
+    if (!weekMenu || !packagePricing) {
+      return res.status(400).json({
+        message:
+          "Missing required data: weekMenu and packagePricing are required",
+      });
+    }
+
     const updatedWeeklyMenu = await WeeklyMenu.findOneAndUpdate(
       { plan: id },
       { weekMenu: new Map(Object.entries(weekMenu)) },
@@ -101,22 +104,20 @@ exports.updateWeekMenu = async (req, res) => {
       return res.status(404).json({ message: "Weekly menu not found" });
     }
 
-    // Update package pricing in Plan
-    const packagePricing = new Map();
-    for (const [pkg, details] of Object.entries(packageDetails)) {
-      packagePricing.set(pkg, {
+    const packagePricingMap = new Map();
+    for (const [pkg, details] of Object.entries(packagePricing)) {
+      packagePricingMap.set(pkg, {
         totalPrice: details.totalPrice,
-        discountPercentage: parseFloat(details.discountValue) || 0,
+        discountPercentage: details.discountPercentage,
         finalPrice: details.finalPrice,
         isCouponEligible: details.isCouponEligible,
       });
     }
 
-    // Update plan with new pricing
     const updatedPlan = await Plan.findByIdAndUpdate(
       id,
       {
-        packagePricing,
+        packagePricing: packagePricingMap,
         totalPrice,
       },
       { new: true }
@@ -126,7 +127,6 @@ exports.updateWeekMenu = async (req, res) => {
       return res.status(404).json({ message: "Plan not found" });
     }
 
-    // Convert Map to object for JSON serialization
     const weekMenuObject = Object.fromEntries(updatedWeeklyMenu.weekMenu);
     for (let day in weekMenuObject) {
       weekMenuObject[day] = Object.fromEntries(weekMenuObject[day]);
@@ -135,12 +135,17 @@ exports.updateWeekMenu = async (req, res) => {
     const packagePricingObject = Object.fromEntries(updatedPlan.packagePricing);
 
     res.status(200).json({
+      success: true,
       weekMenu: weekMenuObject,
       packagePricing: packagePricingObject,
       totalPrice: updatedPlan.totalPrice,
     });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error("Error in updateWeekMenu:", error);
+    res.status(400).json({
+      success: false,
+      message: error.message || "Failed to update week menu",
+    });
   }
 };
 
@@ -160,7 +165,6 @@ exports.getWeekMenu = async (req, res) => {
       return res.status(404).json({ message: "Plan not found" });
     }
 
-    // Convert Map to object for JSON serialization
     const weekMenuObject = Object.fromEntries(weeklyMenu.weekMenu);
     for (let day in weekMenuObject) {
       weekMenuObject[day] = Object.fromEntries(weekMenuObject[day]);

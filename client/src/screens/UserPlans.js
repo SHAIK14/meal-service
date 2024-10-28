@@ -13,7 +13,6 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-
 import {
   getAllPlans,
   getPlanById,
@@ -23,6 +22,25 @@ import {
 
 const { width, height } = Dimensions.get("window");
 
+const calculatePackagePrice = (plan, packageName) => {
+  if (!plan?.packagePricing?.[packageName]) {
+    return {
+      originalPrice: 0,
+      discountedPrice: 0,
+      discountPercent: 0,
+      hasDiscount: false,
+    };
+  }
+
+  const pricing = plan.packagePricing[packageName];
+  return {
+    originalPrice: pricing.totalPrice || 0,
+    discountedPrice: pricing.finalPrice || pricing.totalPrice || 0,
+    discountPercent: pricing.discountPercentage || 0,
+    hasDiscount: (pricing.discountPercentage || 0) > 0,
+  };
+};
+
 const UserPlan = () => {
   const navigation = useNavigation();
   const [plans, setPlans] = useState([]);
@@ -31,7 +49,6 @@ const UserPlan = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Animation and UI states
   const scrollX = useRef(new Animated.Value(0)).current;
   const modalAnimation = useRef(new Animated.Value(height * 0.4)).current;
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
@@ -40,7 +57,6 @@ const UserPlan = () => {
   const [viewingCategory, setViewingCategory] = useState(null);
   const [selectedPackages, setSelectedPackages] = useState([]);
 
-  // Ads data
   const ads = [
     {
       id: 1,
@@ -157,105 +173,6 @@ const UserPlan = () => {
     return selectedPackages.includes(pkg);
   };
 
-  const getMealTypeDescription = (type) => {
-    switch (type) {
-      case "One Meal":
-        return "Choose one meal package";
-      case "Combo Meal":
-        return "Select any two packages";
-      case "Full Day Meal":
-        return "All meals included";
-      default:
-        return "";
-    }
-  };
-
-  const getMealTypeButtons = () => {
-    const packageCount = selectedPlan?.package?.length || 0;
-
-    return (
-      <View style={styles.mealTypeContainer}>
-        <View style={styles.radioContainer}>
-          <TouchableOpacity
-            style={[
-              styles.radioButton,
-              selectedMealType === "One Meal" && styles.activeButton,
-            ]}
-            onPress={() => handleMealTypeSelect("One Meal")}
-          >
-            <Text
-              style={[
-                styles.radioText,
-                selectedMealType === "One Meal" && styles.activeButtonText,
-              ]}
-            >
-              One Meal
-            </Text>
-          </TouchableOpacity>
-
-          {packageCount >= 2 && (
-            <>
-              {packageCount > 2 && (
-                <TouchableOpacity
-                  style={[
-                    styles.radioButton,
-                    selectedMealType === "Combo Meal" && styles.activeButton,
-                  ]}
-                  onPress={() => handleMealTypeSelect("Combo Meal")}
-                >
-                  <Text
-                    style={[
-                      styles.radioText,
-                      selectedMealType === "Combo Meal" &&
-                        styles.activeButtonText,
-                    ]}
-                  >
-                    Combo
-                  </Text>
-                </TouchableOpacity>
-              )}
-
-              <TouchableOpacity
-                style={[
-                  styles.radioButton,
-                  selectedMealType === "Full Day Meal" && styles.activeButton,
-                ]}
-                onPress={() => handleMealTypeSelect("Full Day Meal")}
-              >
-                <Text
-                  style={[
-                    styles.radioText,
-                    selectedMealType === "Full Day Meal" &&
-                      styles.activeButtonText,
-                  ]}
-                >
-                  Full Day
-                </Text>
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
-        <Text style={styles.mealTypeDescription}>
-          {getMealTypeDescription(selectedMealType)}
-        </Text>
-      </View>
-    );
-  };
-
-  const getFilteredItems = () => {
-    if (!selectedPlan || !weekMenu[selectedPlan._id] || !viewingCategory)
-      return [];
-
-    const dayMenu = weekMenu[selectedPlan._id].weekMenu[selectedDayIndex + 1];
-    if (!dayMenu || !dayMenu[viewingCategory]) return [];
-
-    return dayMenu[viewingCategory]
-      .map((itemId) =>
-        planItems[selectedPlan._id]?.find((item) => item._id === itemId)
-      )
-      .filter(Boolean);
-  };
-
   const handleNavigateToUserPlanDuration = () => {
     if (!selectedPlan || !selectedMealType || selectedPackages.length === 0) {
       return;
@@ -270,15 +187,28 @@ const UserPlan = () => {
       mealPlanType = "One Meal: " + selectedPackages[0];
     }
 
+    const pricing = selectedPackages.reduce(
+      (acc, pkg) => {
+        const packagePrice = calculatePackagePrice(selectedPlan, pkg);
+        return {
+          original: acc.original + packagePrice.originalPrice,
+          final: acc.final + packagePrice.discountedPrice,
+          savings:
+            acc.savings +
+            (packagePrice.originalPrice - packagePrice.discountedPrice),
+        };
+      },
+      { original: 0, final: 0, savings: 0 }
+    );
+
     navigation.navigate("UserPlanDuration", {
       plan: {
         id: selectedPlan._id,
         name: selectedPlan.nameEnglish,
         duration: selectedPlan.duration,
-        totalPrice: selectedPlan.totalPrice,
-        package: selectedPlan.package,
+        pricing: pricing,
+        package: selectedPackages,
         mealPlanType: mealPlanType,
-        selectedPackages: selectedPackages,
       },
     });
   };
@@ -317,6 +247,21 @@ const UserPlan = () => {
       },
     })
   ).current;
+
+  const getFilteredItems = () => {
+    if (!selectedPlan || !weekMenu[selectedPlan._id] || !viewingCategory)
+      return [];
+
+    const dayMenu =
+      weekMenu[selectedPlan._id]?.weekMenu?.[selectedDayIndex + 1];
+    if (!dayMenu || !dayMenu[viewingCategory]) return [];
+
+    return dayMenu[viewingCategory]
+      .map((itemId) =>
+        planItems[selectedPlan._id]?.find((item) => item._id === itemId)
+      )
+      .filter(Boolean);
+  };
 
   if (loading) {
     return (
@@ -414,9 +359,50 @@ const UserPlan = () => {
                   {selectedPlan.nameEnglish}
                 </Text>
 
-                {getMealTypeButtons()}
+                {/* Meal Type Selection */}
+                <View style={styles.mealTypeContainer}>
+                  <View style={styles.radioContainer}>
+                    <TouchableOpacity
+                      style={[
+                        styles.radioButton,
+                        selectedMealType === "One Meal" && styles.activeButton,
+                      ]}
+                      onPress={() => handleMealTypeSelect("One Meal")}
+                    >
+                      <Text style={styles.radioText}>One Meal</Text>
+                    </TouchableOpacity>
 
-                {/* Package Selection Tabs */}
+                    {selectedPlan.package.length > 1 && (
+                      <>
+                        {selectedPlan.package.length > 2 && (
+                          <TouchableOpacity
+                            style={[
+                              styles.radioButton,
+                              selectedMealType === "Combo Meal" &&
+                                styles.activeButton,
+                            ]}
+                            onPress={() => handleMealTypeSelect("Combo Meal")}
+                          >
+                            <Text style={styles.radioText}>Combo</Text>
+                          </TouchableOpacity>
+                        )}
+
+                        <TouchableOpacity
+                          style={[
+                            styles.radioButton,
+                            selectedMealType === "Full Day Meal" &&
+                              styles.activeButton,
+                          ]}
+                          onPress={() => handleMealTypeSelect("Full Day Meal")}
+                        >
+                          <Text style={styles.radioText}>Full Day</Text>
+                        </TouchableOpacity>
+                      </>
+                    )}
+                  </View>
+                </View>
+
+                {/* Package Tabs */}
                 <View style={styles.packageTabsContainer}>
                   {selectedPlan.package.map((pkg) => (
                     <TouchableOpacity
@@ -434,14 +420,13 @@ const UserPlan = () => {
                             styles.activePackageTabText,
                         ]}
                       >
-                        {pkg.charAt(0).toUpperCase() +
-                          pkg.slice(1).replace("_", " ")}
+                        {pkg.charAt(0).toUpperCase() + pkg.slice(1)}
                       </Text>
                     </TouchableOpacity>
                   ))}
                 </View>
 
-                {/* Package Selection Checkboxes */}
+                {/* Package Selection */}
                 <View style={styles.checkboxContainer}>
                   {selectedPlan.package.map((pkg) => (
                     <TouchableOpacity
@@ -462,14 +447,14 @@ const UserPlan = () => {
                           )}
                         </View>
                         <Text style={styles.checkboxLabel}>
-                          {pkg.charAt(0).toUpperCase() +
-                            pkg.slice(1).replace("_", " ")}
+                          {pkg.charAt(0).toUpperCase() + pkg.slice(1)}
                         </Text>
                       </View>
                     </TouchableOpacity>
                   ))}
                 </View>
 
+                {/* Days and Items */}
                 {viewingCategory && (
                   <>
                     <ScrollView
@@ -487,14 +472,7 @@ const UserPlan = () => {
                           ]}
                           onPress={() => setSelectedDayIndex(i)}
                         >
-                          <Text
-                            style={[
-                              styles.dayText,
-                              selectedDayIndex === i && styles.activeDayText,
-                            ]}
-                          >
-                            Day {i + 1}
-                          </Text>
+                          <Text style={styles.dayText}>Day {i + 1}</Text>
                         </TouchableOpacity>
                       ))}
                     </ScrollView>
@@ -522,6 +500,7 @@ const UserPlan = () => {
               </View>
             </ScrollView>
 
+            {/* Select Button */}
             <View style={styles.selectButtonContainer}>
               <TouchableOpacity
                 style={[

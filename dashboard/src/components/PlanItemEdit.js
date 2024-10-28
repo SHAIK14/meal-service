@@ -280,6 +280,7 @@ const PlanItemEdit = () => {
 
   const handleSavePlan = async () => {
     try {
+      // Convert weekMenu to only include meal IDs
       const weekMenuIds = {};
       for (const [day, packages] of Object.entries(weekMenu)) {
         weekMenuIds[day] = {};
@@ -288,7 +289,21 @@ const PlanItemEdit = () => {
         }
       }
 
+      // Calculate package details
       const packageDetails = calculatePackagePrices();
+      const packagePricing = {};
+
+      // Transform package details into the correct format
+      for (const [pkg, details] of Object.entries(packageDetails)) {
+        packagePricing[pkg] = {
+          totalPrice: details.totalPrice,
+          discountPercentage:
+            parseFloat(packageDiscounts[pkg]?.discountValue) || 0,
+          finalPrice: details.finalPrice,
+          isCouponEligible: packageDiscounts[pkg]?.isCouponEligible || false,
+        };
+      }
+
       const grandTotal = Object.values(packageDetails).reduce(
         (acc, pkg) => acc + pkg.finalPrice,
         0
@@ -296,7 +311,7 @@ const PlanItemEdit = () => {
 
       const result = await updateWeekMenu(planId, {
         weekMenu: weekMenuIds,
-        packageDetails,
+        packagePricing, // Changed from packageDetails to packagePricing
         totalPrice: grandTotal,
       });
 
@@ -308,6 +323,7 @@ const PlanItemEdit = () => {
       }
     } catch (error) {
       setError("An error occurred while updating plan items");
+      console.error("Update error:", error);
     }
   };
   if (loading) {
