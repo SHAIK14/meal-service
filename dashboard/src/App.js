@@ -24,6 +24,7 @@ import ItemsCategories from "./components/ItemsCategories";
 import Banners from "./components/Banners";
 import PaymentPage from "./components/payment";
 import Vouchers from "./components/Vouchers";
+import InvoiceTemplate from "./components/InvoiceTemplate";
 
 const AuthenticatedLayout = ({ children }) => (
   <div
@@ -94,6 +95,8 @@ const App = () => {
                     element={<PlanItemSelection />}
                   />
                   <Route path="/" element={<Navigate to="/plans" replace />} />
+                  <Route path="/invoice" element={<InvoiceTemplate />} />{" "}
+                  {/* Invoice route */}
                 </Routes>
               </AuthenticatedLayout>
             ) : (
