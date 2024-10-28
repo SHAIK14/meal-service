@@ -19,6 +19,19 @@ const PlanItemSelection = () => {
   const [availableMeals, setAvailableMeals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [packageDiscounts, setPackageDiscounts] = useState({});
+  const [currency, setCurrency] = useState("");
+
+  const initializePackageDiscounts = (packages) => {
+    const initialDiscounts = {};
+    packages.forEach((pkg) => {
+      initialDiscounts[pkg] = {
+        discountValue: "", // Changed from 0 to empty string
+        isCouponEligible: false,
+      };
+    });
+    setPackageDiscounts(initialDiscounts);
+  };
 
   const fetchPlanDetails = useCallback(async () => {
     try {
@@ -26,7 +39,7 @@ const PlanItemSelection = () => {
       if (result.success) {
         setPlan(result.data.plan);
         setSelectedPackage(result.data.plan.package[0]);
-        // Initialize weekMenu based on plan duration and packages
+        // Initialize weekMenu
         const initialWeekMenu = {};
         for (let i = 1; i <= result.data.plan.duration; i++) {
           initialWeekMenu[i] = {};
@@ -35,6 +48,7 @@ const PlanItemSelection = () => {
           });
         }
         setWeekMenu(initialWeekMenu);
+        initializePackageDiscounts(result.data.plan.package);
       } else {
         setError(result.error || "Failed to fetch plan details");
       }
@@ -61,6 +75,10 @@ const PlanItemSelection = () => {
       const result = await getAllItems();
       if (result.success) {
         setAvailableMeals(result.items || []);
+        // Set currency from first meal if available
+        if (result.items?.[0]?.prices?.[0]?.currency) {
+          setCurrency(result.items[0].prices[0].currency);
+        }
       } else {
         setError(result.error || "Failed to fetch available meals");
       }
@@ -131,25 +149,86 @@ const PlanItemSelection = () => {
     }));
   };
 
-  const calculateTotalPrice = () => {
-    let total = 0;
+  const calculatePackagePrices = () => {
+    const packageDetails = {};
+
+    // Calculate total for each package
     for (let day in weekMenu) {
       for (let pkg in weekMenu[day]) {
-        total += (weekMenu[day][pkg] || []).reduce((acc, meal) => {
+        const packageTotal = (weekMenu[day][pkg] || []).reduce((acc, meal) => {
           const price = meal?.prices?.[0]?.sellingPrice || 0;
           return acc + price;
         }, 0);
+
+        if (!packageDetails[pkg]) {
+          packageDetails[pkg] = { totalPrice: 0 };
+        }
+        packageDetails[pkg].totalPrice += packageTotal;
       }
     }
-    return total.toFixed(2);
+
+    // Calculate discounts and final prices
+    for (let pkg in packageDetails) {
+      const discountPercent =
+        parseFloat(packageDiscounts[pkg]?.discountValue) || 0;
+      const discountAmount =
+        (packageDetails[pkg].totalPrice * discountPercent) / 100;
+
+      packageDetails[pkg] = {
+        ...packageDetails[pkg],
+        discountPercent,
+        discountAmount,
+        isCouponEligible: packageDiscounts[pkg]?.isCouponEligible || false,
+        finalPrice: packageDetails[pkg].totalPrice - discountAmount,
+      };
+    }
+
+    return packageDetails;
+  };
+
+  const handleDiscountChange = (pkg, field, value) => {
+    if (field === "discountValue") {
+      // Handle empty string and number validation
+      if (value === "") {
+        setPackageDiscounts((prev) => ({
+          ...prev,
+          [pkg]: { ...prev[pkg], discountValue: "" },
+        }));
+        return;
+      }
+
+      const numValue = parseFloat(value);
+      if (isNaN(numValue) || numValue < 0 || numValue > 100) return;
+
+      // Remove leading zeros
+      const cleanValue = numValue.toString();
+
+      setPackageDiscounts((prev) => ({
+        ...prev,
+        [pkg]: { ...prev[pkg], discountValue: cleanValue },
+      }));
+    } else {
+      setPackageDiscounts((prev) => ({
+        ...prev,
+        [pkg]: { ...prev[pkg], [field]: value },
+      }));
+    }
   };
 
   const handleSavePlan = async () => {
     try {
+      const packageDetails = calculatePackagePrices();
+      const grandTotal = Object.values(packageDetails).reduce(
+        (acc, pkg) => acc + pkg.finalPrice,
+        0
+      );
+
       const result = await updateWeekMenu(planId, {
         weekMenu,
-        totalPrice: calculateTotalPrice(),
+        packageDetails,
+        totalPrice: grandTotal,
       });
+
       if (result.success) {
         alert("Plan items saved successfully");
         navigate("/plans");
@@ -161,21 +240,16 @@ const PlanItemSelection = () => {
     }
   };
 
-  if (loading) {
-    return <div className="loading">Loading...</div>;
-  }
+  if (loading) return <div className="loading">Loading...</div>;
+  if (error) return <div className="error">{error}</div>;
+  if (!plan) return <div className="error">Plan not found</div>;
 
-  if (error) {
-    return <div className="error">{error}</div>;
-  }
-
-  if (!plan) {
-    return <div className="error">Plan not found</div>;
-  }
+  const packagePrices = calculatePackagePrices();
 
   return (
     <div className="plan-item-selection-container">
       <h1>Select Items for {plan.nameEnglish}</h1>
+
       <div className="days-nav">
         {[...Array(plan.duration)].map((_, index) => {
           const day = (index + 1).toString();
@@ -227,7 +301,7 @@ const PlanItemSelection = () => {
                     <div className="meal-overlay">
                       <p className="meal-calories">{meal.calories} kcal</p>
                       <p className="meal-price">
-                        {meal.prices?.[0]?.sellingPrice || 0} SAR
+                        {meal.prices?.[0]?.sellingPrice || 0} {currency}
                       </p>
                     </div>
                   </div>
@@ -263,7 +337,7 @@ const PlanItemSelection = () => {
                     <div className="meal-overlay">
                       <p className="meal-calories">{meal.calories} kcal</p>
                       <p className="meal-price">
-                        {meal.prices?.[0]?.sellingPrice || 0} SAR
+                        {meal.prices?.[0]?.sellingPrice || 0} {currency}
                       </p>
                     </div>
                     <button
@@ -283,11 +357,79 @@ const PlanItemSelection = () => {
               </p>
             )}
           </div>
-          <div className="total-price">
-            <h3>Total Price: {calculateTotalPrice()} SAR</h3>
-            <button onClick={handleSavePlan}>Save Plan</button>
-          </div>
         </div>
+      </div>
+
+      <div className="pricing-section">
+        {Object.entries(packagePrices).map(([pkg, details]) => (
+          <div key={pkg} className="package-pricing">
+            <div className="package-price-info">
+              <span className="package-name">
+                {pkg.charAt(0).toUpperCase() + pkg.slice(1)}
+              </span>
+              <span className="package-total">
+                Total: {details.totalPrice.toFixed(2)} {currency}
+              </span>
+            </div>
+
+            <div className="discount-section">
+              <div className="discount-input-group">
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={packageDiscounts[pkg]?.discountValue}
+                  onChange={(e) =>
+                    handleDiscountChange(pkg, "discountValue", e.target.value)
+                  }
+                  placeholder="Discount "
+                  className="discount-input"
+                />
+                <span className="percentage-symbol">%</span>
+              </div>
+
+              <label className="coupon-toggle">
+                <input
+                  type="checkbox"
+                  checked={packageDiscounts[pkg]?.isCouponEligible}
+                  onChange={(e) =>
+                    handleDiscountChange(
+                      pkg,
+                      "isCouponEligible",
+                      e.target.checked
+                    )
+                  }
+                />
+                <span>Coupon Eligible</span>
+              </label>
+            </div>
+
+            {details.discountPercent > 0 && (
+              <div className="discount-info">
+                {details.discountAmount.toFixed(2)} {currency} off (
+                {details.discountPercent}%)
+              </div>
+            )}
+
+            <div className="final-price">
+              Final: {details.finalPrice.toFixed(2)} {currency}
+            </div>
+          </div>
+        ))}
+
+        <div className="total-section">
+          <span>Grand Total:</span>
+          <span>
+            {Object.values(packagePrices)
+              .reduce((acc, pkg) => acc + pkg.finalPrice, 0)
+              .toFixed(2)}{" "}
+            {currency}
+          </span>
+        </div>
+
+        <button className="save-button" onClick={handleSavePlan}>
+          Save Plan
+        </button>
       </div>
     </div>
   );
