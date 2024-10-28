@@ -33,11 +33,17 @@ const calculatePackagePrice = (plan, packageName) => {
   }
 
   const pricing = plan.packagePricing[packageName];
+  const originalPrice = pricing.totalPrice || 0;
+  const discountPercent = pricing.discountPercentage || 0;
+  const discountedPrice = pricing.finalPrice || originalPrice;
+  const savings = originalPrice - discountedPrice;
+
   return {
-    originalPrice: pricing.totalPrice || 0,
-    discountedPrice: pricing.finalPrice || pricing.totalPrice || 0,
-    discountPercent: pricing.discountPercentage || 0,
-    hasDiscount: (pricing.discountPercentage || 0) > 0,
+    originalPrice,
+    discountedPrice,
+    discountPercent,
+    hasDiscount: discountPercent > 0,
+    savings,
   };
 };
 
@@ -187,17 +193,26 @@ const UserPlan = () => {
       mealPlanType = "One Meal: " + selectedPackages[0];
     }
 
-    const pricing = selectedPackages.reduce(
-      (acc, pkg) => {
-        const packagePrice = calculatePackagePrice(selectedPlan, pkg);
-        return {
-          original: acc.original + packagePrice.originalPrice,
-          final: acc.final + packagePrice.discountedPrice,
-          savings:
-            acc.savings +
-            (packagePrice.originalPrice - packagePrice.discountedPrice),
-        };
-      },
+    // Calculate detailed pricing information for each selected package
+    const packageDetails = selectedPackages.map((pkg) => {
+      const pricing = calculatePackagePrice(selectedPlan, pkg);
+      return {
+        package: pkg,
+        originalPrice: pricing.originalPrice,
+        discountedPrice: pricing.discountedPrice,
+        discountPercent: pricing.discountPercent,
+        hasDiscount: pricing.hasDiscount,
+        savings: pricing.savings,
+      };
+    });
+
+    // Calculate total pricing
+    const totalPricing = packageDetails.reduce(
+      (acc, pkg) => ({
+        original: acc.original + pkg.originalPrice,
+        final: acc.final + pkg.discountedPrice,
+        savings: acc.savings + pkg.savings,
+      }),
       { original: 0, final: 0, savings: 0 }
     );
 
@@ -206,7 +221,8 @@ const UserPlan = () => {
         id: selectedPlan._id,
         name: selectedPlan.nameEnglish,
         duration: selectedPlan.duration,
-        pricing: pricing,
+        pricing: totalPricing,
+        packageDetails: packageDetails, // Added package-specific details
         package: selectedPackages,
         mealPlanType: mealPlanType,
       },
