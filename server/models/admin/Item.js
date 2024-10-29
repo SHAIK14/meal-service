@@ -25,6 +25,12 @@ const ItemSchema = new mongoose.Schema(
       },
     ],
     available: { type: Boolean, default: true },
+    services: {
+      subscription: { type: Boolean, default: false },
+      indoorCatering: { type: Boolean, default: false },
+      outdoorCatering: { type: Boolean, default: false },
+      dining: { type: Boolean, default: false },
+    },
   },
   { timestamps: true }
 );

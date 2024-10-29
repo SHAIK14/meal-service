@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, Upload, Image } from "lucide-react";
+import { X, Upload, Image, AlertTriangle } from "lucide-react";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "../config/firebaseConfig";
 import { createItem, getAllCategories } from "../utils/api";
@@ -21,12 +21,19 @@ const AddItemPage = () => {
     type: "Non Veg",
     category: "",
     prices: [{ currency: "SAR", sellingPrice: "", discountPrice: "" }],
+    services: {
+      subscription: false,
+      indoorCatering: false,
+      outdoorCatering: false,
+      dining: false,
+    },
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [categories, setCategories] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [showWarning, setShowWarning] = useState(false);
 
   useEffect(() => {
     fetchCategories();
@@ -55,12 +62,24 @@ const AddItemPage = () => {
       setCategoriesLoading(false);
     }
   };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setItem((prevState) => ({
       ...prevState,
       [name]: value,
     }));
+  };
+
+  const handleServiceChange = (service) => {
+    setItem((prevState) => ({
+      ...prevState,
+      services: {
+        ...prevState.services,
+        [service]: !prevState.services[service],
+      },
+    }));
+    setShowWarning(true);
   };
 
   const handleImageChange = (e) => {
@@ -121,7 +140,6 @@ const AddItemPage = () => {
       let imageUrl = "";
       if (item.image) {
         imageUrl = await uploadImage(item.image);
-        // console.log(imageUrl)
       }
 
       const itemData = {
@@ -139,14 +157,10 @@ const AddItemPage = () => {
             : null,
         })),
       };
-      console.log("Selected category:", item.category);
-      console.log("All categories:", categories);
 
       const result = await createItem(itemData);
       if (result.success) {
-        console.log("Item added:", result.data);
         setSuccess(true);
-        // Reset form
         setItem({
           image: null,
           nameEnglish: "",
@@ -160,6 +174,12 @@ const AddItemPage = () => {
           type: "Non Veg",
           category: categories[0]?._id || "",
           prices: [{ currency: "SAR", sellingPrice: "", discountPrice: "" }],
+          services: {
+            subscription: false,
+            indoorCatering: false,
+            outdoorCatering: false,
+            dining: false,
+          },
         });
       } else {
         setError(result.error || "Failed to add item. Please try again.");
@@ -179,6 +199,7 @@ const AddItemPage = () => {
   if (error) {
     return <div className="error-message">{error}</div>;
   }
+
   if (categories.length === 0) {
     return (
       <div className="add-item-page">
@@ -326,6 +347,54 @@ const AddItemPage = () => {
                   </option>
                 ))}
               </select>
+            </div>
+
+            {/* New Services Section */}
+            <div className="services-section">
+              <h3>Available Services</h3>
+              {showWarning && (
+                <div className="warning-message">
+                  <AlertTriangle size={16} />
+                  <span>
+                    Warning: Service options cannot be modified after creation.
+                    Please choose carefully.
+                  </span>
+                </div>
+              )}
+              <div className="services-grid">
+                <label className="service-option">
+                  <input
+                    type="checkbox"
+                    checked={item.services.subscription}
+                    onChange={() => handleServiceChange("subscription")}
+                  />
+                  <span>Subscription</span>
+                </label>
+                <label className="service-option">
+                  <input
+                    type="checkbox"
+                    checked={item.services.indoorCatering}
+                    onChange={() => handleServiceChange("indoorCatering")}
+                  />
+                  <span>Indoor Catering</span>
+                </label>
+                <label className="service-option">
+                  <input
+                    type="checkbox"
+                    checked={item.services.outdoorCatering}
+                    onChange={() => handleServiceChange("outdoorCatering")}
+                  />
+                  <span>Outdoor Catering</span>
+                </label>
+                <label className="service-option">
+                  <input
+                    type="checkbox"
+                    checked={item.services.dining}
+                    onChange={() => handleServiceChange("dining")}
+                  />
+                  <span>Dining</span>
+                </label>
+              </div>
             </div>
 
             <div className="price-section">

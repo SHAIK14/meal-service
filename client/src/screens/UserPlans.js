@@ -81,17 +81,23 @@ const UserPlan = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Replace the existing fetchPlans function with this:
   const fetchPlans = async () => {
     try {
       const data = await getAllPlans();
-      setPlans(data.data);
+      if (data.data) {
+        // Filter plans to only show subscription service plans
+        const subscriptionPlans = data.data.filter(
+          (plan) => plan.service === "subscription"
+        );
+        setPlans(subscriptionPlans);
+      }
       setLoading(false);
     } catch (err) {
       setError(err.message);
       setLoading(false);
     }
   };
-
   const fetchWeekMenu = async (planId) => {
     try {
       const data = await getPlanWeeklyMenu(planId);
