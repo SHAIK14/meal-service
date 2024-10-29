@@ -10,83 +10,119 @@ import {
   PanResponder,
   Dimensions,
   ScrollView,
+  ActivityIndicator,
+  TextInput,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import {
+  getAllPlans,
+  getPlanById,
+  getPlanWeeklyMenu,
+  getItemsBatch,
+} from "../utils/api";
 
 const { width, height } = Dimensions.get("window");
 
+// Country codes array
+const countryCodes = [
+  { code: "+973", country: "Bahrain" },
+  { code: "+966", country: "Saudi Arabia" },
+  { code: "+971", country: "UAE" },
+  { code: "+974", country: "Qatar" },
+  { code: "+968", country: "Oman" },
+  { code: "+965", country: "Kuwait" },
+  { code: "+91", country: "India" },
+];
+
 const AddPartner = () => {
-  const [selectedPlan, setSelectedPlan] = useState(null);
+  const navigation = useNavigation();
+  const [plans, setPlans] = useState([]);
+  const [weekMenu, setWeekMenu] = useState({});
+  const [planItems, setPlanItems] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Partner details states
+  const [partnerName, setPartnerName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [selectedCountryCode, setSelectedCountryCode] = useState(
+    countryCodes[0].code
+  );
+  const [showCountryCodes, setShowCountryCodes] = useState(false);
+
+  // Animation and UI states
   const scrollX = useRef(new Animated.Value(0)).current;
   const modalAnimation = useRef(new Animated.Value(height * 0.4)).current;
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
-  const [modalHeight, setModalHeight] = useState(height * 0.6);
   const [selectedMeal, setSelectedMeal] = useState("");
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState(null);
 
-  const mealItems = [
-    {
-      id: 1,
-      name: "Chicken Salad",
-      image: {
-        uri: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQn4mOc7fcGf1CuLCqOgEgkNWiU8rVVseWRWw&s",
-      },
-      category: "Lunch",
-    },
-    {
-      id: 2,
-      name: "Chicken Biryani",
-      image: {
-        uri: "https://static.wixstatic.com/media/91e241_76e634b7ab52498e82533ba79b747b55~mv2.jpg/v1/fill/w_666,h_444,al_c,q_80,usm_0.66_1.00_0.01,enc_auto/91e241_76e634b7ab52498e82533ba79b747b55~mv2.jpg",
-      },
-      category: "Dinner",
-    },
-    {
-      id: 3,
-      name: "Dal Makhni",
-      image: {
-        uri: "https://myfoodstory.com/wp-content/uploads/2018/08/Dal-Makhani-New-3.jpg",
-      },
-      category: "Lunch",
-    },
-    {
-      id: 4,
-      name: "Butter Chicken",
-      image: {
-        uri: "https://img.hellofresh.com/f_auto,fl_lossy,q_auto,w_1200/hellofresh_s3/image/HF_Y24_R36_W04_UK_SU12275-19_Main__2low-117d75ec.jpg",
-      },
-      category: "Dinner",
-    },
-    {
-      id: 5,
-      name: "Malai Kabab",
-      image: {
-        uri: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTnNOYuBPjj_ItnBI0mMZBNsx2HanxCzw5SjA&s",
-      },
-      category: "Lunch",
-    },
-    {
-      id: 6,
-      name: "Malai Kabab",
-      image: {
-        uri: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTnNOYuBPjj_ItnBI0mMZBNsx2HanxCzw5SjA&s",
-      },
-      category: "Lunch",
-    },
-    {
-      id: 7,
-      name: "Malai Kabab",
-      image: {
-        uri: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTnNOYuBPjj_ItnBI0mMZBNsx2HanxCzw5SjA&s",
-      },
-      category: "Lunch",
-    },
-  ];
+  useEffect(() => {
+    fetchPlans();
+  }, []);
 
-  const days = ["Day 1", "Day 2", "Day 3", "Day 4", "Day 5", "Day 6"];
-  const [selectedCategory, setSelectedCategory] = useState("Lunch");
+  const fetchPlans = async () => {
+    try {
+      const data = await getAllPlans();
+      setPlans(data.data);
+      setLoading(false);
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
+    }
+  };
 
-  const handlePlanSelect = (plan) => {
+  const fetchWeekMenu = async (planId) => {
+    try {
+      const data = await getPlanWeeklyMenu(planId);
+      setWeekMenu((prev) => ({ ...prev, [planId]: data.data }));
+      return data.data;
+    } catch (err) {
+      console.error("Error fetching week menu:", err);
+      return null;
+    }
+  };
+
+  const fetchPlanItems = async (planId, weekMenuData) => {
+    try {
+      if (!weekMenuData?.weekMenu) return;
+
+      const itemIds = new Set();
+      Object.values(weekMenuData.weekMenu).forEach((dayData) => {
+        Object.values(dayData).forEach((packageItems) => {
+          packageItems.forEach((itemId) => itemIds.add(itemId));
+        });
+      });
+
+      const itemIdsArray = Array.from(itemIds);
+      if (itemIdsArray.length === 0) {
+        setPlanItems((prev) => ({ ...prev, [planId]: [] }));
+        return;
+      }
+
+      const data = await getItemsBatch(itemIdsArray);
+      if (data.success && Array.isArray(data.data)) {
+        setPlanItems((prev) => ({ ...prev, [planId]: data.data }));
+      }
+    } catch (err) {
+      console.error("Error fetching plan items:", err);
+      setPlanItems((prev) => ({ ...prev, [planId]: [] }));
+    }
+  };
+
+  const handlePlanSelect = async (plan) => {
     setSelectedPlan(plan);
+    setSelectedCategory(plan.package[0]);
+    setSelectedDayIndex(0);
+
+    if (!weekMenu[plan._id]) {
+      const menuData = await fetchWeekMenu(plan._id);
+      if (menuData) {
+        await fetchPlanItems(plan._id, menuData);
+      }
+    }
+
     Animated.spring(modalAnimation, {
       toValue: 0,
       useNativeDriver: true,
@@ -97,161 +133,251 @@ const AddPartner = () => {
     Animated.spring(modalAnimation, {
       toValue: height,
       useNativeDriver: true,
-    }).start(() => setSelectedPlan(null));
+    }).start(() => {
+      setSelectedPlan(null);
+      setSelectedCategory(null);
+    });
   };
+
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gestureState) => {
-        return Math.abs(gestureState.dy) > 10;
+        return Math.abs(gestureState.dy) > 20;
       },
       onPanResponderRelease: (_, gestureState) => {
-        if (gestureState.dy > 50) {
+        if (gestureState.dy > 100) {
           closeModal();
+        } else {
+          Animated.spring(modalAnimation, {
+            toValue: 0,
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) {
+          modalAnimation.setValue(gestureState.dy);
         }
       },
     })
   ).current;
 
+  const getFilteredItems = () => {
+    if (!selectedPlan || !weekMenu[selectedPlan._id]) return [];
+
+    const dayMenu = weekMenu[selectedPlan._id].weekMenu[selectedDayIndex + 1];
+    if (!dayMenu || !dayMenu[selectedCategory]) return [];
+
+    return dayMenu[selectedCategory]
+      .map((itemId) =>
+        planItems[selectedPlan._id]?.find((item) => item._id === itemId)
+      )
+      .filter(Boolean);
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#C5A85F" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      {/* Ad Banner */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={24} color="#000" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Add Meal Partner</Text>
+        <View style={{ width: 24 }} />
+      </View>
 
-      <ScrollView contentContainerStyle={styles.planWrapper}>
-        <Text style={styles.partnerPlanTitle}>Select Plan For Partner</Text>
-        <View contentContainerStyle={styles.planContainer}>
-          {/* Plan Cards */}
+      <ScrollView contentContainerStyle={styles.mainContent}>
+        {/* Partner Details Section */}
+        <View style={styles.partnerSection}>
+          <Text style={styles.sectionTitle}>Partner Details</Text>
 
-          <TouchableOpacity
-            style={styles.planCard}
-            onPress={() => handlePlanSelect("Sample Plan")}
-          >
-            <Image
-              source={{
-                uri: "https://recipes.net/wp-content/uploads/2024/01/how-to-eat-traditional-indian-food-1706505708.jpg",
-              }}
-              style={styles.planImage}
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="Partner Name"
+              value={partnerName}
+              onChangeText={setPartnerName}
+              placeholderTextColor="#999"
             />
-            <View style={styles.cardTextContainer}>
-              <Text style={styles.planName}>Sample Plan 1 </Text>
-              <Text style={styles.planDescription}>
-                A short description of the sample plan.
-              </Text>
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.planCard}
-            onPress={() => handlePlanSelect("Sample Plan")}
-          >
-            <Image
-              source={{
-                uri: "https://t4.ftcdn.net/jpg/02/75/39/23/360_F_275392381_9upAWW5Rdsa4UE0CV6gRu2CwUETjzbKy.jpg",
-              }}
-              style={styles.planImage}
+          </View>
+
+          <View style={styles.phoneInputContainer}>
+            <TouchableOpacity
+              style={styles.countryCodeButton}
+              onPress={() => setShowCountryCodes(!showCountryCodes)}
+            >
+              <Text style={styles.countryCodeText}>{selectedCountryCode}</Text>
+              <Ionicons name="chevron-down" size={16} color="#666" />
+            </TouchableOpacity>
+
+            <TextInput
+              style={styles.phoneInput}
+              placeholder="Mobile Number"
+              value={phoneNumber}
+              onChangeText={setPhoneNumber}
+              keyboardType="phone-pad"
+              placeholderTextColor="#999"
             />
-            <View style={styles.cardTextContainer}>
-              <Text style={styles.planName}>Sample Plan 2 </Text>
-              <Text style={styles.planDescription}>
-                A short description of the sample plan.
-              </Text>
+          </View>
+
+          {showCountryCodes && (
+            <View style={styles.countryCodeList}>
+              {countryCodes.map((country) => (
+                <TouchableOpacity
+                  key={country.code}
+                  style={styles.countryCodeItem}
+                  onPress={() => {
+                    setSelectedCountryCode(country.code);
+                    setShowCountryCodes(false);
+                  }}
+                >
+                  <Text style={styles.countryCodeItemText}>
+                    {country.country} ({country.code})
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
-          </TouchableOpacity>
+          )}
+        </View>
+
+        <Text style={styles.sectionTitle}>Available Plans</Text>
+
+        <View style={styles.plansContainer}>
+          {plans.map((plan) => (
+            <TouchableOpacity
+              key={plan._id}
+              style={styles.planCard}
+              onPress={() => handlePlanSelect(plan)}
+            >
+              <Image source={{ uri: plan.image }} style={styles.planImage} />
+              <View style={styles.planTextContainer}>
+                <Text style={styles.planName}>{plan.nameEnglish}</Text>
+                <Text style={styles.planDescription}>
+                  {plan.descriptionEnglish}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ))}
         </View>
       </ScrollView>
 
-      {/* Selected Plan Details Modal */}
       {selectedPlan && (
-        <TouchableOpacity
-          style={styles.overlay}
-          activeOpacity={1}
-          onPress={closeModal}
-        >
+        <View style={styles.overlay}>
+          <TouchableOpacity
+            style={styles.overlayBackground}
+            activeOpacity={1}
+            onPress={closeModal}
+          />
           <Animated.View
             style={[
               styles.modalContainer,
               {
-                height: modalHeight,
                 transform: [{ translateY: modalAnimation }],
               },
             ]}
-            {...panResponder.panHandlers}
           >
-            <ScrollView>
-              <View
-                style={styles.modalContent}
-                onStartShouldSetResponder={() => true}
-              >
-                <Text style={styles.modalTitle}>{selectedPlan}</Text>
+            <View {...panResponder.panHandlers} style={styles.modalHandle}>
+              <View style={styles.handleBar} />
+            </View>
+
+            <ScrollView
+              style={styles.modalScroll}
+              bounces={false}
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>
+                  {selectedPlan.nameEnglish}
+                </Text>
                 <Text style={styles.modalDescription}>
-                  Detailed description of the selected plan goes here.
+                  {selectedPlan.descriptionEnglish}
                 </Text>
 
-                {/* Category Selection */}
                 <View style={styles.categoryContainer}>
-                  <TouchableOpacity
-                    style={[
-                      styles.categoryButton,
-                      selectedCategory === "Lunch" && styles.selectedCategory,
-                    ]}
-                    onPress={() => setSelectedCategory("Lunch")}
-                  >
-                    <Text style={styles.categoryText}>Lunch</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.categoryButton,
-                      selectedCategory === "Dinner" && styles.selectedCategory,
-                    ]}
-                    onPress={() => setSelectedCategory("Dinner")}
-                  >
-                    <Text style={styles.categoryText}>Dinner</Text>
-                  </TouchableOpacity>
-                </View>
-                <View style={styles.daysWrapper}>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    style={styles.daysScroll}
-                  >
-                    {days.map((day, index) => (
-                      <TouchableOpacity
-                        key={index}
+                  {selectedPlan.package.map((pkg) => (
+                    <TouchableOpacity
+                      key={pkg}
+                      style={[
+                        styles.categoryButton,
+                        selectedCategory === pkg && styles.selectedCategory,
+                      ]}
+                      onPress={() => setSelectedCategory(pkg)}
+                    >
+                      <Text
                         style={[
-                          styles.dayButton,
-                          selectedDayIndex === index && styles.activeDayButton,
+                          styles.categoryText,
+                          selectedCategory === pkg &&
+                            styles.selectedCategoryText,
                         ]}
-                        onPress={() => setSelectedDayIndex(index)}
                       >
-                        <Text
-                          style={[
-                            styles.dayText,
-                            selectedDayIndex === index
-                              ? styles.activeDayText
-                              : styles.inactiveDayText,
-                          ]}
-                        >
-                          {day}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
+                        {pkg.charAt(0).toUpperCase() +
+                          pkg.slice(1).replace("_", " ")}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
                 </View>
-                {/* Horizontal ScrollView for Meal Items */}
-                <View style={styles.itemsWrapper}>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    style={styles.itemsContainer}
-                  >
-                    {mealItems
-                      .filter((item) => item.category === selectedCategory)
-                      .map((item) => (
-                        <View key={item.id} style={styles.itemCard}>
-                          <Image source={item.image} style={styles.itemImage} />
-                          <Text style={styles.itemName}>{item.name}</Text>
-                        </View>
-                      ))}
-                  </ScrollView>
-                </View>
+
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.daysWrapper}
+                  contentContainerStyle={styles.daysContent}
+                >
+                  {Array.from({ length: selectedPlan.duration }, (_, i) => (
+                    <TouchableOpacity
+                      key={i}
+                      style={[
+                        styles.dayButton,
+                        selectedDayIndex === i && styles.activeDayButton,
+                      ]}
+                      onPress={() => setSelectedDayIndex(i)}
+                    >
+                      <Text
+                        style={[
+                          styles.dayText,
+                          selectedDayIndex === i && styles.activeDayText,
+                        ]}
+                      >
+                        Day {i + 1}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.itemsWrapper}
+                  contentContainerStyle={styles.itemsContent}
+                >
+                  {getFilteredItems().map((item) => (
+                    <View key={item._id} style={styles.itemCard}>
+                      <Image
+                        source={{ uri: item.image }}
+                        style={styles.itemImage}
+                      />
+                      <Text style={styles.itemName}>{item.nameEnglish}</Text>
+                    </View>
+                  ))}
+                </ScrollView>
 
                 <View style={styles.radioContainer}>
                   <TouchableOpacity
@@ -289,14 +415,34 @@ const AddPartner = () => {
                     </Text>
                   </TouchableOpacity>
                 </View>
-
-                <TouchableOpacity style={styles.selectButton}>
-                  <Text style={styles.selectButtonText}>Select This Plan</Text>
-                </TouchableOpacity>
               </View>
             </ScrollView>
+
+            <View style={styles.selectButtonContainer}>
+              <TouchableOpacity
+                style={styles.selectButton}
+                onPress={() =>
+                  navigation.navigate("UserPlanDuration", {
+                    plan: {
+                      id: selectedPlan._id,
+                      name: selectedPlan.nameEnglish,
+                      description: selectedPlan.descriptionEnglish,
+                      duration: selectedPlan.duration,
+                      totalPrice: selectedPlan.totalPrice,
+                      package: selectedPlan.package,
+                    },
+                    partner: {
+                      name: partnerName,
+                      phone: selectedCountryCode + phoneNumber,
+                    },
+                  })
+                }
+              >
+                <Text style={styles.selectButtonText}>Select This Plan</Text>
+              </TouchableOpacity>
+            </View>
           </Animated.View>
-        </TouchableOpacity>
+        </View>
       )}
     </View>
   );
@@ -307,241 +453,347 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f5f5f5",
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+    padding: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    color: "red",
+    textAlign: "center",
+  },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     padding: 20,
     backgroundColor: "#fff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
   },
-  button: {
-    backgroundColor: "#C5A85F",
-    borderRadius: 5,
-    padding: 10,
+  backButton: {
+    padding: 5,
   },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-  profileIcon: {
-    padding: 10,
-  },
-  carousel: {
-    height: height * 0.2,
-    alignSelf: "center",
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "600",
   },
   scrollView: {
-    flexGrow: 1,
+    flex: 1,
   },
-  adContainer: {
-    width: width,
-    justifyContent: "center",
+  // Partner Details Section
+  partnerSection: {
+    backgroundColor: "#fff",
+    padding: 20,
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginBottom: 15,
+    paddingHorizontal: 20,
+    color: "#333",
+  },
+  inputContainer: {
+    marginBottom: 15,
+  },
+  input: {
+    backgroundColor: "#f8f8f8",
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+  },
+  phoneInputContainer: {
+    flexDirection: "row",
     alignItems: "center",
+    marginBottom: 5,
   },
-  adImage: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 25,
-    resizeMode: "cover",
-  },
-  planWrapper: {
-    padding: 25,
+  countryCodeButton: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: "#f8f8f8",
+    borderRadius: 8,
+    padding: 12,
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    width: 100,
   },
-
+  countryCodeText: {
+    fontSize: 16,
+    marginRight: 5,
+  },
+  phoneInput: {
+    flex: 1,
+    backgroundColor: "#f8f8f8",
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+  },
+  countryCodeList: {
+    position: "absolute",
+    top: 135,
+    left: 20,
+    right: 20,
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
+    zIndex: 1000,
+  },
+  countryCodeItem: {
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  countryCodeItemText: {
+    fontSize: 16,
+    color: "#333",
+  },
+  // Plans Section
   planCard: {
     backgroundColor: "#fff",
     borderRadius: 10,
     shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
     shadowOpacity: 0.1,
     shadowRadius: 5,
-    marginVertical: 10,
-    marginHorizontal: 5,
-    padding: 10,
     flexDirection: "row",
-    width: width * 0.9,
+    marginVertical: 10,
+    marginHorizontal: 20,
+    padding: 15,
+    elevation: 3,
   },
-  cardTextContainer: {
-    marginLeft: 10,
-  },
-
   planImage: {
-    width: 80,
-    height: 80,
+    width: 70,
+    height: 70,
     borderRadius: 10,
+  },
+  planTextContainer: {
+    flex: 1,
+    justifyContent: "center",
+    marginLeft: 15,
   },
   planName: {
     fontSize: 18,
     fontWeight: "bold",
-    marginVertical: 5,
+    marginBottom: 5,
   },
   planDescription: {
     fontSize: 14,
-    flexWrap: "wrap",
-    width: "100%",
     color: "#666",
   },
+  // Modal Styles
   overlay: {
     position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
+  },
+  overlayBackground: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
   },
   modalContainer: {
-    width: width,
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
     backgroundColor: "#fff",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    padding: 20,
+    height: height * 0.85,
+  },
+  modalHandle: {
+    height: 28,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  handleBar: {
+    width: 40,
+    height: 4,
+    backgroundColor: "#DDD",
+    borderRadius: 2,
+  },
+  modalScroll: {
+    flex: 1,
+    marginBottom: 80,
   },
   modalContent: {
-    flex: 1,
+    padding: 20,
   },
-
   modalTitle: {
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 5,
+    marginBottom: 8,
   },
   modalDescription: {
     fontSize: 16,
     color: "#666",
     marginBottom: 20,
   },
+  // Categories
   categoryContainer: {
     flexDirection: "row",
+    flexWrap: "wrap",
+    marginBottom: 20,
   },
   categoryButton: {
-    backgroundColor: "#D3D3D3",
-    borderRadius: 5,
-    marginRight: 10,
+    backgroundColor: "#f0f0f0",
+    borderRadius: 8,
     paddingVertical: 10,
     paddingHorizontal: 20,
+    marginRight: 10,
+    marginBottom: 10,
   },
   selectedCategory: {
     backgroundColor: "#C5A85F",
   },
   categoryText: {
-    color: "#fff",
-    fontWeight: "bold",
+    color: "#666",
+    fontWeight: "600",
   },
-  daysScroll: {
-    marginBottom: 5,
-    paddingVertical: 10,
-    height: 10,
+  selectedCategoryText: {
+    color: "#fff",
+  },
+  // Days Navigation
+  daysWrapper: {
+    marginBottom: 20,
+    height: 50,
+  },
+  daysContent: {
+    paddingHorizontal: 5,
+    alignItems: "center",
   },
   dayButton: {
-    borderRadius: 5,
-    padding: 10,
-    height: 40,
-    justifyContent: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginRight: 8,
+    borderRadius: 20,
+    backgroundColor: "#f0f0f0",
+    minWidth: 80,
     alignItems: "center",
-    marginHorizontal: 5,
+  },
+  activeDayButton: {
+    backgroundColor: "#C5A85F",
   },
   dayText: {
-    fontWeight: "bold",
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#666",
   },
   activeDayText: {
-    color: "#C5A85F",
-    fontWeight: "bold",
+    color: "#fff",
   },
-  inactiveDayText: {
-    color: "#666",
-    fontWeight: "normal",
-  },
-  itemsContainer: {
+  // Items Display
+  itemsWrapper: {
     marginBottom: 20,
-    alignSelf: "flex-start",
+    height: 200,
+  },
+  itemsContent: {
+    paddingHorizontal: 5,
   },
   itemCard: {
-    borderRadius: 10,
-    flex: 1,
-    marginRight: 10,
-    padding: 5,
-    alignItems: "center",
-    justifyContent: "center",
-    Width: 100,
-    alignSelf: "flex-start",
+    width: 150,
+    marginRight: 15,
+    padding: 10,
+    borderRadius: 12,
+    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
   itemImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 10,
+    width: "100%",
+    height: 130,
+    borderRadius: 8,
+    marginBottom: 8,
   },
   itemName: {
-    fontSize: 12,
-    fontWeight: "bold",
-    marginTop: 5,
+    fontSize: 14,
+    fontWeight: "500",
+    textAlign: "center",
+    color: "#333",
   },
-  radioContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginBottom: 20,
-  },
-  radioButton: {
-    backgroundColor: "#eee",
-    borderRadius: 5,
-    padding: 10,
-    flex: 1,
-    alignItems: "center",
-    marginHorizontal: 5,
-  },
-  radioText: {
-    fontWeight: "bold",
-  },
-  daysWrapper: {
-    height: 60,
-  },
-  itemsWrapper: {
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  selectButton: {
-    backgroundColor: "#C5A85F",
-    padding: 15,
-    borderRadius: 25,
-    justifyContent: "center",
-    alignItems: "center",
-    flex: 1,
-  },
-  selectButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
+  // Radio Buttons
   radioContainer: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
+    marginVertical: 20,
   },
   radioButton: {
     paddingVertical: 10,
-    paddingHorizontal: 25,
+    paddingHorizontal: 20,
+    borderRadius: 8,
     backgroundColor: "#f0f0f0",
-    borderRadius: 5,
-    marginRight: 10,
-    marginBottom: 25,
-    justifyContent: "center",
-    alignItems: "center",
+    marginHorizontal: 8,
   },
   activeButton: {
     backgroundColor: "#C5A85F",
   },
   radioText: {
-    color: "#000",
-    fontWeight: "bold",
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#666",
   },
   activeButtonText: {
-    color: "white",
+    color: "#fff",
   },
-  partnerPlanTitle: {
-    fontSize: 24,
+  // Select Button
+  selectButtonContainer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#fff",
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderTopWidth: 1,
+    borderTopColor: "#f0f0f0",
+  },
+  selectButton: {
+    backgroundColor: "#C5A85F",
+    borderRadius: 12,
+    paddingVertical: 15,
+    alignItems: "center",
+  },
+  selectButtonText: {
+    color: "#fff",
+    fontSize: 16,
     fontWeight: "bold",
-    marginVertical: 10,
   },
 });
 

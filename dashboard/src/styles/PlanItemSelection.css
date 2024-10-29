@@ -1,5 +1,4 @@
 /* PlanItemSelection.css */
-
 .plan-item-selection-container {
   display: flex;
   flex-direction: column;
@@ -80,8 +79,6 @@
   overflow-y: auto;
   overflow-x: hidden;
 }
-
-/* Scrollbar styles remain the same */
 
 .meal-card,
 .selected-meal-card {
@@ -166,29 +163,139 @@
   transform: scale(1.1);
 }
 
-.total-price {
-  margin-top: 20px;
-  font-size: 1.5em;
+/* Pricing Section Styles */
+.pricing-section {
   width: 100%;
+  margin: 20px 10px;
+  background-color: white;
+  padding: 20px;
+  border-radius: 15px;
+}
+
+.package-pricing {
+  border-bottom: 1px solid #eee;
+  padding: 15px 0;
+  margin-bottom: 15px;
+}
+
+.package-pricing:last-child {
+  border-bottom: none;
+}
+
+.package-price-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.package-name {
+  font-weight: 600;
+  font-size: 1.1em;
+}
+
+.package-total {
+  color: #666;
+}
+
+.discount-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 10px 0;
+}
+
+.discount-input-group {
+  position: relative;
+  width: 120px;
+}
+
+.discount-input {
+  width: 100%;
+  padding: 8px;
+  padding-right: 25px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.percentage-symbol {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #666;
+}
+
+.coupon-toggle {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-}
-
-.total-price h2 {
-  display: flex;
-  width: 70%;
-  justify-content: left;
-}
-
-.save-plan-btn {
-  padding: 15px 20px;
-  border: none;
-  background-color: rgb(50, 175, 10);
-  border-radius: 50px;
-  color: white;
-  font-size: 14pt;
+  gap: 8px;
   cursor: pointer;
+  -webkit-user-select: none; /* Safari */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* IE/Edge */
+  user-select: none; /* Standard syntax */
+}
+
+.coupon-toggle input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.discount-info {
+  font-size: 0.9em;
+  color: #32af0a;
+  margin: 5px 0;
+}
+
+.final-price {
+  text-align: right;
+  font-weight: 600;
+  color: #32af0a;
+  font-size: 1.1em;
+  margin-top: 10px;
+}
+
+.total-section {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 2px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  font-size: 1.2em;
+}
+
+.save-button {
+  width: 100%;
+  margin-top: 20px;
+  padding: 12px;
+  background-color: #32af0a;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1.1em;
+  transition: background-color 0.3s;
+}
+
+.save-button:hover {
+  background-color: #288c08;
+}
+
+/* Error and Loading States */
+.loading,
+.error {
+  text-align: center;
+  padding: 20px;
+  font-size: 1.2em;
+}
+
+.error {
+  color: red;
 }
 
 /* Responsive Styles */
@@ -213,5 +320,20 @@
   .days-nav,
   .package-nav {
     flex-wrap: wrap;
+  }
+
+  .pricing-section {
+    margin: 10px;
+    padding: 15px;
+  }
+
+  .discount-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .discount-input-group {
+    width: 100%;
   }
 }

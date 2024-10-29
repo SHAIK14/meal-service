@@ -1,5 +1,12 @@
 const mongoose = require("mongoose");
 
+const PackagePricingSchema = new mongoose.Schema({
+  totalPrice: { type: Number, default: 0 },
+  discountPercentage: { type: Number, default: 0, min: 0, max: 100 },
+  finalPrice: { type: Number, default: 0 },
+  isCouponEligible: { type: Boolean, default: false },
+});
+
 const PlanSchema = new mongoose.Schema(
   {
     nameEnglish: { type: String, required: true },
@@ -15,7 +22,7 @@ const PlanSchema = new mongoose.Schema(
       type: [
         {
           type: String,
-          enum: ["breakfast", "lunch", "dinner", "evening_snacks"],
+          enum: ["breakfast", "lunch", "dinner", "snacks"],
         },
       ],
       required: true,
@@ -25,6 +32,11 @@ const PlanSchema = new mongoose.Schema(
         },
         message: "At least one package option must be selected",
       },
+    },
+    packagePricing: {
+      type: Map,
+      of: PackagePricingSchema,
+      default: new Map(),
     },
     totalPrice: { type: Number, default: 0 },
     duration: { type: Number, required: true, min: 1, max: 7 },
