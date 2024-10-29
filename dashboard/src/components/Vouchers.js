@@ -1,55 +1,52 @@
 import React, { useState } from "react";
-import "../styles/Vouchers.css"; // Import your updated CSS
+import "../styles/Vouchers.css";
 
 const Vouchers = () => {
-  // State variables
   const [showForm, setShowForm] = useState(false);
   const [promoCode, setPromoCode] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [eligibleMembers, setEligibleMembers] = useState(""); // State for eligible members
+  const [eligibleMembers, setEligibleMembers] = useState("");
+  const [discountType, setDiscountType] = useState("percentage"); // Default to percentage
+  const [discountValue, setDiscountValue] = useState(""); // State for discount value
   const [promoCodes, setPromoCodes] = useState([]);
 
-  // Get today's date in YYYY-MM-DD format for the min attribute
   const today = new Date().toISOString().split("T")[0];
 
-  // Function to handle form submission
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Add new promo code to the list of promo codes
     const newPromoCode = {
       promoCode,
       startDate,
       endDate,
-      eligibleMembers: parseInt(eligibleMembers), // Convert to number
-      isActive: true, // Set the new promo code as active by default
+      eligibleMembers: parseInt(eligibleMembers),
+      discountType,
+      discountValue: parseFloat(discountValue), // Convert to a number
+      isActive: true,
     };
 
-    setPromoCodes([...promoCodes, newPromoCode]); // Add the new promo code to the list
-    setShowForm(false); // Hide the form after submission
-
-    // Clear the form fields
+    setPromoCodes([...promoCodes, newPromoCode]);
+    setShowForm(false);
     setPromoCode("");
     setStartDate("");
     setEndDate("");
-    setEligibleMembers(""); // Clear the eligible members field
+    setEligibleMembers("");
+    setDiscountType("percentage");
+    setDiscountValue("");
   };
 
-  // Function to toggle the active/inactive state of a promo code
   const togglePromoCode = (index) => {
     const updatedPromoCodes = [...promoCodes];
     updatedPromoCodes[index].isActive = !updatedPromoCodes[index].isActive;
     setPromoCodes(updatedPromoCodes);
   };
 
-  // Function to delete a promo code
   const deletePromoCode = (index) => {
     const updatedPromoCodes = promoCodes.filter((_, i) => i !== index);
     setPromoCodes(updatedPromoCodes);
   };
 
-  // Function to show the form when "Add Promo Code" is clicked
   const handleAddPromoCodeClick = () => {
     setShowForm(true);
   };
@@ -88,7 +85,7 @@ const Vouchers = () => {
               id="startDate"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              min={today} // Set minimum date to today
+              min={today}
               required
             />
           </div>
@@ -100,12 +97,11 @@ const Vouchers = () => {
               id="endDate"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              min={today} // Set minimum date to today
+              min={startDate || today}
               required
             />
           </div>
 
-          {/* New field for Number of Members Eligible */}
           <div className="form-group">
             <label htmlFor="eligibleMembers">Number of Members Eligible</label>
             <input
@@ -119,13 +115,59 @@ const Vouchers = () => {
             />
           </div>
 
+          {/* Radio buttons for Discount Type */}
+          <div className="discount-type-radio">
+            <label>Discount Type</label>
+            <div className="radio-inputs">
+              <label>Percentage</label>
+              <input
+                type="radio"
+                name="discountType"
+                value="percentage"
+                checked={discountType === "percentage"}
+                onChange={() => setDiscountType("percentage")}
+              />{" "}
+            </div>
+            <div className="radio-inputs">
+              <label>Flat Discount</label>
+              <input
+                type="radio"
+                name="discountType"
+                value="flat"
+                checked={discountType === "flat"}
+                onChange={() => setDiscountType("flat")}
+              />
+            </div>
+          </div>
+
+          {/* Conditional input field for Discount Value */}
+          <div className="discount-type-container">
+            <label htmlFor="discountValue">
+              {discountType === "percentage"
+                ? "Percentage Discount (%)"
+                : "Flat Discount (SAR)"}
+            </label>
+            <input
+              type="number"
+              id="discountValue"
+              value={discountValue}
+              onChange={(e) => setDiscountValue(e.target.value)}
+              placeholder={
+                discountType === "percentage"
+                  ? "Enter Percentage"
+                  : "Enter Flat Discount"
+              }
+              min="0"
+              required
+            />
+          </div>
+
           <button type="submit" className="submit-btn">
             Create Voucher
           </button>
         </form>
       )}
 
-      {/* Display list of promo codes */}
       {promoCodes.length > 0 && (
         <div className="promo-codes-list">
           <h2>Active Promo Codes</h2>
@@ -134,7 +176,11 @@ const Vouchers = () => {
               <li key={index} className="promo-code-item">
                 <span>
                   {promo.promoCode} - Valid from {promo.startDate} to{" "}
-                  {promo.endDate} - Eligible Members: {promo.eligibleMembers}
+                  {promo.endDate} - Eligible Members: {promo.eligibleMembers} -{" "}
+                  {promo.discountType === "percentage"
+                    ? `${promo.discountValue}%`
+                    : `${promo.discountValue} (flat)`}{" "}
+                  Discount
                 </span>
                 <div className="actions">
                   <label className="switch">
@@ -158,9 +204,7 @@ const Vouchers = () => {
         </div>
       )}
 
-      {promoCodes.length === 0 && !showForm && (
-        <p>No promo codes available</p> // Message when no promo codes are available
-      )}
+      {promoCodes.length === 0 && !showForm && <p>No promo codes available</p>}
     </div>
   );
 };
