@@ -12,7 +12,6 @@ const Plans = () => {
   const fetchPlans = useCallback(async () => {
     try {
       const result = await getAllPlans();
-      console.log("Fetched plans:", result); // Debug log
       if (result.success) {
         setPlans(result.data);
         checkPlansWithItems(result.data);
@@ -33,19 +32,16 @@ const Plans = () => {
     for (const plan of plans) {
       try {
         const weekMenuResult = await getWeekMenu(plan._id);
-        console.log(`Week menu for plan ${plan._id}:`, weekMenuResult); // Debug log
         plansItemStatus[plan._id] =
           weekMenuResult.success &&
           Object.values(weekMenuResult.data.weekMenu).some((day) =>
             Object.values(day).some((packageMeals) => packageMeals.length > 0)
           );
-        console.log(`Plan ${plan._id} has items:`, plansItemStatus[plan._id]); // Debug log
       } catch (error) {
         console.error(`Error checking items for plan ${plan._id}:`, error);
         plansItemStatus[plan._id] = false;
       }
     }
-    console.log("Final plansWithItems:", plansItemStatus); // Debug log
     setPlansWithItems(plansItemStatus);
   };
 
@@ -54,7 +50,6 @@ const Plans = () => {
       try {
         const result = await deletePlan(planId);
         if (result.success) {
-          console.log("Plan deleted successfully");
           fetchPlans();
         } else {
           console.error("Failed to delete plan:", result.error);
@@ -66,12 +61,21 @@ const Plans = () => {
   };
 
   const handleAddOrEditItems = (planId, hasItems) => {
-    console.log(`Handling add/edit for plan ${planId}, hasItems: ${hasItems}`); // Debug log
     if (hasItems) {
       navigate(`/plans/${planId}/edit-items`);
     } else {
       navigate(`/plans/${planId}/add-items`);
     }
+  };
+
+  const getServiceLabel = (service) => {
+    const labels = {
+      subscription: "Subscription Service",
+      indoorCatering: "Indoor Catering Service",
+      outdoorCatering: "Outdoor Catering Service",
+      dining: "Dining Service",
+    };
+    return labels[service] || "Not Specified";
   };
 
   return (
@@ -103,6 +107,12 @@ const Plans = () => {
                 </div>
                 <div className="admin-plan-details">
                   <h2>{plan.nameEnglish}</h2>
+                  <div className="admin-service-info">
+                    <span className="admin-service-label">Service Type:</span>
+                    <span className="admin-service-value">
+                      {getServiceLabel(plan.service)}
+                    </span>
+                  </div>
                 </div>
                 <div className="admin-plan-actions">
                   <button

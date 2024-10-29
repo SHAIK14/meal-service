@@ -147,7 +147,12 @@ const PlanItemEdit = () => {
     try {
       const result = await getAllItems();
       if (result.success) {
-        setAvailableMeals(result.items || []);
+        // Filter meals based on plan service
+        const filteredMeals = result.items.filter(
+          (meal) => meal.services && meal.services[plan.service]
+        );
+        setAvailableMeals(filteredMeals);
+
         if (result.items?.[0]?.prices?.[0]?.currency) {
           setCurrency(result.items[0].prices[0].currency);
         }
@@ -157,19 +162,29 @@ const PlanItemEdit = () => {
     } catch (error) {
       setError("An error occurred while fetching available meals");
     }
-  }, []);
+  }, [plan?.service]);
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      await Promise.all([
-        fetchPlanDetails(),
-        fetchWeekMenu(),
-        fetchAvailableMeals(),
-      ]);
-      setLoading(false);
+      try {
+        await fetchPlanDetails();
+        await fetchWeekMenu();
+      } catch (error) {
+        setError("An error occurred while fetching data");
+      } finally {
+        setLoading(false);
+      }
     };
     fetchData();
-  }, [fetchPlanDetails, fetchWeekMenu, fetchAvailableMeals]);
+  }, [fetchPlanDetails, fetchWeekMenu]);
+
+  // Separate effect for fetching meals after plan is loaded
+  useEffect(() => {
+    if (plan?.service) {
+      fetchAvailableMeals();
+    }
+  }, [plan?.service, fetchAvailableMeals]);
 
   const handleDragStart = (event, meal) => {
     event.dataTransfer.setData("meal", JSON.stringify(meal));
@@ -214,10 +229,10 @@ const PlanItemEdit = () => {
       },
     }));
   };
+
   const calculatePackagePrices = () => {
     const packageDetails = {};
 
-    // Calculate total for each package
     for (let day in weekMenu) {
       for (let pkg in weekMenu[day]) {
         const packageTotal = (weekMenu[day][pkg] || []).reduce((acc, meal) => {
@@ -232,7 +247,6 @@ const PlanItemEdit = () => {
       }
     }
 
-    // Calculate discounts and final prices
     for (let pkg in packageDetails) {
       const discountPercent =
         parseFloat(packageDiscounts[pkg]?.discountValue) || 0;
@@ -289,11 +303,9 @@ const PlanItemEdit = () => {
         }
       }
 
-      // Calculate package details
       const packageDetails = calculatePackagePrices();
       const packagePricing = {};
 
-      // Transform package details into the correct format
       for (const [pkg, details] of Object.entries(packageDetails)) {
         packagePricing[pkg] = {
           totalPrice: details.totalPrice,
@@ -311,7 +323,7 @@ const PlanItemEdit = () => {
 
       const result = await updateWeekMenu(planId, {
         weekMenu: weekMenuIds,
-        packagePricing, // Changed from packageDetails to packagePricing
+        packagePricing,
         totalPrice: grandTotal,
       });
 
@@ -326,21 +338,24 @@ const PlanItemEdit = () => {
       console.error("Update error:", error);
     }
   };
-  if (loading) {
-    return <div className="loading">Loading...</div>;
-  }
 
-  if (error) {
-    return <div className="error">{error}</div>;
-  }
+  if (loading) return <div className="loading">Loading...</div>;
+  if (error) return <div className="error">{error}</div>;
+  if (!plan) return <div className="error">Plan not found</div>;
 
-  if (!plan) {
-    return <div className="error">Plan not found</div>;
-  }
-
+  const packagePrices = calculatePackagePrices();
   return (
     <div className="plan-item-selection-container">
       <h1>Edit Items for {plan.nameEnglish}</h1>
+
+      <div className="service-info">
+        <span className="service-label">Service Type:</span>
+        <span className="service-value">
+          {plan.service.charAt(0).toUpperCase() +
+            plan.service.slice(1).replace(/([A-Z])/g, " $1")}
+        </span>
+      </div>
+
       <div className="days-nav">
         {[...Array(plan.duration)].map((_, index) => {
           const day = (index + 1).toString();
@@ -372,7 +387,7 @@ const PlanItemEdit = () => {
 
       <div className="content-wrapper">
         <div className="available-meals">
-          <h2>Available Meals</h2>
+          <h2>Available {plan.service} Meals</h2>
           <div className="meals-list">
             {availableMeals.length > 0 ? (
               availableMeals.map((meal) => (
@@ -400,7 +415,7 @@ const PlanItemEdit = () => {
                 </div>
               ))
             ) : (
-              <p>No available meals found.</p>
+              <p>No meals available for {plan.service} service.</p>
             )}
           </div>
         </div>
@@ -452,7 +467,7 @@ const PlanItemEdit = () => {
       </div>
 
       <div className="pricing-section">
-        {Object.entries(calculatePackagePrices()).map(([pkg, details]) => (
+        {Object.entries(packagePrices).map(([pkg, details]) => (
           <div key={pkg} className="package-pricing">
             <div className="package-price-info">
               <span className="package-name">
@@ -511,7 +526,7 @@ const PlanItemEdit = () => {
         <div className="total-section">
           <span>Grand Total:</span>
           <span>
-            {Object.values(calculatePackagePrices())
+            {Object.values(packagePrices)
               .reduce((acc, pkg) => acc + pkg.finalPrice, 0)
               .toFixed(2)}{" "}
             {currency}

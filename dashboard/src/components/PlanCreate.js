@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaTrash } from "react-icons/fa";
+import { AlertTriangle } from "lucide-react";
 import { createPlan } from "../utils/api";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "../config/firebaseConfig";
@@ -21,8 +22,10 @@ const PlanCreate = () => {
     isMultiple: false,
     package: [],
     duration: 5,
+    service: "", // New field for service
   });
   const [showPackageWarning, setShowPackageWarning] = useState(false);
+  const [showServiceWarning, setShowServiceWarning] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -34,6 +37,12 @@ const PlanCreate = () => {
           : prevState.package.filter((item) => item !== value),
       }));
       setShowPackageWarning(true);
+    } else if (name === "service") {
+      setShowServiceWarning(true);
+      setNewPlan((prevState) => ({
+        ...prevState,
+        [name]: value,
+      }));
     } else {
       setNewPlan((prevState) => ({
         ...prevState,
@@ -41,6 +50,7 @@ const PlanCreate = () => {
       }));
     }
   };
+
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     setSelectedImage(URL.createObjectURL(file));
@@ -54,6 +64,10 @@ const PlanCreate = () => {
     e.preventDefault();
     if (newPlan.package.length === 0) {
       alert("Please select at least one package option.");
+      return;
+    }
+    if (!newPlan.service) {
+      alert("Please select a service type.");
       return;
     }
     try {
@@ -75,11 +89,9 @@ const PlanCreate = () => {
         navigate("/plans");
       } else {
         console.error("Failed to create plan:", result.error);
-        // Handle error (e.g., show error message to user)
       }
     } catch (error) {
       console.error("Error creating plan:", error);
-      // Handle error (e.g., show error message to user)
     }
   };
 
@@ -87,6 +99,7 @@ const PlanCreate = () => {
     <div className="admin-plan-create-wrapper">
       <h1>Create New Plan</h1>
       <form onSubmit={handleSavePlan} className="admin-plan-create-form">
+        {/* Existing image container code */}
         <div className="admin-image-container">
           <label htmlFor="file-upload" className="admin-custom-file-upload">
             {selectedImage ? (
@@ -122,6 +135,33 @@ const PlanCreate = () => {
           )}
         </div>
         <div className="admin-form-container">
+          {/* Service Selection - New Addition */}
+          <div className="admin-form-group-category">
+            <label className="admin-select-label">Service Type:</label>
+            <select
+              name="service"
+              value={newPlan.service}
+              onChange={handleInputChange}
+              required
+              className="admin-select"
+            >
+              <option value="">Select a service</option>
+              <option value="subscription">Subscription Service</option>
+              <option value="indoorCatering">Indoor Catering Service</option>
+              <option value="outdoorCatering">Outdoor Catering Service</option>
+              <option value="dining">Dining Service</option>
+            </select>
+          </div>
+          {showServiceWarning && (
+            <div className="admin-warning-message">
+              <AlertTriangle size={16} />
+              <span>
+                Warning: Service type cannot be modified after creation.
+              </span>
+            </div>
+          )}
+
+          {/* Existing form fields */}
           <input
             type="text"
             name="nameEnglish"

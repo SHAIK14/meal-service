@@ -92,6 +92,24 @@ exports.getItemsByCategory = async (req, res) => {
   }
 };
 
+exports.getItemById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const item = await Item.findById(id).populate("category");
+
+    if (!item) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Item not found" });
+    }
+
+    res.json({ success: true, item });
+  } catch (error) {
+    console.error("Error in getItemById:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 exports.updateItem = async (req, res) => {
   try {
     const { id } = req.params;
@@ -154,23 +172,6 @@ exports.toggleItemAvailability = async (req, res) => {
     });
   } catch (error) {
     console.error("Error in toggleItemAvailability:", error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-};
-exports.getItemById = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const item = await Item.findById(id).populate("category");
-
-    if (!item) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Item not found" });
-    }
-
-    res.json({ success: true, item });
-  } catch (error) {
-    console.error("Error in getItemById:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };

@@ -18,6 +18,11 @@ const PlanSchema = new mongoose.Schema(
     isNonVeg: { type: Boolean, default: false },
     isIndividual: { type: Boolean, default: false },
     isMultiple: { type: Boolean, default: false },
+    service: {
+      type: String,
+      enum: ["subscription", "indoorCatering", "outdoorCatering", "dining"],
+      required: true,
+    },
     package: {
       type: [
         {

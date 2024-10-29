@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { FaTrash } from "react-icons/fa";
+import { AlertTriangle } from "lucide-react";
 import { getPlanById, updatePlan } from "../utils/api";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "../config/firebaseConfig";
@@ -22,6 +23,7 @@ const PlanEdit = () => {
     isMultiple: false,
     package: [],
     duration: null,
+    service: "",
   });
 
   useEffect(() => {
@@ -58,6 +60,7 @@ const PlanEdit = () => {
       }));
     }
   };
+
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     setSelectedImage(URL.createObjectURL(file));
@@ -89,12 +92,20 @@ const PlanEdit = () => {
         navigate("/plans");
       } else {
         console.error("Failed to update plan:", result.error);
-        // Handle error (e.g., show error message to user)
       }
     } catch (error) {
       console.error("Error updating plan:", error);
-      // Handle error (e.g., show error message to user)
     }
+  };
+
+  const getServiceLabel = (service) => {
+    const labels = {
+      subscription: "Subscription Service",
+      indoorCatering: "Indoor Catering Service",
+      outdoorCatering: "Outdoor Catering Service",
+      dining: "Dining Service",
+    };
+    return labels[service] || "Not Specified";
   };
 
   return (
@@ -135,6 +146,23 @@ const PlanEdit = () => {
           )}
         </div>
         <div className="admin-form-container">
+          {/* Service Display Section */}
+          <div className="admin-form-group-category">
+            <label className="admin-select-label">Service Type:</label>
+            <select
+              name="service"
+              value={plan.service}
+              className="admin-select"
+              disabled
+            >
+              <option value="">{getServiceLabel(plan.service)}</option>
+            </select>
+          </div>
+          <div className="admin-warning-message">
+            <AlertTriangle size={16} />
+            <span>Service type cannot be modified after plan creation.</span>
+          </div>
+
           <input
             type="text"
             name="nameEnglish"

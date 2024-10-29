@@ -83,6 +83,26 @@
   font-size: 14px;
 }
 
+.admin-service-info {
+  margin-top: 8px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-service-label {
+  font-weight: 500;
+  color: #666;
+}
+
+.admin-service-value {
+  color: #333;
+  background-color: #e8f0fe;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
 .admin-plan-actions {
   display: flex;
   gap: 10px;
@@ -137,6 +157,34 @@
   font-size: 18px;
   color: #666;
   margin-top: 20px;
+}
+
+.admin-warning-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  margin: 10px 0;
+  background-color: #fff3cd;
+  border: 1px solid #ffeeba;
+  border-radius: 4px;
+  color: #856404;
+  font-size: 14px;
+}
+
+.admin-service-dropdown {
+  margin-top: 15px;
+  margin-bottom: 5px;
+  width: 100%;
+}
+
+.admin-service-dropdown select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  background-color: white;
 }
 
 @media (max-width: 768px) {

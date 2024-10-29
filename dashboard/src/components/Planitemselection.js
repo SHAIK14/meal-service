@@ -26,7 +26,7 @@ const PlanItemSelection = () => {
     const initialDiscounts = {};
     packages.forEach((pkg) => {
       initialDiscounts[pkg] = {
-        discountValue: "", // Changed from 0 to empty string
+        discountValue: "",
         isCouponEligible: false,
       };
     });
@@ -74,7 +74,12 @@ const PlanItemSelection = () => {
     try {
       const result = await getAllItems();
       if (result.success) {
-        setAvailableMeals(result.items || []);
+        // Filter meals based on plan service
+        const filteredMeals = result.items.filter(
+          (meal) => meal.services && meal.services[plan.service]
+        );
+        setAvailableMeals(filteredMeals);
+
         // Set currency from first meal if available
         if (result.items?.[0]?.prices?.[0]?.currency) {
           setCurrency(result.items[0].prices[0].currency);
@@ -85,17 +90,14 @@ const PlanItemSelection = () => {
     } catch (error) {
       setError("An error occurred while fetching available meals");
     }
-  }, []);
+  }, [plan?.service]); // Add plan.service as dependency
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        await Promise.all([
-          fetchPlanDetails(),
-          fetchWeekMenu(),
-          fetchAvailableMeals(),
-        ]);
+        await fetchPlanDetails();
+        await fetchWeekMenu();
       } catch (error) {
         setError("An error occurred while fetching data");
       } finally {
@@ -103,7 +105,14 @@ const PlanItemSelection = () => {
       }
     };
     fetchData();
-  }, [fetchPlanDetails, fetchWeekMenu, fetchAvailableMeals]);
+  }, [fetchPlanDetails, fetchWeekMenu]);
+
+  // Add separate effect for fetching meals after plan is loaded
+  useEffect(() => {
+    if (plan?.service) {
+      fetchAvailableMeals();
+    }
+  }, [plan?.service, fetchAvailableMeals]);
 
   const handleDragStart = (event, meal) => {
     event.dataTransfer.setData("meal", JSON.stringify(meal));
@@ -152,7 +161,6 @@ const PlanItemSelection = () => {
   const calculatePackagePrices = () => {
     const packageDetails = {};
 
-    // Calculate total for each package
     for (let day in weekMenu) {
       for (let pkg in weekMenu[day]) {
         const packageTotal = (weekMenu[day][pkg] || []).reduce((acc, meal) => {
@@ -167,7 +175,6 @@ const PlanItemSelection = () => {
       }
     }
 
-    // Calculate discounts and final prices
     for (let pkg in packageDetails) {
       const discountPercent =
         parseFloat(packageDiscounts[pkg]?.discountValue) || 0;
@@ -188,7 +195,6 @@ const PlanItemSelection = () => {
 
   const handleDiscountChange = (pkg, field, value) => {
     if (field === "discountValue") {
-      // Handle empty string and number validation
       if (value === "") {
         setPackageDiscounts((prev) => ({
           ...prev,
@@ -200,7 +206,6 @@ const PlanItemSelection = () => {
       const numValue = parseFloat(value);
       if (isNaN(numValue) || numValue < 0 || numValue > 100) return;
 
-      // Remove leading zeros
       const cleanValue = numValue.toString();
 
       setPackageDiscounts((prev) => ({
@@ -223,14 +228,12 @@ const PlanItemSelection = () => {
         0
       );
 
-      // Structure the data to match the MongoDB schema
       const updateData = {
         weekMenu,
-        packagePricing: {}, // This will contain the properly structured package pricing data
+        packagePricing: {},
         totalPrice: grandTotal,
       };
 
-      // Restructure package details to match the MongoDB schema
       for (const [pkg, details] of Object.entries(packageDetails)) {
         updateData.packagePricing[pkg] = {
           totalPrice: details.totalPrice,
@@ -259,10 +262,17 @@ const PlanItemSelection = () => {
   if (!plan) return <div className="error">Plan not found</div>;
 
   const packagePrices = calculatePackagePrices();
-
   return (
     <div className="plan-item-selection-container">
       <h1>Select Items for {plan.nameEnglish}</h1>
+
+      <div className="service-info">
+        <span className="service-label">Service Type:</span>
+        <span className="service-value">
+          {plan.service.charAt(0).toUpperCase() +
+            plan.service.slice(1).replace(/([A-Z])/g, " $1")}
+        </span>
+      </div>
 
       <div className="days-nav">
         {[...Array(plan.duration)].map((_, index) => {
@@ -323,7 +333,7 @@ const PlanItemSelection = () => {
                 </div>
               ))
             ) : (
-              <p>No available meals found.</p>
+              <p>No meals available for {plan.service} service.</p>
             )}
           </div>
         </div>
