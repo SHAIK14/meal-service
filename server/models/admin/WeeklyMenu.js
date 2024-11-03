@@ -6,6 +6,10 @@ const WeeklyMenuSchema = new mongoose.Schema({
     ref: "Plan",
     required: true,
   },
+  subscriptionOrder: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "SubscriptionOrder",
+  },
   weekMenu: {
     type: Map,
     of: {
@@ -18,6 +22,14 @@ const WeeklyMenuSchema = new mongoose.Schema({
       ],
     },
   },
+
+  status: {
+    type: String,
+    enum: ["pending", "active", "completed"],
+    default: "pending",
+  },
+  weekNumber: Number,
+  cycleNumber: Number,
 });
 
 module.exports = mongoose.model("WeeklyMenu", WeeklyMenuSchema);
