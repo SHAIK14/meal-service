@@ -380,4 +380,23 @@ export const getSubscriptionById = async (id) => {
   }
 };
 
-// Update subscription status
+// user.js
+export const getAllUsers = async (params) => {
+  try {
+    const response = await api.get("/admin/users", { params });
+    return { success: true, ...response.data };
+  } catch (error) {
+    console.error("Error in getAllUsers:", error);
+    return { success: false, error: error.message };
+  }
+};
+
+export const getUserAnalytics = async () => {
+  try {
+    const response = await api.get("/admin/users/analytics");
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Error in getUserAnalytics:", error);
+    return { success: false, error: error.message };
+  }
+};
