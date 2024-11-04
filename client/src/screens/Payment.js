@@ -7,27 +7,45 @@ import {
   TextInput,
   StyleSheet,
   ScrollView,
+  ActivityIndicator,
+  Alert,
+  Modal,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { getUserAddress } from "../utils/api";
+import {
+  getUserAddress,
+  getAvailableVouchers,
+  validateVoucher,
+  createSubscription,
+} from "../utils/api";
 
 const Payment = ({ route, navigation }) => {
+  const { plan } = route.params;
+  console.log("Plan in Payment screen from the navigation:", plan);
+
+  // Address State
+  const [userAddress, setUserAddress] = useState(null);
+
+  // Voucher States
+  const [showVoucherModal, setShowVoucherModal] = useState(false);
+  const [availableVouchers, setAvailableVouchers] = useState([]);
+  const [selectedVoucher, setSelectedVoucher] = useState(null);
+  const [isLoadingVouchers, setIsLoadingVouchers] = useState(false);
+  const [voucherError, setVoucherError] = useState("");
+
+  // Payment States - Set STC Pay as default
   const [isChecked, setIsChecked] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState("Visa/Mastercard");
+  const [paymentMethod, setPaymentMethod] = useState("STC Pay");
   const [cardHolderName, setCardHolderName] = useState("");
   const [cardNumber, setCardNumber] = useState("");
   const [cvv, setCvv] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
   const [stcPhoneNumber, setStcPhoneNumber] = useState("");
   const [isFormValid, setIsFormValid] = useState(false);
-  const [promoCode, setPromoCode] = useState("");
-  const [userAddress, setUserAddress] = useState(null);
-  const [promoDiscount, setPromoDiscount] = useState(0);
-
-  const { plan } = route.params;
-
+  const [loading, setLoading] = useState(false);
   useEffect(() => {
     fetchUserAddress();
+    fetchAvailableVouchers();
     validateForm();
   }, [isChecked, cardHolderName, cardNumber, cvv, expiryDate, stcPhoneNumber]);
 
@@ -39,6 +57,68 @@ const Payment = ({ route, navigation }) => {
       console.error("Error fetching address:", error);
       setUserAddress(null);
     }
+  };
+
+  const fetchAvailableVouchers = async () => {
+    setIsLoadingVouchers(true);
+    try {
+      console.log("Fetching available vouchers...");
+      const response = await getAvailableVouchers();
+      console.log("Voucher response:", response);
+
+      if (response.success) {
+        setAvailableVouchers(response.data);
+        if (response.data.length === 0) {
+          console.log("No vouchers available");
+        }
+      }
+    } catch (error) {
+      console.error("Detailed error fetching vouchers:", error);
+      setVoucherError(error.message || "Failed to load vouchers");
+    } finally {
+      setIsLoadingVouchers(false);
+    }
+  };
+
+  const calculateDiscount = (voucher, originalPrice) => {
+    if (!voucher) return 0;
+
+    if (voucher.discountType === "percentage") {
+      const rawDiscount = (originalPrice * voucher.discountValue) / 100;
+      return voucher.maxThreshold
+        ? Math.min(rawDiscount, voucher.maxThreshold)
+        : rawDiscount;
+    } else {
+      return Math.min(voucher.discountValue, originalPrice);
+    }
+  };
+
+  const calculateFinalPrice = () => {
+    const originalPrice = plan.pricing.final;
+    if (!selectedVoucher) return originalPrice.toFixed(2);
+
+    const discountAmount = calculateDiscount(selectedVoucher, originalPrice);
+    return Math.max(0, originalPrice - discountAmount).toFixed(2);
+  };
+
+  const handleSelectVoucher = async (voucher) => {
+    try {
+      const validationResult = await validateVoucher(voucher.promoCode);
+
+      if (validationResult.success) {
+        setSelectedVoucher(voucher);
+        setShowVoucherModal(false);
+        Alert.alert("Success", "Voucher applied successfully!");
+      } else {
+        Alert.alert("Error", validationResult.message);
+      }
+    } catch (error) {
+      Alert.alert("Error", error.message);
+    }
+  };
+
+  const handleRemoveVoucher = () => {
+    setSelectedVoucher(null);
   };
 
   const validateForm = () => {
@@ -72,48 +152,81 @@ const Payment = ({ route, navigation }) => {
       .slice(0, 19);
     setCardNumber(formatted);
   };
-
-  const applyPromoCode = () => {
-    // Here you would typically validate with backend
-    if (promoCode.toUpperCase() === "SAVE10") {
-      setPromoDiscount(10);
-      alert("Promo code applied successfully!");
-    } else {
-      setPromoDiscount(0);
-      alert("Invalid promo code");
-    }
-  };
-
-  const calculateFinalPrice = () => {
-    const basePrice = plan.pricing.final;
-    const promoDiscountAmount = (basePrice * promoDiscount) / 100;
-    return (basePrice - promoDiscountAmount).toFixed(2);
-  };
-
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (!userAddress) {
-      alert("Please add a delivery address");
+      Alert.alert("Error", "Please add a delivery address");
       return;
     }
 
     if (!isFormValid) {
-      alert("Please fill in all required fields");
+      Alert.alert("Error", "Please fill in all required fields");
       return;
     }
 
-    navigation.navigate("OrderSummary", {
-      plan,
-      paymentMethod,
-      paymentDetails:
-        paymentMethod === "Visa/Mastercard"
-          ? { cardHolderName, cardNumber, expiryDate }
-          : { stcPhoneNumber },
-      promoDiscount,
-      finalAmount: calculateFinalPrice(),
-      deliveryAddress: userAddress,
-    });
-  };
+    setLoading(true);
+    try {
+      const subscriptionData = {
+        planDetails: {
+          planId: plan.id, // Changed from _id to id
+          name: plan.name, // Changed from nameEnglish to name
+          duration: plan.duration,
+        },
+        selectedPackages: plan.package,
+        duration: plan.selectedDuration,
+        pricing: {
+          original: plan.pricing.original,
+          savings: plan.pricing.savings,
+          final: parseFloat(calculateFinalPrice()),
+        },
+        voucherDetails: selectedVoucher
+          ? {
+              _id: selectedVoucher._id,
+              promoCode: selectedVoucher.promoCode,
+              discountType: selectedVoucher.discountType,
+              discountValue: selectedVoucher.discountValue,
+            }
+          : undefined,
+        deliveryAddress: {
+          fullAddress: userAddress.fullAddress,
+          saveAs: userAddress.saveAs,
+          coordinates: userAddress.coordinates,
+        },
+        paymentDetails: {
+          method: paymentMethod,
+          ...(paymentMethod === "Visa/Mastercard"
+            ? {
+                cardHolderName,
+                cardNumber,
+              }
+            : {
+                stcPhoneNumber,
+              }),
+        },
+      };
 
+      console.log("Sending subscription data:", subscriptionData); // For debugging
+
+      const response = await createSubscription(subscriptionData);
+
+      if (response.success) {
+        Alert.alert(
+          "Success!",
+          "Your subscription has been created successfully!",
+          [
+            {
+              text: "OK",
+              onPress: () => navigation.navigate("UserPlans"),
+            },
+          ]
+        );
+      }
+    } catch (error) {
+      console.error("Error in createSubscription:", error);
+      Alert.alert("Error", "Failed to create subscription. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -125,6 +238,66 @@ const Payment = ({ route, navigation }) => {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Delivery Address Section */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>Delivery Address</Text>
+          {userAddress ? (
+            <View style={styles.addressCard}>
+              <Text style={styles.addressType}>{userAddress.saveAs}</Text>
+              <Text style={styles.addressText}>{userAddress.fullAddress}</Text>
+              <TouchableOpacity
+                style={styles.changeButton}
+                onPress={() => navigation.navigate("UserAddress")}
+              >
+                <Text style={styles.changeButtonText}>Change</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.addAddressButton}
+              onPress={() => navigation.navigate("UserAddress")}
+            >
+              <Text style={styles.addAddressText}>Add Delivery Address</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Promo Code Section */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>Promo Code</Text>
+          {selectedVoucher ? (
+            <View style={styles.selectedVoucherCard}>
+              <View>
+                <Text style={styles.voucherCode}>
+                  {selectedVoucher.promoCode}
+                </Text>
+                <Text style={styles.voucherDescription}>
+                  {selectedVoucher.discountType === "percentage"
+                    ? `${selectedVoucher.discountValue}% off${
+                        selectedVoucher.maxThreshold
+                          ? ` (up to ${selectedVoucher.maxThreshold} SAR)`
+                          : ""
+                      }`
+                    : `${selectedVoucher.discountValue} SAR off`}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.removeVoucherButton}
+                onPress={handleRemoveVoucher}
+              >
+                <Text style={styles.removeVoucherText}>Remove</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.addPromoButton}
+              onPress={() => setShowVoucherModal(true)}
+            >
+              <Text style={styles.addPromoText}>Select Promo Code</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
         {/* Order Summary Section */}
         <View style={styles.summaryCard}>
           <Text style={styles.cardTitle}>Order Summary</Text>
@@ -159,11 +332,16 @@ const Payment = ({ route, navigation }) => {
                 {plan.pricing.final.toFixed(2)} SAR
               </Text>
             </View>
-            {promoDiscount > 0 && (
+            {selectedVoucher && (
               <View style={styles.priceRow}>
                 <Text style={styles.priceLabel}>Promo Discount</Text>
                 <Text style={styles.promoPrice}>
-                  -{((plan.pricing.final * promoDiscount) / 100).toFixed(2)} SAR
+                  -
+                  {calculateDiscount(
+                    selectedVoucher,
+                    plan.pricing.final
+                  ).toFixed(2)}{" "}
+                  SAR
                 </Text>
               </View>
             )}
@@ -171,50 +349,6 @@ const Payment = ({ route, navigation }) => {
               <Text style={styles.finalPriceLabel}>Total</Text>
               <Text style={styles.finalPrice}>{calculateFinalPrice()} SAR</Text>
             </View>
-          </View>
-        </View>
-
-        {/* Delivery Address Section */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Delivery Address</Text>
-          {userAddress ? (
-            <View style={styles.addressCard}>
-              <Text style={styles.addressType}>{userAddress.saveAs}</Text>
-              <Text style={styles.addressText}>{userAddress.fullAddress}</Text>
-              <TouchableOpacity
-                style={styles.changeButton}
-                onPress={() => navigation.navigate("UserAddress")}
-              >
-                <Text style={styles.changeButtonText}>Change</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <TouchableOpacity
-              style={styles.addAddressButton}
-              onPress={() => navigation.navigate("UserAddress")}
-            >
-              <Text style={styles.addAddressText}>Add Delivery Address</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Promo Code Section */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Promo Code</Text>
-          <View style={styles.promoContainer}>
-            <TextInput
-              style={styles.promoInput}
-              placeholder="Enter promo code"
-              value={promoCode}
-              onChangeText={setPromoCode}
-              autoCapitalize="characters"
-            />
-            <TouchableOpacity
-              style={styles.promoButton}
-              onPress={applyPromoCode}
-            >
-              <Text style={styles.promoButtonText}>Apply</Text>
-            </TouchableOpacity>
           </View>
         </View>
 
@@ -325,20 +459,73 @@ const Payment = ({ route, navigation }) => {
       </ScrollView>
 
       {/* Checkout Button */}
+
       <View style={styles.checkoutContainer}>
         <TouchableOpacity
           style={[
             styles.checkoutButton,
-            (!isFormValid || !userAddress) && styles.disabledButton,
+            (loading || !isFormValid || !userAddress) && styles.disabledButton,
           ]}
           onPress={handleCheckout}
-          disabled={!isFormValid || !userAddress}
+          disabled={loading || !isFormValid || !userAddress}
         >
-          <Text style={styles.checkoutButtonText}>
-            Pay {calculateFinalPrice()} SAR
-          </Text>
+          {loading ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.checkoutButtonText}>
+              Pay {calculateFinalPrice()} SAR
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
+
+      {/* Voucher Selection Modal */}
+      <Modal
+        visible={showVoucherModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowVoucherModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Available Vouchers</Text>
+              <TouchableOpacity onPress={() => setShowVoucherModal(false)}>
+                <Ionicons name="close" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+
+            {isLoadingVouchers ? (
+              <ActivityIndicator size="large" color="#C5A85F" />
+            ) : voucherError ? (
+              <Text style={styles.errorText}>{voucherError}</Text>
+            ) : availableVouchers.length === 0 ? (
+              <Text style={styles.noVouchersText}>No vouchers available</Text>
+            ) : (
+              <ScrollView>
+                {availableVouchers.map((voucher, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.voucherItem}
+                    onPress={() => handleSelectVoucher(voucher)}
+                  >
+                    <Text style={styles.voucherCode}>{voucher.promoCode}</Text>
+                    <Text style={styles.voucherDescription}>
+                      {voucher.discountType === "percentage"
+                        ? `${voucher.discountValue}% off${
+                            voucher.maxThreshold
+                              ? ` (up to ${voucher.maxThreshold} SAR)`
+                              : ""
+                          }`
+                        : `${voucher.discountValue} SAR off`}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -361,6 +548,100 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#333333",
   },
+
+  // Common Section Styles
+  sectionContainer: {
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#EEEEEE",
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333333",
+    marginBottom: 12,
+  },
+
+  // Address Section
+  addressCard: {
+    backgroundColor: "#F8F8F8",
+    borderRadius: 8,
+    padding: 12,
+    position: "relative",
+  },
+  addressType: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#333333",
+    marginBottom: 4,
+  },
+  addressText: {
+    fontSize: 14,
+    color: "#666666",
+    lineHeight: 20,
+  },
+  changeButton: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+  },
+  changeButtonText: {
+    fontSize: 14,
+    color: "#C5A85F",
+    fontWeight: "600",
+  },
+  addAddressButton: {
+    backgroundColor: "#F8F8F8",
+    borderRadius: 8,
+    padding: 12,
+    alignItems: "center",
+  },
+  addAddressText: {
+    fontSize: 14,
+    color: "#C5A85F",
+    fontWeight: "600",
+  },
+
+  // Voucher Section
+  selectedVoucherCard: {
+    backgroundColor: "#F8F8F8",
+    borderRadius: 8,
+    padding: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  voucherCode: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#333333",
+    marginBottom: 4,
+  },
+  voucherDescription: {
+    fontSize: 12,
+    color: "#666666",
+  },
+  addPromoButton: {
+    backgroundColor: "#F8F8F8",
+    borderRadius: 8,
+    padding: 12,
+    alignItems: "center",
+  },
+  addPromoText: {
+    fontSize: 14,
+    color: "#C5A85F",
+    fontWeight: "600",
+  },
+  removeVoucherButton: {
+    padding: 8,
+  },
+  removeVoucherText: {
+    fontSize: 14,
+    color: "#FF4444",
+    fontWeight: "600",
+  },
+
+  // Order Summary Section
   summaryCard: {
     margin: 16,
     padding: 16,
@@ -443,79 +724,8 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#333333",
   },
-  sectionContainer: {
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: "#EEEEEE",
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333333",
-    marginBottom: 12,
-  },
-  addressCard: {
-    backgroundColor: "#F8F8F8",
-    borderRadius: 8,
-    padding: 12,
-    position: "relative",
-  },
-  addressType: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333333",
-    marginBottom: 4,
-  },
-  addressText: {
-    fontSize: 14,
-    color: "#666666",
-    lineHeight: 20,
-  },
-  changeButton: {
-    position: "absolute",
-    top: 12,
-    right: 12,
-  },
-  changeButtonText: {
-    fontSize: 14,
-    color: "#C5A85F",
-    fontWeight: "600",
-  },
-  addAddressButton: {
-    backgroundColor: "#F8F8F8",
-    borderRadius: 8,
-    padding: 12,
-    alignItems: "center",
-  },
-  addAddressText: {
-    fontSize: 14,
-    color: "#C5A85F",
-    fontWeight: "600",
-  },
-  promoContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  promoInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: "#EEEEEE",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 14,
-  },
-  promoButton: {
-    backgroundColor: "#C5A85F",
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-  },
-  promoButtonText: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "600",
-  },
+
+  // Payment Method Section
   paymentOption: {
     flexDirection: "row",
     alignItems: "center",
@@ -553,6 +763,8 @@ const styles = StyleSheet.create({
   halfInput: {
     flex: 1,
   },
+
+  // Terms Section
   termsContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -564,6 +776,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666666",
   },
+
+  // Checkout Section
   checkoutContainer: {
     padding: 16,
     borderTopWidth: 1,
@@ -583,6 +797,48 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     backgroundColor: "#CCCCCC",
+  },
+
+  // Modal Styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    padding: 16,
+    maxHeight: "80%",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#333333",
+  },
+  voucherItem: {
+    borderWidth: 1,
+    borderColor: "#EEEEEE",
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+  },
+  noVouchersText: {
+    textAlign: "center",
+    color: "#666666",
+    marginTop: 20,
+  },
+  errorText: {
+    color: "#FF4444",
+    textAlign: "center",
+    marginTop: 20,
   },
 });
 
