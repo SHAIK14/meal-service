@@ -5,7 +5,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 // const API_URL = "http://localhost:5000/api";
 const getApiUrl = () => {
   if (__DEV__) {
-    const localIpAddress = "192.168.1.104"; // Replace with your actual IP address if different
+    const localIpAddress = "172.20.10.5"; // Replace with your actual IP address if different
     return `http://${localIpAddress}:5000/api`;
   } else {
     return "https://your-production-api-url.com/api";
@@ -223,6 +223,199 @@ export const getItemsBatch = async (itemIds) => {
     return response.json();
   } catch (error) {
     console.error("Error in getItemsBatch:", error);
+    throw error;
+  }
+};
+
+export const getAvailableVouchers = async () => {
+  const token = await AsyncStorage.getItem("userToken");
+  try {
+    console.log(
+      "Fetching vouchers from:",
+      `${API_URL}/user/vouchers/available`
+    );
+    console.log("With token:", token);
+
+    const response = await fetch(`${API_URL}/user/vouchers/available`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    const responseText = await response.text();
+    console.log("Raw response:", responseText);
+
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      console.error("Error parsing response:", e);
+      throw new Error("Invalid response format");
+    }
+
+    console.log("Parsed voucher data:", data);
+
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to fetch available vouchers");
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Detailed error in getAvailableVouchers:", error);
+    throw error;
+  }
+};
+
+// Validate a promo code
+export const validateVoucher = async (promoCode) => {
+  const token = await AsyncStorage.getItem("userToken");
+  try {
+    const response = await fetch(`${API_URL}/user/vouchers/validate`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        promoCode,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to validate voucher");
+    }
+
+    const responseData = await response.json();
+    console.log("Voucher validation response:", responseData);
+    return responseData;
+  } catch (error) {
+    console.error("Error in validateVoucher:", error);
+    throw error;
+  }
+};
+
+// Create new subscription
+export const createSubscription = async (subscriptionData) => {
+  const token = await AsyncStorage.getItem("userToken");
+  try {
+    const response = await fetch(`${API_URL}/subscriptions/create`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(subscriptionData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to create subscription");
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error in createSubscription:", error);
+    throw error;
+  }
+};
+
+// Get user's active subscriptions
+export const getActiveSubscriptions = async () => {
+  const token = await AsyncStorage.getItem("userToken");
+  try {
+    const response = await fetch(`${API_URL}/subscriptions/active`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        errorData.message || "Failed to fetch active subscriptions"
+      );
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error in getActiveSubscriptions:", error);
+    throw error;
+  }
+};
+
+// Get subscription history
+export const getSubscriptionHistory = async () => {
+  const token = await AsyncStorage.getItem("userToken");
+  try {
+    const response = await fetch(`${API_URL}/subscriptions/history`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        errorData.message || "Failed to fetch subscription history"
+      );
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error in getSubscriptionHistory:", error);
+    throw error;
+  }
+};
+
+// Get specific subscription details
+export const getSubscriptionDetails = async (orderId) => {
+  const token = await AsyncStorage.getItem("userToken");
+  try {
+    const response = await fetch(`${API_URL}/subscriptions/${orderId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        errorData.message || "Failed to fetch subscription details"
+      );
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error in getSubscriptionDetails:", error);
+    throw error;
+  }
+};
+
+// Update subscription status (cancel/pause)
+export const updateSubscriptionStatus = async (orderId, status) => {
+  const token = await AsyncStorage.getItem("userToken");
+  try {
+    const response = await fetch(`${API_URL}/subscriptions/${orderId}/status`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ status }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        errorData.message || "Failed to update subscription status"
+      );
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error in updateSubscriptionStatus:", error);
     throw error;
   }
 };

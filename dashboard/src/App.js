@@ -15,7 +15,7 @@ import PlanItemSelection from "./components/Planitemselection";
 import PlanItemEdit from "./components/PlanItemEdit";
 import Items from "./components/items";
 import Delivery from "./components/delivery";
-import Orders from "./components/orders";
+import Subscriptions from "./components/Subscriptions";
 import Users from "./components/users";
 import SelectItemPage from "./components/SelectItemPage";
 import AddItemPage from "./components/Additem";
@@ -82,7 +82,7 @@ const App = () => {
                   <Route path="/payment-options" element={<PaymentPage />} />
                   <Route path="/delivery" element={<Delivery />} />
                   <Route path="/banners-container" element={<Banners />} />
-                  <Route path="/orders" element={<Orders />} />
+                  <Route path="/subscriptions" element={<Subscriptions />} />
                   <Route path="/users" element={<Users />} />
                   <Route
                     path="/select-item-page"

@@ -11,7 +11,6 @@ import {
   FaUtensilSpoon,
   FaCreditCard,
   FaTicketAlt,
-  // FaMoneyCheckAlt,
 } from "react-icons/fa";
 import "../styles/Sidebar.css";
 
@@ -46,6 +45,22 @@ const Sidebar = () => {
         </li>
         <li>
           <NavLink
+            to="/subscriptions"
+            className={({ isActive }) => (isActive ? "active" : "")}
+          >
+            <FaShoppingCart className="icon" /> <span>Subscriptions</span>
+          </NavLink>
+        </li>
+        <li>
+          <NavLink
+            to="/Vouchers"
+            className={({ isActive }) => (isActive ? "active" : "")}
+          >
+            <FaTicketAlt className="icon" /> <span>Vouchers</span>
+          </NavLink>
+        </li>
+        <li>
+          <NavLink
             to="/payment-options"
             className={({ isActive }) => (isActive ? "active" : "")}
           >
@@ -58,14 +73,6 @@ const Sidebar = () => {
             className={({ isActive }) => (isActive ? "active" : "")}
           >
             <FaTruck className="icon" /> <span>Delivery</span>
-          </NavLink>
-        </li>
-        <li>
-          <NavLink
-            to="/orders"
-            className={({ isActive }) => (isActive ? "active" : "")}
-          >
-            <FaShoppingCart className="icon" /> <span>Orders</span>
           </NavLink>
         </li>
         <li>
@@ -84,22 +91,6 @@ const Sidebar = () => {
             <FaUsers className="icon" /> <span>Users</span>
           </NavLink>
         </li>
-        <li>
-          <NavLink
-            to="/Vouchers"
-            className={({ isActive }) => (isActive ? "active" : "")}
-          >
-            <FaTicketAlt className="icon" /> <span>Vouchers</span>
-          </NavLink>
-        </li>
-        {/* <li>
-          <NavLink
-            to="/payments"
-            className={({ isActive }) => (isActive ? "active" : "")}
-          >
-            <FaMoneyCheckAlt className="icon" /> <span>Payments</span>
-          </NavLink>
-        </li> */}
         <li>
           <NavLink to="/logout" className="logout-button">
             <FaSignOutAlt className="icon" /> <span>Logout</span>

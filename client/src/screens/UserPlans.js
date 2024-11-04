@@ -310,7 +310,10 @@ const UserPlan = () => {
         >
           <Text style={styles.buttonText}>Add Partner</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.profileIcon}>
+        <TouchableOpacity
+          style={styles.profileIcon}
+          onPress={() => navigation.navigate("Profile")}
+        >
           <Ionicons name="person-circle-outline" size={32} color="#000" />
         </TouchableOpacity>
       </View>

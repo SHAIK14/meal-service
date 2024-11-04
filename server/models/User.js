@@ -40,6 +40,26 @@ const userSchema = new mongoose.Schema(
         },
       },
     },
+    // New subscription-related fields
+    subscriptions: {
+      active: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "SubscriptionOrder",
+        },
+      ],
+      history: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "SubscriptionOrder",
+        },
+      ],
+    },
+    isSubscribed: {
+      type: Boolean,
+      default: false,
+    },
+    lastSubscriptionDate: Date,
     lastLogin: Date,
   },
   { timestamps: true }

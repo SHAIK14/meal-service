@@ -233,3 +233,170 @@ export const getWeekMenu = async (planId) => {
   }
 };
 export default api;
+
+// Voucher management functions
+export const createVoucher = async (voucherData) => {
+  try {
+    const response = await api.post("/admin/vouchers", voucherData);
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Error in createVoucher:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "An unexpected error occurred",
+    };
+  }
+};
+
+export const getAllVouchers = async () => {
+  try {
+    const response = await api.get("/admin/vouchers");
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Error in getAllVouchers:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "An unexpected error occurred",
+    };
+  }
+};
+
+export const toggleVoucherStatus = async (voucherId) => {
+  try {
+    const response = await api.patch(`/admin/vouchers/${voucherId}/toggle`);
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Error in toggleVoucherStatus:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "An unexpected error occurred",
+    };
+  }
+};
+
+export const deleteVoucher = async (voucherId) => {
+  try {
+    const response = await api.delete(`/admin/vouchers/${voucherId}`);
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Error in deleteVoucher:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "An unexpected error occurred",
+    };
+  }
+};
+
+// Get all subscriptions with filters
+// Update these subscription-related functions in your api.js
+
+export const getAllSubscriptions = async (params) => {
+  try {
+    const response = await api.get("/admin/subscriptions", { params });
+    console.log("getAllSubscriptions raw response:", response);
+
+    // Ensure we're returning the correct data structure
+    if (response.data && response.data.data) {
+      return {
+        success: true,
+        data: {
+          subscriptions: response.data.data.subscriptions || [],
+          pagination: response.data.data.pagination || {},
+          stats: response.data.data.stats || {},
+        },
+      };
+    }
+
+    // If the response structure is different, try to adapt it
+    return {
+      success: true,
+      data: {
+        subscriptions: Array.isArray(response.data) ? response.data : [],
+        pagination: response.data.pagination || {},
+        stats: response.data.stats || {},
+      },
+    };
+  } catch (error) {
+    console.error("Error in getAllSubscriptions:", error);
+    console.error("Error response:", error.response?.data);
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message,
+      data: { subscriptions: [], pagination: {}, stats: {} },
+    };
+  }
+};
+
+export const getSubscriptionAnalytics = async (params) => {
+  try {
+    const response = await api.get("/admin/subscriptions/analytics", {
+      params,
+    });
+    console.log("getSubscriptionAnalytics raw response:", response);
+
+    return {
+      success: true,
+      data: response.data.data || response.data || {},
+    };
+  } catch (error) {
+    console.error("Error in getSubscriptionAnalytics:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message,
+      data: {},
+    };
+  }
+};
+
+export const updateSubscriptionStatus = async (id, statusData) => {
+  try {
+    const response = await api.patch(
+      `/admin/subscriptions/${id}/status`,
+      statusData
+    );
+    console.log("updateSubscriptionStatus raw response:", response);
+
+    return {
+      success: true,
+      data: response.data.data || response.data,
+    };
+  } catch (error) {
+    console.error("Error in updateSubscriptionStatus:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message,
+    };
+  }
+};
+
+// Get subscription by ID
+export const getSubscriptionById = async (id) => {
+  try {
+    const response = await api.get(`/admin/subscriptions/${id}`);
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Error in getSubscriptionById:", error);
+    return { success: false, error: error.message };
+  }
+};
+
+// user.js
+export const getAllUsers = async (params) => {
+  try {
+    const response = await api.get("/admin/users", { params });
+    return { success: true, ...response.data };
+  } catch (error) {
+    console.error("Error in getAllUsers:", error);
+    return { success: false, error: error.message };
+  }
+};
+
+export const getUserAnalytics = async () => {
+  try {
+    const response = await api.get("/admin/users/analytics");
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Error in getUserAnalytics:", error);
+    return { success: false, error: error.message };
+  }
+};
