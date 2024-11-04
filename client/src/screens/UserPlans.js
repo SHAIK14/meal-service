@@ -377,51 +377,15 @@ const UserPlan = () => {
               showsVerticalScrollIndicator={false}
             >
               <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>
-                  {selectedPlan.nameEnglish}
-                </Text>
-
-                {/* Meal Type Selection */}
-                <View style={styles.mealTypeContainer}>
-                  <View style={styles.radioContainer}>
-                    <TouchableOpacity
-                      style={[
-                        styles.radioButton,
-                        selectedMealType === "One Meal" && styles.activeButton,
-                      ]}
-                      onPress={() => handleMealTypeSelect("One Meal")}
-                    >
-                      <Text style={styles.radioText}>One Meal</Text>
-                    </TouchableOpacity>
-
-                    {selectedPlan.package.length > 1 && (
-                      <>
-                        {selectedPlan.package.length > 2 && (
-                          <TouchableOpacity
-                            style={[
-                              styles.radioButton,
-                              selectedMealType === "Combo Meal" &&
-                                styles.activeButton,
-                            ]}
-                            onPress={() => handleMealTypeSelect("Combo Meal")}
-                          >
-                            <Text style={styles.radioText}>Combo</Text>
-                          </TouchableOpacity>
-                        )}
-
-                        <TouchableOpacity
-                          style={[
-                            styles.radioButton,
-                            selectedMealType === "Full Day Meal" &&
-                              styles.activeButton,
-                          ]}
-                          onPress={() => handleMealTypeSelect("Full Day Meal")}
-                        >
-                          <Text style={styles.radioText}>Full Day</Text>
-                        </TouchableOpacity>
-                      </>
-                    )}
-                  </View>
+                <View style={styles.modalTitleWrapper}>
+                  <Text style={styles.modalTitle}>
+                    {selectedPlan.nameEnglish}
+                  </Text>
+                  <Text style={styles.modalDescription}>
+                    This is Description is simply dummy text of the printing and
+                    typesetting industry. Lorem Ipsum has been the industry's
+                    standard dummy text ever since the 1500s,
+                  </Text>
                 </View>
 
                 {/* Package Tabs */}
@@ -448,34 +412,6 @@ const UserPlan = () => {
                   ))}
                 </View>
 
-                {/* Package Selection */}
-                <View style={styles.checkboxContainer}>
-                  {selectedPlan.package.map((pkg) => (
-                    <TouchableOpacity
-                      key={pkg}
-                      style={styles.checkboxRow}
-                      onPress={() => handlePackageToggle(pkg)}
-                      disabled={selectedMealType === "Full Day Meal"}
-                    >
-                      <View style={styles.checkboxWrapper}>
-                        <View
-                          style={[
-                            styles.checkbox,
-                            isPackageSelected(pkg) && styles.checkboxChecked,
-                          ]}
-                        >
-                          {isPackageSelected(pkg) && (
-                            <Ionicons name="checkmark" size={16} color="#fff" />
-                          )}
-                        </View>
-                        <Text style={styles.checkboxLabel}>
-                          {pkg.charAt(0).toUpperCase() + pkg.slice(1)}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-
                 {/* Days and Items */}
                 {viewingCategory && (
                   <>
@@ -494,7 +430,14 @@ const UserPlan = () => {
                           ]}
                           onPress={() => setSelectedDayIndex(i)}
                         >
-                          <Text style={styles.dayText}>Day {i + 1}</Text>
+                          <Text
+                            style={[
+                              styles.dayText,
+                              selectedDayIndex === i && styles.activeDayText, // Apply active text color here
+                            ]}
+                          >
+                            Day {i + 1}
+                          </Text>
                         </TouchableOpacity>
                       ))}
                     </ScrollView>
@@ -506,7 +449,13 @@ const UserPlan = () => {
                       contentContainerStyle={styles.itemsContent}
                     >
                       {getFilteredItems().map((item) => (
-                        <View key={item._id} style={styles.itemCard}>
+                        <TouchableOpacity
+                          key={item._id} // Use TouchableOpacity for clickable item
+                          style={styles.itemCard}
+                          onPress={() =>
+                            navigation.navigate("ItemDetails", { item })
+                          } // Navigate to ItemDetails with item data
+                        >
                           <Image
                             source={{ uri: item.image }}
                             style={styles.itemImage}
@@ -514,11 +463,104 @@ const UserPlan = () => {
                           <Text style={styles.itemName}>
                             {item.nameEnglish}
                           </Text>
-                        </View>
+                        </TouchableOpacity>
                       ))}
                     </ScrollView>
                   </>
                 )}
+              </View>
+
+              {/* Meal Type Selection */}
+              <View style={styles.mealTypeContainer}>
+                <View style={styles.radioContainer}>
+                  <TouchableOpacity
+                    style={[
+                      styles.radioButton,
+                      selectedMealType === "One Meal" && styles.activeButton,
+                    ]}
+                    onPress={() => handleMealTypeSelect("One Meal")}
+                  >
+                    <Text
+                      style={[
+                        styles.radioText,
+                        selectedMealType === "One Meal" && styles.activeText,
+                      ]}
+                    >
+                      One Meal
+                    </Text>
+                  </TouchableOpacity>
+
+                  {selectedPlan.package.length > 1 && (
+                    <>
+                      {selectedPlan.package.length > 2 && (
+                        <TouchableOpacity
+                          style={[
+                            styles.radioButton,
+                            selectedMealType === "Combo Meal" &&
+                              styles.activeButton,
+                          ]}
+                          onPress={() => handleMealTypeSelect("Combo Meal")}
+                        >
+                          <Text
+                            style={[
+                              styles.radioText,
+                              selectedMealType === "Combo Meal" &&
+                                styles.activeText,
+                            ]}
+                          >
+                            Combo
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+
+                      <TouchableOpacity
+                        style={[
+                          styles.radioButton,
+                          selectedMealType === "Full Day Meal" &&
+                            styles.activeButton,
+                        ]}
+                        onPress={() => handleMealTypeSelect("Full Day Meal")}
+                      >
+                        <Text
+                          style={[
+                            styles.radioText,
+                            selectedMealType === "Full Day Meal" &&
+                              styles.activeText, // Update condition here
+                          ]}
+                        >
+                          Full Day
+                        </Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
+              </View>
+              {/* Package Selection */}
+              <View style={styles.checkboxContainer}>
+                {selectedPlan.package.map((pkg) => (
+                  <TouchableOpacity
+                    key={pkg}
+                    style={styles.checkboxRow}
+                    onPress={() => handlePackageToggle(pkg)}
+                    disabled={selectedMealType === "Full Day Meal"}
+                  >
+                    <View style={styles.checkboxWrapper}>
+                      <View
+                        style={[
+                          styles.checkbox,
+                          isPackageSelected(pkg) && styles.checkboxChecked,
+                        ]}
+                      >
+                        {isPackageSelected(pkg) && (
+                          <Ionicons name="checkmark" size={16} color="#fff" />
+                        )}
+                      </View>
+                      <Text style={styles.checkboxLabel}>
+                        {pkg.charAt(0).toUpperCase() + pkg.slice(1)}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
               </View>
             </ScrollView>
 
@@ -567,15 +609,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 12,
     backgroundColor: "#fff",
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
+    paddingHorizontal: 30,
   },
   button: {
     backgroundColor: "#C5A85F",
     borderRadius: 6,
-    paddingVertical: 6,
+    paddingVertical: 10,
     paddingHorizontal: 12,
   },
   buttonText: {
@@ -651,10 +693,11 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: "#fff",
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    height: height * 0.85,
+    borderTopLeftRadius: 50,
+    borderTopRightRadius: 50,
+    height: height * 0.75,
   },
+
   modalHandle: {
     height: 20,
     justifyContent: "center",
@@ -671,42 +714,61 @@ const styles = StyleSheet.create({
     marginBottom: 60,
   },
   modalContent: {
-    padding: 12,
+    padding: 0,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalTitleWrapper: {
+    marginTop: 30,
+    marginVertical: 10,
+    textAlign: "Left",
+    paddingHorizontal: 30,
+  },
+  modalDescription: {
+    textAlign: "justify",
+    color: "gray",
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 24,
     marginBottom: 12,
-    textAlign: "center",
+    fontWeight: "bold",
+    textAlign: "Left",
   },
   mealTypeContainer: {
     marginBottom: 16,
+    paddingHorizontal: 30,
   },
   radioContainer: {
     flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 8,
+    height: 35,
+    justifyContent: "space-evenly",
+    marginVertical: 10,
   },
   radioButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
     borderRadius: 6,
     backgroundColor: "#f0f0f0",
-    minWidth: "28%",
+    alignItems: "center",
+    marginHorizontal: 10,
+    paddingHorizontal: 25,
+    justifyContent: "center",
     alignItems: "center",
   },
   activeButton: {
     backgroundColor: "#C5A85F",
+    color: "white",
   },
   radioText: {
-    fontSize: 12,
-    fontWeight: "600",
+    fontSize: 14,
+    fontWeight: "400",
     color: "#666",
   },
   activeButtonText: {
-    color: "#fff",
+    color: "white",
+    fontWeight: "600",
+  },
+  activeText: {
+    color: "white",
+    fontWeight: "600",
   },
   mealTypeDescription: {
     textAlign: "center",
@@ -716,19 +778,19 @@ const styles = StyleSheet.create({
   },
   packageTabsContainer: {
     flexDirection: "row",
-    justifyContent: "center",
-    gap: 8,
-    marginBottom: 12,
-    paddingHorizontal: 8,
+    height: 35,
+    justifyContent: "space-evenly",
+    marginVertical: 10,
+    marginBottom: 35,
   },
   packageTab: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
     borderRadius: 6,
     backgroundColor: "#f0f0f0",
-    flex: 1,
     alignItems: "center",
-    maxWidth: "30%",
+    marginHorizontal: 15,
+    paddingHorizontal: 30,
+    justifyContent: "center",
+    alignItems: "center",
   },
   activePackageTab: {
     backgroundColor: "#C5A85F",
@@ -743,9 +805,11 @@ const styles = StyleSheet.create({
   },
   checkboxContainer: {
     marginBottom: 12,
-    paddingHorizontal: 16,
-    backgroundColor: "#f8f8f8",
+    flexDirection: "row",
+    paddingHorizontal: 35,
     borderRadius: 8,
+    paddingHorizontal: 30,
+    justifyContent: "space-between",
     padding: 8,
   },
   checkboxRow: {
@@ -776,27 +840,29 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   daysWrapper: {
-    marginBottom: 12,
-    height: 36,
+    marginBottom: 24,
+
+    marginHorizontal: 15,
   },
   daysContent: {
-    paddingHorizontal: 4,
     alignItems: "center",
   },
   dayButton: {
     paddingVertical: 6,
+    justifyContent: "center",
     paddingHorizontal: 12,
     marginRight: 6,
-    borderRadius: 16,
+    borderRadius: 50,
     backgroundColor: "#f0f0f0",
     minWidth: 65,
+    minHeight: 65,
     alignItems: "center",
   },
   activeDayButton: {
     backgroundColor: "#C5A85F",
   },
   dayText: {
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: "600",
     color: "#666",
   },
@@ -805,32 +871,28 @@ const styles = StyleSheet.create({
   },
   itemsWrapper: {
     marginBottom: 12,
-    height: 160,
+    height: 180,
   },
   itemsContent: {
-    paddingHorizontal: 4,
+    paddingVertical: 10,
+    marginLeft: 6,
+    justifyContent: "center",
+    alignItems: "center",
   },
   itemCard: {
-    width: 120,
+    width: 200,
     marginRight: 10,
-    padding: 8,
     borderRadius: 8,
-    backgroundColor: "#fff",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
   },
   itemImage: {
     width: "100%",
-    height: 100,
+    height: "100%",
     borderRadius: 6,
     marginBottom: 6,
   },
   itemName: {
-    fontSize: 11,
-    fontWeight: "500",
+    fontSize: 14,
+    fontWeight: "600",
     textAlign: "center",
     color: "#333",
   },
