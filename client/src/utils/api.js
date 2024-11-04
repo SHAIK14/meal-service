@@ -5,7 +5,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 // const API_URL = "http://localhost:5000/api";
 const getApiUrl = () => {
   if (__DEV__) {
-    const localIpAddress = "172.20.10.5"; // Replace with your actual IP address if different
+    const localIpAddress = "192.168.1.105"; // Replace with your actual IP address if different
     return `http://${localIpAddress}:5000/api`;
   } else {
     return "https://your-production-api-url.com/api";
@@ -416,6 +416,71 @@ export const updateSubscriptionStatus = async (orderId, status) => {
     return response.json();
   } catch (error) {
     console.error("Error in updateSubscriptionStatus:", error);
+    throw error;
+  }
+};
+// subsctiption
+export const getTodayMenus = async () => {
+  const token = await AsyncStorage.getItem("userToken");
+  try {
+    const response = await fetch(`${API_URL}/menu/today`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to fetch today's menus");
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error in getTodayMenus:", error);
+    throw error;
+  }
+};
+
+export const getWeeklyMenu = async (orderId) => {
+  const token = await AsyncStorage.getItem("userToken");
+  try {
+    const response = await fetch(`${API_URL}/menu/weekly/${orderId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to fetch weekly menu");
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error in getWeeklyMenu:", error);
+    throw error;
+  }
+};
+
+export const updateMenuCycle = async (orderId) => {
+  const token = await AsyncStorage.getItem("userToken");
+  try {
+    const response = await fetch(`${API_URL}/menu/cycle/${orderId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to update menu cycle");
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error in updateMenuCycle:", error);
     throw error;
   }
 };
