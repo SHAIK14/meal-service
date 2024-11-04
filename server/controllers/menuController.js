@@ -1,6 +1,7 @@
 const SubscriptionOrder = require("../models/subscription");
 const WeeklyMenu = require("../models/admin/WeeklyMenu");
 const Plan = require("../models/admin/Plan");
+const Item = require("../models/admin/Item");
 
 // Helper function to determine current day number
 const getCurrentDayNumber = (startDate) => {
@@ -33,6 +34,7 @@ const isDeliveryDay = (planDuration, currentDayNumber) => {
 // Get today's menu for all active subscriptions
 
 // Get today's menu for all active subscriptions
+
 const getTodaySubscriptionMenus = async (req, res) => {
   try {
     // 1. Get active subscriptions
@@ -59,14 +61,6 @@ const getTodaySubscriptionMenus = async (req, res) => {
       },
     });
 
-    console.log(
-      "Weekly Menus found:",
-      weeklyMenus.map((menu) => ({
-        planId: menu.plan,
-        menuData: menu.weekMenu,
-      }))
-    );
-
     const todayMenus = await Promise.all(
       activeSubscriptions.map(async (subscription) => {
         const currentDayNumber = getCurrentDayNumber(subscription.startDate);
@@ -77,30 +71,43 @@ const getTodaySubscriptionMenus = async (req, res) => {
 
         console.log(`\nProcessing ${subscription.orderId}:`);
         console.log(`Day: ${currentDayNumber}`);
-        console.log(`Menu found:`, weeklyMenu?.weekMenu?.[currentDayNumber]);
+        console.log("Weekly Menu:", {
+          planId: weeklyMenu?.plan,
+          hasMenu: weeklyMenu?.weekMenu instanceof Map,
+          availableDays: weeklyMenu?.weekMenu
+            ? Array.from(weeklyMenu.weekMenu.keys())
+            : [],
+        });
 
         const menuItems = {};
 
-        if (weeklyMenu?.weekMenu?.[currentDayNumber]) {
-          const dayMenu = weeklyMenu.weekMenu[currentDayNumber];
+        if (weeklyMenu?.weekMenu && weeklyMenu.weekMenu instanceof Map) {
+          // Get the day menu using Map.get()
+          const dayMenu = weeklyMenu.weekMenu.get(currentDayNumber.toString());
+          console.log(`Day ${currentDayNumber} menu:`, dayMenu);
 
-          // Filter for user's selected packages
-          for (const packageType of subscription.plan.selectedPackages) {
-            if (dayMenu[packageType] && Array.isArray(dayMenu[packageType])) {
-              // Get items for this package
-              const itemIds = dayMenu[packageType];
-              console.log(`Found ${itemIds.length} items for ${packageType}`);
+          if (dayMenu && dayMenu instanceof Map) {
+            // Process each selected package
+            for (const packageType of subscription.plan.selectedPackages) {
+              const packageItems = dayMenu.get(packageType);
+              console.log(`${packageType} items:`, packageItems);
 
-              // Populate items
-              const items = await Item.find({ _id: { $in: itemIds } });
-              menuItems[packageType] = items.map((item) => ({
-                nameEnglish: item.nameEnglish,
-                nameArabic: item.nameArabic,
-                calories: item.calories,
-                protein: item.protein,
-                carbs: item.carbs,
-                fat: item.fat,
-              }));
+              if (packageItems && Array.isArray(packageItems)) {
+                // Get the items data
+                const items = await Item.find({
+                  _id: { $in: packageItems },
+                });
+
+                console.log(`Found ${items.length} items for ${packageType}`);
+                menuItems[packageType] = items.map((item) => ({
+                  nameEnglish: item.nameEnglish,
+                  nameArabic: item.nameArabic,
+                  calories: item.calories,
+                  protein: item.protein,
+                  carbs: item.carbs,
+                  fat: item.fat,
+                }));
+              }
             }
           }
         }
