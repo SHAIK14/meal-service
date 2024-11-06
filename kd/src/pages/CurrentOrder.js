@@ -7,7 +7,7 @@ import dayjs from "dayjs";
 import "../styles/CurrentOrder.css";
 
 const orderData = {
-  "2024-11-03": [
+  "2024-11-06": [
     {
       category: "Breakfast",
       readyTime: "08:30 AM",
@@ -26,7 +26,7 @@ const orderData = {
       ],
     },
   ],
-  "2024-11-04": [
+  "2024-11-07": [
     {
       category: "Breakfast",
       readyTime: "08:30 AM",
@@ -38,6 +38,14 @@ const orderData = {
     },
     {
       category: "Lunch",
+      readyTime: "12:30 PM", // Ready time for all lunch items
+      items: [
+        { id: 4, name: "Biryani Rice", quantity: 2 },
+        { id: 5, name: "Chicken 65", quantity: 1 },
+      ],
+    },
+    {
+      category: "Dinner",
       readyTime: "12:30 PM", // Ready time for all lunch items
       items: [
         { id: 4, name: "Biryani Rice", quantity: 2 },

@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-import React, { useState } from "react";
-=======
 import React, { useState, useEffect } from "react";
 import {
   createVoucher,
@@ -8,7 +5,6 @@ import {
   toggleVoucherStatus,
   deleteVoucher,
 } from "../utils/api.js";
->>>>>>> upstream/master
 import "../styles/Vouchers.css";
 
 const Vouchers = () => {
@@ -19,15 +15,6 @@ const Vouchers = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [eligibleMembers, setEligibleMembers] = useState("");
-<<<<<<< HEAD
-  const [discountType, setDiscountType] = useState("percentage"); // Default to percentage
-  const [discountValue, setDiscountValue] = useState(""); // State for discount value
-  const [promoCodes, setPromoCodes] = useState([]);
-
-  const today = new Date().toISOString().split("T")[0];
-
-  const handleSubmit = (e) => {
-=======
   const [discountType, setDiscountType] = useState("percentage");
   const [discountValue, setDiscountValue] = useState("");
   const [maxThreshold, setMaxThreshold] = useState("");
@@ -80,25 +67,10 @@ const Vouchers = () => {
   };
 
   const handleSubmit = async (e) => {
->>>>>>> upstream/master
     e.preventDefault();
     setError("");
     setLoading(true);
 
-<<<<<<< HEAD
-    const newPromoCode = {
-      promoCode,
-      startDate,
-      endDate,
-      eligibleMembers: parseInt(eligibleMembers),
-      discountType,
-      discountValue: parseFloat(discountValue), // Convert to a number
-      isActive: true,
-    };
-
-    setPromoCodes([...promoCodes, newPromoCode]);
-    setShowForm(false);
-=======
     // Combine date and time for precise timestamps
     const startDateTime = new Date(startDate);
     const endDateTime = new Date(endDate);
@@ -129,31 +101,12 @@ const Vouchers = () => {
   };
 
   const resetForm = () => {
->>>>>>> upstream/master
     setPromoCode("");
     setStartDate("");
     setEndDate("");
     setEligibleMembers("");
     setDiscountType("percentage");
     setDiscountValue("");
-<<<<<<< HEAD
-  };
-
-  const togglePromoCode = (index) => {
-    const updatedPromoCodes = [...promoCodes];
-    updatedPromoCodes[index].isActive = !updatedPromoCodes[index].isActive;
-    setPromoCodes(updatedPromoCodes);
-  };
-
-  const deletePromoCode = (index) => {
-    const updatedPromoCodes = promoCodes.filter((_, i) => i !== index);
-    setPromoCodes(updatedPromoCodes);
-  };
-
-  const handleAddPromoCodeClick = () => {
-    setShowForm(true);
-  };
-=======
     setMaxThreshold("");
     setError("");
   };
@@ -185,7 +138,6 @@ const Vouchers = () => {
   if (loading && promoCodes.length === 0) {
     return <div className="loading">Loading...</div>;
   }
->>>>>>> upstream/master
 
   return (
     <div className="vouchers-page">
@@ -217,124 +169,6 @@ const Vouchers = () => {
               />
             </div>
 
-<<<<<<< HEAD
-          <div className="form-group">
-            <label htmlFor="startDate">Start Date</label>
-            <input
-              type="date"
-              id="startDate"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              min={today}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="endDate">End Date</label>
-            <input
-              type="date"
-              id="endDate"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              min={startDate || today}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="eligibleMembers">Number of Members Eligible</label>
-            <input
-              type="number"
-              id="eligibleMembers"
-              value={eligibleMembers}
-              onChange={(e) => setEligibleMembers(e.target.value)}
-              placeholder="Enter number of members"
-              min="1"
-              required
-            />
-          </div>
-
-          {/* Radio buttons for Discount Type */}
-          <div className="discount-type-radio">
-            <label>Discount Type</label>
-            <div className="radio-inputs">
-              <label>Percentage</label>
-              <input
-                type="radio"
-                name="discountType"
-                value="percentage"
-                checked={discountType === "percentage"}
-                onChange={() => setDiscountType("percentage")}
-              />{" "}
-            </div>
-            <div className="radio-inputs">
-              <label>Flat Discount</label>
-              <input
-                type="radio"
-                name="discountType"
-                value="flat"
-                checked={discountType === "flat"}
-                onChange={() => setDiscountType("flat")}
-              />
-            </div>
-          </div>
-
-          {/* Conditional input field for Discount Value */}
-          <div className="discount-type-container">
-            <label htmlFor="discountValue">
-              {discountType === "percentage"
-                ? "Percentage Discount (%)"
-                : "Flat Discount (SAR)"}
-            </label>
-            <input
-              type="number"
-              id="discountValue"
-              value={discountValue}
-              onChange={(e) => setDiscountValue(e.target.value)}
-              placeholder={
-                discountType === "percentage"
-                  ? "Enter Percentage"
-                  : "Enter Flat Discount"
-              }
-              min="0"
-              required
-            />
-          </div>
-
-          <button type="submit" className="submit-btn">
-            Create Voucher
-          </button>
-        </form>
-      )}
-
-      {promoCodes.length > 0 && (
-        <div className="promo-codes-list">
-          <h2>Active Promo Codes</h2>
-          <ul>
-            {promoCodes.map((promo, index) => (
-              <li key={index} className="promo-code-item">
-                <span>
-                  {promo.promoCode} - Valid from {promo.startDate} to{" "}
-                  {promo.endDate} - Eligible Members: {promo.eligibleMembers} -{" "}
-                  {promo.discountType === "percentage"
-                    ? `${promo.discountValue}%`
-                    : `${promo.discountValue} (flat)`}{" "}
-                  Discount
-                </span>
-                <div className="actions">
-                  <label className="switch">
-                    <input
-                      type="checkbox"
-                      checked={promo.isActive}
-                      onChange={() => togglePromoCode(index)}
-                    />
-                    <span className="slider round"></span>
-                  </label>
-                  <button
-                    className="delete-btn"
-                    onClick={() => deletePromoCode(index)}
-=======
             <div className="form-group dates-group">
               <div className="date-input">
                 <label htmlFor="startDate">Start Date</label>
@@ -470,7 +304,6 @@ const Vouchers = () => {
                   <div
                     key={promo._id}
                     className={`promo-card ${status.status}`}
->>>>>>> upstream/master
                   >
                     <div className="promo-header">
                       <h3>{promo.promoCode}</h3>
@@ -517,14 +350,10 @@ const Vouchers = () => {
           </div>
         )}
 
-<<<<<<< HEAD
-      {promoCodes.length === 0 && !showForm && <p>No promo codes available</p>}
-=======
         {promoCodes.length === 0 && !showForm && (
           <p className="no-codes">No promo codes available</p>
         )}
       </div>
->>>>>>> upstream/master
     </div>
   );
 };

@@ -54,7 +54,7 @@ const UserPlan = () => {
   const [planItems, setPlanItems] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
+  const [activeTab, setActiveTab] = useState("Tab1");
   const scrollX = useRef(new Animated.Value(0)).current;
   const modalAnimation = useRef(new Animated.Value(height * 0.4)).current;
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
@@ -71,7 +71,9 @@ const UserPlan = () => {
       },
     },
   ];
-
+  const handleTabPress = (tab) => {
+    setActiveTab(tab); // Update the active tab state
+  };
   useEffect(() => {
     fetchPlans();
     const interval = setInterval(() => {
@@ -336,6 +338,36 @@ const UserPlan = () => {
               </View>
             ))}
           </Animated.ScrollView>
+        </View>
+        {/* Tabs Section */}
+        <View style={styles.tabsContainer}>
+          <TouchableOpacity
+            style={[
+              styles.tab,
+              activeTab === "Tab1" ? styles.activeTab : styles.inactiveTab,
+            ]}
+            onPress={() => handleTabPress("Tab1")}
+          >
+            <Text style={styles.tabText}>5 Days </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.tab,
+              activeTab === "Tab2" ? styles.activeTab : styles.inactiveTab,
+            ]}
+            onPress={() => handleTabPress("Tab2")}
+          >
+            <Text style={styles.tabText}>6 Days</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.tab,
+              activeTab === "Tab3" ? styles.activeTab : styles.inactiveTab,
+            ]}
+            onPress={() => handleTabPress("Tab3")}
+          >
+            <Text style={styles.tabText}>7 Days</Text>
+          </TouchableOpacity>
         </View>
 
         {plans.map((plan) => (
@@ -647,6 +679,32 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     resizeMode: "cover",
   },
+  // ... other styles
+  tabsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginVertical: 20,
+
+    backgroundColor: "white",
+  },
+  tab: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+  },
+  activeTab: {
+    borderWidth: 2,
+    borderColor: "green",
+    backgroundColor: "white",
+  },
+  inactiveTab: {
+    backgroundColor: "white",
+  },
+  tabText: {
+    fontSize: 16,
+    color: "#333",
+  },
+
   planWrapper: {
     padding: 12,
     paddingBottom: 24,

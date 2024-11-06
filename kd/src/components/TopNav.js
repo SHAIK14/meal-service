@@ -4,8 +4,7 @@ import { NavLink, Link } from "react-router-dom";
 import "../styles/TopNav.css";
 
 function TopNav() {
-  // Example order count; replace this with dynamic data as needed
-  const orderCount = 70; // This is just a static example; ensure this value changes accordingly
+  const orderCount = 70;
 
   return (
     <div className="nav-container">
@@ -18,6 +17,9 @@ function TopNav() {
         {orderCount > 0 && (
           <span className="notification-badge">{orderCount}</span>
         )}
+      </NavLink>
+      <NavLink className="nav-item" to="/Alacarte" activeClassName="active">
+        A La Carte
       </NavLink>
     </div>
   );

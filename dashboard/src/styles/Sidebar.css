@@ -1,27 +1,43 @@
 .sidebar {
-  height: auto;
+  top: 0;
+  left: 0;
+  padding: 10px;
   background-color: white;
   color: black;
+  width: 60px; /* Default width when collapsed */
   transition: width 0.3s ease;
-  overflow: hidden;
+  overflow: hidden; /* Prevent overflow outside */
+  z-index: 1000;
 }
 
 .sidebar.open {
-  width: 250px;
+  width: 300px;
 }
 
 .sidebar.closed {
-  width: 0;
+  width: 120px;
+}
+.sidebar ul::-webkit-scrollbar {
+  width: 8px; /* Width of the scrollbar */
+}
+.sidebar ul::-webkit-scrollbar-thumb {
+  background: #888; /* Color of the scrollbar thumb */
+  border-radius: 10px; /* Round edges of the scrollbar */
+}
+.sidebar ul::-webkit-scrollbar-thumb:hover {
+  background: #555; /* Darker color on hover */
 }
 
 .sidebar ul {
   list-style-type: none;
   padding: 0;
-  margin-top: 100px;
+  margin-top: 100px; /* Margin to accommodate the toggle button */
+  height: calc(100vh - 100px); /* Adjust height to fit within the sidebar */
+  overflow-y: auto; /* Enable vertical scrolling */
 }
 
 .sidebar ul li {
-  margin-bottom: 20px;
+  margin-bottom: 5px;
 }
 
 .sidebar ul li a {
@@ -31,20 +47,26 @@
   text-decoration: none;
   font-size: 18px;
   transition: 0.3s ease-in-out;
-  margin: 50px;
+  margin: 20px 20px;
 }
 
 .sidebar ul li a:hover {
-  color: black;
+  background-color: black;
+  color: white;
+  padding: 10px;
+  border-radius: 50px;
+  transition: 0.3s ease;
 }
 
 .icon {
   margin-right: 10px;
   font-size: 20px;
+  background-color: white;
+  padding: 10px;
+  border-radius: 25px;
 }
 
 .toggle-btn {
-  margin: 0px 50px;
   cursor: pointer;
   color: grey;
   font-size: 24px;
@@ -54,10 +76,10 @@
   height: 50px;
   width: 50px;
   border-radius: 50%;
-  position: absolute;
-  top: 20px;
-  left: -25px;
-  z-index: 1000;
+  position: absolute; /* Position absolute to the sidebar */
+  top: 20px; /* Adjust position */
+  left: 25px; /* Keep it outside the sidebar */
+  z-index: 1001; /* Higher than sidebar for visibility */
   transition: 0.3s ease-in-out;
 }
 
@@ -75,9 +97,9 @@
 
 /* Active link style */
 .sidebar ul li .active {
-  background-color: #faf9d9;
-  color: black;
-  padding: 15px;
+  background-color: black;
+  color: white;
+  padding: 10px;
   border-radius: 50px;
   transition: 0.3s ease;
 }

@@ -11,6 +11,7 @@ import {
   FaUtensilSpoon,
   FaCreditCard,
   FaTicketAlt,
+  FaBook,
 } from "react-icons/fa";
 import "../styles/Sidebar.css";
 
@@ -20,9 +21,19 @@ const Sidebar = () => {
   const toggleSidebar = () => {
     setIsOpen(!isOpen);
   };
+  const handleMouseEnter = () => {
+    setIsOpen(true); // Open sidebar on hover
+  };
+  const handleMouseLeave = () => {
+    setIsOpen(false); // Close sidebar when not hovered
+  };
 
   return (
-    <div className={`sidebar ${isOpen ? "open" : "closed"}`}>
+    <div
+      className={`sidebar ${isOpen ? "open" : "closed"}`}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       <div className="toggle-btn" onClick={toggleSidebar}>
         <FaBars />
       </div>
@@ -89,6 +100,14 @@ const Sidebar = () => {
             className={({ isActive }) => (isActive ? "active" : "")}
           >
             <FaUsers className="icon" /> <span>Users</span>
+          </NavLink>
+        </li>
+        <li>
+          <NavLink
+            to="/Configuration"
+            className={({ isActive }) => (isActive ? "active" : "")}
+          >
+            <FaBook className="icon" /> <span>Config</span>
           </NavLink>
         </li>
         <li>

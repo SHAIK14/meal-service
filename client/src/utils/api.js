@@ -5,12 +5,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 // const API_URL = "http://localhost:5000/api";
 const getApiUrl = () => {
   if (__DEV__) {
-<<<<<<< HEAD
-    const localIpAddress = "192.168.1.148"; // Replace with your actual IP address if different
-
-=======
-    const localIpAddress = "172.20.10.5"; // Replace with your actual IP address if different
->>>>>>> upstream/master
+    const localIpAddress = "192.168.1.17"; // Replace with your actual IP address if different
     return `http://${localIpAddress}:5000/api`;
   } else {
     return "https://your-production-api-url.com/api";
