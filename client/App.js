@@ -19,6 +19,7 @@ import PrivacyPolicy from "./src/screens/Profile/PrivacyPolicy";
 import Subscription from "./src/screens/Profile/Subscription";
 import ContactSupport from "./src/screens/Profile/ContactSupport";
 import EditProfile from "./src/screens/Profile/EditProfile";
+import ItemDetails from "./src/screens/ItemDetails";
 
 const Stack = createStackNavigator();
 
@@ -59,6 +60,7 @@ export default function App() {
         <Stack.Screen name="Subscription" component={Subscription} />
         <Stack.Screen name="ContactSupport" component={ContactSupport} />
         <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicy} />
+        <Stack.Screen name="ItemDetails" component={ItemDetails} />
       </Stack.Navigator>
     </NavigationContainer>
   );

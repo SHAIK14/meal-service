@@ -19,9 +19,19 @@ import { requestOTP } from "../utils/api";
 import backgroundImage from "../../assets/background.png";
 
 const { width, height } = Dimensions.get("window");
+const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
 
 const countryCodes = [
   { code: "+966", country: "Saudi Arabia", maxLength: 9, flag: "🇸🇦" },
+  { code: "+971", country: "UAE", maxLength: 10, flag: "🇦🇪" },
+  { code: "+973", country: "Bahrain", maxLength: 8, flag: "🇧🇭" },
+  { code: "+968", country: "Oman", maxLength: 8, flag: "🇴🇲" },
+  { code: "+974", country: "Qatar", maxLength: 8, flag: "🇶🇦" },
+  { code: "+965", country: "Kuwait", maxLength: 8, flag: "🇰🇼" },
+  { code: "+964", country: "Iraq", maxLength: 10, flag: "🇮🇶" },
+  { code: "+962", country: "Jordan", maxLength: 9, flag: "🇯🇴" },
+  { code: "+963", country: "Syria", maxLength: 9, flag: "🇸🇾" },
+  { code: "+961", country: "Lebanon", maxLength: 8, flag: "🇱🇧" },
   { code: "+91", country: "India", maxLength: 10, flag: "🇮🇳" },
 ];
 
@@ -31,6 +41,7 @@ const LoginScreen = ({ navigation }) => {
   const [error, setError] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleSendOtp = async () => {
     setError("");
@@ -59,12 +70,20 @@ const LoginScreen = ({ navigation }) => {
       );
     }
   };
+
   const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
 
   const selectCountry = (country) => {
     setSelectedCountry(country);
     setIsDropdownOpen(false);
   };
+
+  // Filter the countries based on the search query
+  const filteredCountries = countryCodes.filter(
+    (country) =>
+      country.country.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      country.code.includes(searchQuery)
+  );
 
   return (
     <ImageBackground
@@ -79,7 +98,7 @@ const LoginScreen = ({ navigation }) => {
       >
         <ScrollView contentContainerStyle={styles.scrollViewContent}>
           <View style={styles.formContainer}>
-            <Text style={styles.title}>Welcome to Zafran Valley</Text>
+            <Text style={styles.title}>Log in to Zafran Valley</Text>
             <View style={styles.phoneContainer}>
               <TouchableOpacity
                 style={styles.dropdownButton}
@@ -115,27 +134,39 @@ const LoginScreen = ({ navigation }) => {
         </ScrollView>
       </KeyboardAvoidingView>
 
+      {/* Modal for selecting country */}
+      {/* Modal for selecting country */}
       <Modal visible={isDropdownOpen} transparent={true} animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Country</Text>
-            {countryCodes.map((country) => (
-              <TouchableOpacity
-                key={country.code}
-                style={styles.countryOption}
-                onPress={() => selectCountry(country)}
-              >
-                <Text style={styles.countryOptionText}>
-                  {country.flag} {country.country} ({country.code})
-                </Text>
-              </TouchableOpacity>
-            ))}
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={toggleDropdown}
-            >
-              <Text style={styles.closeButtonText}>Close</Text>
+            {/* "X" Close Icon */}
+            <TouchableOpacity style={styles.closeIcon} onPress={toggleDropdown}>
+              <Text style={styles.closeIconText}>✕</Text>
             </TouchableOpacity>
+
+            <Text style={styles.modalTitle}>Select Country</Text>
+
+            {/* Search bar */}
+            <TextInput
+              style={styles.searchBar}
+              placeholder="Search by country name or code"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+
+            <ScrollView style={styles.countryListScroll}>
+              {filteredCountries.map((country) => (
+                <TouchableOpacity
+                  key={country.code}
+                  style={styles.countryOption}
+                  onPress={() => selectCountry(country)}
+                >
+                  <Text style={styles.countryOptionText}>
+                    {country.flag} {country.country} ({country.code})
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -166,7 +197,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 25,
     borderTopRightRadius: 25,
     width: "100%",
-    maxHeight: height * 0.7,
+    maxHeight: height * 1,
   },
   title: {
     fontSize: width * 0.06,
@@ -177,31 +208,29 @@ const styles = StyleSheet.create({
   phoneContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: height * 0.02,
+    borderBottomWidth: 1,
+    borderBottomColor: "#d1d1d1",
+    paddingVertical: 10,
   },
   dropdownButton: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    width: width * 0.25,
-    height: 50,
-    borderWidth: 1,
-    borderColor: "gray",
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    marginRight: width * 0.02,
+    paddingRight: 10,
+    borderRightWidth: 1,
+    borderRightColor: "#d1d1d1",
+    marginRight: 10,
   },
+
   dropdownButtonText: {
-    fontSize: width * 0.04,
+    fontSize: 16,
+    color: "#333",
+    paddingHorizontal: 5,
   },
   phoneInput: {
     flex: 1,
-    height: 50,
-    borderWidth: 1,
-    borderColor: "gray",
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    fontSize: width * 0.04,
+    fontSize: 16,
+    color: "#333",
+    paddingVertical: 8,
   },
   verifyButton: {
     backgroundColor: "#FAF9D9",
@@ -227,39 +256,52 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    justifyContent: "flex-end",
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
+
+  searchBar: {
+    borderColor: "#d1d1d1",
+    borderBottomWidth: 2,
+    padding: 10,
+    marginBottom: 10,
+    borderRadius: 5,
+    fontSize: 16,
+    color: "#333",
+  },
   modalContent: {
+    width: "80%",
+    maxHeight: "40%",
     backgroundColor: "white",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
     padding: 20,
+    borderRadius: 32,
+    position: "relative",
   },
   modalTitle: {
-    fontSize: width * 0.05,
+    fontSize: 18,
     fontWeight: "bold",
     marginBottom: 15,
     textAlign: "center",
   },
   countryOption: {
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    paddingVertical: 10,
+    marginVertical: 6,
+    padding: 10,
+    borderRadius: 5,
   },
   countryOptionText: {
-    fontSize: width * 0.04,
+    fontSize: 16,
+    color: "#333",
   },
-  closeButton: {
-    marginTop: 20,
-    padding: 15,
-    backgroundColor: "#FAF9D9",
-    borderRadius: 5,
-    alignItems: "center",
+  closeIcon: {
+    position: "absolute",
+    top: 15,
+    right: 20,
   },
-  closeButtonText: {
-    fontSize: width * 0.04,
-    fontWeight: "bold",
+  closeIconText: {
+    fontSize: 20,
+    color: "#333",
   },
 });
 

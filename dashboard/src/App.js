@@ -24,6 +24,8 @@ import ItemsCategories from "./components/ItemsCategories";
 import Banners from "./components/Banners";
 import PaymentPage from "./components/payment";
 import Vouchers from "./components/Vouchers";
+import InvoiceTemplate from "./components/InvoiceTemplate";
+import Configuration from "./components/Configuration";
 
 const AuthenticatedLayout = ({ children }) => (
   <div
@@ -88,12 +90,14 @@ const App = () => {
                     path="/select-item-page"
                     element={<SelectItemPage />}
                   />
-                  <Route path="/Vouchers" element={<Vouchers />} />
+                  <Route path="/vouchers" element={<Vouchers />} />
                   <Route
-                    path="/Planitemselection/:planId"
+                    path="/planitemselection/:planId"
                     element={<PlanItemSelection />}
                   />
                   <Route path="/" element={<Navigate to="/plans" replace />} />
+                  <Route path="/invoice" element={<InvoiceTemplate />} />
+                  <Route path="/configuration" element={<Configuration />} />
                 </Routes>
               </AuthenticatedLayout>
             ) : (

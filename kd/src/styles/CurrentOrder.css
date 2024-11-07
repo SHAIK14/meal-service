@@ -1,0 +1,235 @@
+.current-order-container {
+  max-width: 600px;
+  margin: 50px auto;
+  padding: 50px;
+}
+
+/* Flex layout for category headers */
+.category-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  color: black;
+
+  transition: 0.3s;
+  padding: 10px;
+  background-color: #f9f9f9;
+  border-radius: 25px;
+}
+.header-title {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  margin: 0;
+  padding: 0;
+}
+.header-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+/* Flex layout for calendar container */
+.calendar-container {
+  display: flex;
+  align-items: center;
+}
+
+/* Change header color on hover */
+.category-header:hover {
+  color: black;
+  background-color: #efefef;
+}
+
+/* Arrow styling */
+.arrow {
+  width: 0;
+  height: 0;
+  border: solid transparent;
+  border-width: 12px 12px 0 0;
+  display: inline-block;
+  margin: 10px;
+  transition: transform 0.3s;
+}
+
+.right {
+  border-top-color: black;
+  transform: rotate(180deg);
+}
+
+.down {
+  border-top-color: black;
+  transform: rotate(45deg);
+}
+
+/* Title styling */
+h2 {
+  text-align: left;
+  font-size: 1.8em;
+  color: #333;
+}
+
+/* Inner content styling */
+.inner-content {
+  padding: 25px;
+}
+
+/* Order category styling */
+.order-category {
+  margin-bottom: 20px;
+  padding: 15px;
+  box-shadow: rgba(0, 0, 0, 0.1) 0px 20px 25px -5px,
+    rgba(0, 0, 0, 0.04) 0px 10px 10px -5px;
+  border-radius: 50px;
+  background-color: #fff;
+}
+
+/* Font size for category headings */
+.order-category h3 {
+  font-size: 1em;
+  margin: 0 15px;
+  color: black;
+}
+
+/* Font size for paragraph elements */
+.order-category p {
+  font-size: 1em;
+  color: #555;
+}
+
+/* Unordered list styling */
+ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Styling for order items */
+.order-item {
+  padding: 10px 0;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between;
+}
+
+.item {
+  border-radius: 6px;
+}
+
+.order-item:first-child {
+  border-top: none;
+}
+
+/* Paragraph styling for order items */
+.order-item p {
+  margin: 0;
+  font-size: 0.95em;
+  color: #333;
+}
+
+/* Styling for quantity display */
+.quantity {
+  display: flex;
+  background-color: red;
+  width: 25px;
+  height: 25px;
+  border-radius: 25px;
+  justify-content: center;
+  align-items: center;
+  padding: 5px;
+  color: white;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Strong element styling within order items */
+.order-item strong {
+  font-weight: 600;
+}
+
+/* Button styling for ready for pickup */
+.ready-for-pickup-button {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  font-size: 1em;
+  color: #fff;
+  background-color: #28a745;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  margin-top: 15px;
+  transition: background-color 0.3s ease;
+}
+
+.ready-for-pickup-button:hover {
+  background-color: #218838;
+}
+
+/* Responsive typography */
+h2 {
+  display: flex;
+  align-items: center;
+}
+
+/* Icon styling */
+h2 i {
+  margin-right: 8px;
+  font-size: 1.5rem;
+  color: #007bff;
+}
+
+/* Media queries for responsiveness */
+@media (max-width: 768px) {
+  .current-order-container {
+    padding: 15px;
+  }
+
+  h2 {
+    font-size: 1.5em;
+  }
+
+  .category-header {
+    padding: 8px;
+  }
+
+  .inner-content {
+    padding: 20px;
+  }
+
+  .order-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .quantity {
+    width: 20px;
+    height: 20px;
+  }
+
+  .ready-for-pickup-button {
+    font-size: 0.9em;
+  }
+}
+
+@media (max-width: 480px) {
+  h2 {
+    font-size: 1.2em;
+  }
+
+  .category-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .order-item {
+    font-size: 0.9em;
+  }
+
+  .ready-for-pickup-button {
+    font-size: 0.8em;
+  }
+}
