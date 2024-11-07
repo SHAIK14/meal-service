@@ -400,3 +400,175 @@ export const getUserAnalytics = async () => {
     return { success: false, error: error.message };
   }
 };
+//config
+// Add these functions after your existing exports
+
+// Base Configuration
+export const getConfiguration = async () => {
+  try {
+    const response = await api.get("/admin/config");
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Error in getConfiguration:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "An unexpected error occurred",
+    };
+  }
+};
+
+export const updateBasicConfig = async (configData) => {
+  try {
+    const response = await api.put("/admin/config/basic", configData);
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Error in updateBasicConfig:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "An unexpected error occurred",
+    };
+  }
+};
+
+// Location Settings
+export const updateLocationSettings = async (locationData) => {
+  try {
+    const response = await api.put("/admin/config/location", locationData);
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Error in updateLocationSettings:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "An unexpected error occurred",
+    };
+  }
+};
+
+// Weekly Holidays
+export const updateWeeklyHolidays = async (holidaysData) => {
+  try {
+    const response = await api.put(
+      "/admin/config/weekly-holidays",
+      holidaysData
+    );
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Error in updateWeeklyHolidays:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "An unexpected error occurred",
+    };
+  }
+};
+
+// National Holidays
+export const getNationalHolidays = async () => {
+  try {
+    const response = await api.get("/admin/config/holidays");
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Error in getNationalHolidays:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "An unexpected error occurred",
+    };
+  }
+};
+
+export const addNationalHoliday = async (holidayData) => {
+  try {
+    const response = await api.post("/admin/config/holiday", holidayData);
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Error in addNationalHoliday:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "An unexpected error occurred",
+    };
+  }
+};
+
+export const updateNationalHoliday = async (holidayId, holidayData) => {
+  try {
+    const response = await api.put(
+      `/admin/config/holiday/${holidayId}`,
+      holidayData
+    );
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Error in updateNationalHoliday:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "An unexpected error occurred",
+    };
+  }
+};
+
+export const deleteNationalHoliday = async (holidayId) => {
+  try {
+    const response = await api.delete(`/admin/config/holiday/${holidayId}`);
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Error in deleteNationalHoliday:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "An unexpected error occurred",
+    };
+  }
+};
+
+// Emergency Closures
+export const getEmergencyClosures = async () => {
+  try {
+    const response = await api.get("/admin/config/emergencies");
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Error in getEmergencyClosures:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "An unexpected error occurred",
+    };
+  }
+};
+
+export const addEmergencyClosure = async (closureData) => {
+  try {
+    const response = await api.post("/admin/config/emergency", closureData);
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Error in addEmergencyClosure:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "An unexpected error occurred",
+    };
+  }
+};
+
+export const updateEmergencyClosure = async (closureId, closureData) => {
+  try {
+    const response = await api.put(
+      `/admin/config/emergency/${closureId}`,
+      closureData
+    );
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Error in updateEmergencyClosure:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "An unexpected error occurred",
+    };
+  }
+};
+
+export const deleteEmergencyClosure = async (closureId) => {
+  try {
+    const response = await api.delete(`/admin/config/emergency/${closureId}`);
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Error in deleteEmergencyClosure:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "An unexpected error occurred",
+    };
+  }
+};

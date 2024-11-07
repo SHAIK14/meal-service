@@ -1,12 +1,25 @@
-import React, { useState } from "react";
-import "../styles/Configuration.css"; // Ensure you have the appropriate styles imported
-import { Theme, useTheme } from "@mui/material/styles";
+import React, { useState, useEffect } from "react";
+import "../styles/Configuration.css";
 import OutlinedInput from "@mui/material/OutlinedInput";
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
-import Select, { SelectChangeEvent } from "@mui/material/Select";
+import Select from "@mui/material/Select";
 import TextField from "@mui/material/TextField";
+import {
+  getConfiguration,
+  updateBasicConfig,
+  updateLocationSettings,
+  updateWeeklyHolidays,
+  getNationalHolidays,
+  addNationalHoliday,
+  deleteNationalHoliday,
+  getEmergencyClosures,
+  addEmergencyClosure,
+  deleteEmergencyClosure,
+} from "../utils/api";
+import toast from "react-hot-toast";
+
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;
 const MenuProps = {
@@ -20,29 +33,52 @@ const MenuProps = {
 
 const Configuration = () => {
   const [activeTab, setActiveTab] = useState(1);
-  const [weekPlan, setWeekPlan] = useState(""); // For 1 Week Plan
-  const [twoWeekPlan, setTwoWeekPlan] = useState(""); // For 2 Week Plan
-  const [monthPlan, setMonthPlan] = useState(""); // For 1 Month Plan
-  const [selectedDays, setSelectedDays] = useState(1);
+  const [loading, setLoading] = useState(true);
+
+  // Initialize all skip-related states to 0
+  const [selectedDays, setSelectedDays] = useState(0);
+  const [userPlanStart, setUserPlanStart] = useState(0);
+
+  // Skip allowances
+  const [skipAllowances, setSkipAllowances] = useState({
+    week: 0,
+    twoWeek: 0,
+    month: 0,
+  });
+
   const [selectedCountry, setSelectedCountry] = useState("");
   const [selectedCurrency, setSelectedCurrency] = useState("");
-  const [weeklyHolidays, setWeeklyHolidays] = useState({
-    Sunday: false,
-    Monday: false,
-    Tuesday: false,
-    Wednesday: false,
-    Thursday: false,
-    Friday: false,
-    Saturday: false,
-  });
+
+  // Weekly holidays state
+  const [selectedWeeklyHolidays, setSelectedWeeklyHolidays] = useState([]);
+  const [weeklyHolidayInput, setWeeklyHolidayInput] = useState("");
+
+  // Holiday states
   const [nationalHolidays, setNationalHolidays] = useState([]);
   const [holidayDate, setHolidayDate] = useState("");
   const [holidayName, setHolidayName] = useState("");
-  const [userPlanStart, setUserPlanStart] = useState(1);
+
+  // Emergency closure states
+  const [emergencyClosures, setEmergencyClosures] = useState([]);
   const [emergencyDate, setEmergencyDate] = useState("");
   const [emergencyDescription, setEmergencyDescription] = useState("");
+
+  // Location states
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
+
   const today = new Date().toISOString().split("T")[0];
-  const daysOptions = Array.from({ length: 7 }, (_, i) => i + 1);
+  const daysOptions = Array.from({ length: 8 }, (_, i) => i); // Changed to include 0
+
+  const weekDays = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
 
   const gccCountries = [
     { name: "Bahrain", currency: "Bahraini Dinar (BHD)" },
@@ -52,68 +88,258 @@ const Configuration = () => {
     { name: "Saudi Arabia", currency: "Saudi Riyal (SAR)" },
     { name: "United Arab Emirates", currency: "UAE Dirham (AED)" },
   ];
-  // Event Handlers for changing dropdown values
-  const handleWeekPlanChange = (e) => {
-    setWeekPlan(e.target.value);
+
+  // Format date to display without time
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
   };
 
-  const handleTwoWeekPlanChange = (e) => {
-    setTwoWeekPlan(e.target.value);
+  useEffect(() => {
+    fetchConfiguration();
+    fetchEmergencyClosures();
+  }, []);
+
+  const fetchConfiguration = async () => {
+    try {
+      setLoading(true);
+      const response = await getConfiguration();
+      if (response.success) {
+        const config = response.data;
+        // Set default values to 0 if not present
+        setSelectedDays(config?.skipMealDays ?? 0);
+        setUserPlanStart(config?.planStartDelay ?? 0);
+
+        // Handle weekly holidays array
+        setSelectedWeeklyHolidays(config?.weeklyHolidays || []);
+
+        // Format dates for national holidays
+        const formattedHolidays = (config?.nationalHolidays || []).map(
+          (holiday) => ({
+            ...holiday,
+            date: formatDate(holiday.date),
+          })
+        );
+        setNationalHolidays(formattedHolidays);
+
+        // Set skip allowances with defaults
+        setSkipAllowances({
+          week: config?.skipAllowances?.week ?? 0,
+          twoWeek: config?.skipAllowances?.twoWeek ?? 0,
+          month: config?.skipAllowances?.month ?? 0,
+        });
+
+        // Set location settings
+        setSelectedCountry(config?.country || "");
+        setSelectedCurrency(config?.currency || "");
+        setLatitude(config?.coordinates?.latitude || "");
+        setLongitude(config?.coordinates?.longitude || "");
+      }
+    } catch (error) {
+      console.error("Error loading configuration:", error);
+      // Don't show error toast if it's the first time loading
+      if (error.response?.status !== 404) {
+        toast.error("Failed to load configuration");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleMonthPlanChange = (e) => {
-    setMonthPlan(e.target.value);
+  const fetchEmergencyClosures = async () => {
+    try {
+      const response = await getEmergencyClosures();
+      if (response.success) {
+        const formattedClosures = response.data.map((closure) => ({
+          ...closure,
+          date: formatDate(closure.date),
+        }));
+        setEmergencyClosures(formattedClosures);
+      }
+    } catch (error) {
+      console.error("Error fetching emergency closures:", error);
+    }
   };
 
-  // Handle country selection
+  const handleUpdateConfiguration = async () => {
+    try {
+      // Update basic config with new skipAllowances structure
+      const basicConfigResponse = await updateBasicConfig({
+        skipMealDays: selectedDays,
+        planStartDelay: userPlanStart,
+        skipAllowances: {
+          week: skipAllowances.week,
+          twoWeek: skipAllowances.twoWeek,
+          month: skipAllowances.month,
+        },
+      });
+
+      // Update weekly holidays (already in array format)
+      const weeklyHolidaysResponse = await updateWeeklyHolidays(
+        selectedWeeklyHolidays
+      );
+
+      // Update location settings
+      const locationResponse = await updateLocationSettings({
+        country: selectedCountry,
+        currency: selectedCurrency,
+        coordinates: {
+          latitude: parseFloat(latitude),
+          longitude: parseFloat(longitude),
+        },
+      });
+
+      if (
+        basicConfigResponse.success &&
+        weeklyHolidaysResponse.success &&
+        locationResponse.success
+      ) {
+        toast.success("Configuration updated successfully");
+      } else {
+        toast.error("Some updates failed");
+      }
+    } catch (error) {
+      toast.error("Error updating configuration");
+      console.error("Error:", error);
+    }
+  };
+
+  // Updated handlers for skip allowances
+  const handleWeekSkipChange = (e) => {
+    setSkipAllowances((prev) => ({
+      ...prev,
+      week: e.target.value,
+    }));
+  };
+
+  const handleTwoWeekSkipChange = (e) => {
+    setSkipAllowances((prev) => ({
+      ...prev,
+      twoWeek: e.target.value,
+    }));
+  };
+
+  const handleMonthSkipChange = (e) => {
+    setSkipAllowances((prev) => ({
+      ...prev,
+      month: e.target.value,
+    }));
+  };
+
+  const handleDaysChange = (event) => setSelectedDays(event.target.value);
+  const handleUserPlanStartChange = (event) =>
+    setUserPlanStart(event.target.value);
+
+  const handleWeeklyHolidayChange = (event) => {
+    const day = event.target.value;
+    if (!selectedWeeklyHolidays.includes(day)) {
+      if (selectedWeeklyHolidays.length < 7) {
+        setSelectedWeeklyHolidays([...selectedWeeklyHolidays, day]);
+      } else {
+        toast.error("Maximum 7 holidays can be selected");
+      }
+    }
+    setWeeklyHolidayInput("");
+  };
+
+  const handleRemoveWeeklyHoliday = (dayToRemove) => {
+    setSelectedWeeklyHolidays(
+      selectedWeeklyHolidays.filter((day) => day !== dayToRemove)
+    );
+  };
+
   const handleCountryChange = (e) => {
     const country = e.target.value;
     setSelectedCountry(country);
     const currency =
       gccCountries.find((item) => item.name === country)?.currency || "";
-    setSelectedCurrency(currency); // Automatically set the currency based on the selected country
-  };
-  // State for location coordinates
-  const [latitude, setLatitude] = useState("");
-  const [longitude, setLongitude] = useState("");
-
-  const handleDaysChange = (event) => setSelectedDays(event.target.value);
-  const handleUserPlanStartChange = (event) =>
-    setUserPlanStart(event.target.value);
-  const handleToggleChange = (day) => {
-    setWeeklyHolidays((prevState) => ({
-      ...prevState,
-      [day]: !prevState[day],
-    }));
+    setSelectedCurrency(currency);
   };
 
-  const handleAddHoliday = () => {
+  const handleAddHoliday = async () => {
     if (holidayDate && holidayName) {
-      setNationalHolidays([
-        ...nationalHolidays,
-        { date: holidayDate, name: holidayName },
-      ]);
-      setHolidayDate("");
-      setHolidayName("");
+      try {
+        const response = await addNationalHoliday({
+          date: holidayDate,
+          name: holidayName,
+        });
+        if (response.success) {
+          const formattedDate = formatDate(holidayDate);
+          const newHoliday = {
+            _id: response.data._id,
+            date: formattedDate,
+            name: holidayName,
+          };
+          setNationalHolidays([...nationalHolidays, newHoliday]);
+          setHolidayDate("");
+          setHolidayName("");
+          toast.success("Holiday added successfully");
+        }
+      } catch (error) {
+        toast.error("Failed to add holiday");
+        console.error("Error:", error);
+      }
     }
   };
 
-  const handleDeleteHoliday = (index) => {
-    setNationalHolidays((prevHolidays) =>
-      prevHolidays.filter((_, i) => i !== index)
-    );
+  const handleDeleteHoliday = async (holidayId) => {
+    try {
+      const response = await deleteNationalHoliday(holidayId);
+      if (response.success) {
+        setNationalHolidays(
+          nationalHolidays.filter((holiday) => holiday._id !== holidayId)
+        );
+        toast.success("Holiday deleted successfully");
+      }
+    } catch (error) {
+      toast.error("Failed to delete holiday");
+      console.error("Error:", error);
+    }
   };
 
-  const handleEmergencyDayOff = () => {
+  const handleEmergencyDayOff = async () => {
     if (emergencyDate && emergencyDescription) {
-      alert(
-        `Emergency Day Off Requested:\nDate: ${emergencyDate}\nDescription: ${emergencyDescription}`
-      );
-      setEmergencyDate("");
-      setEmergencyDescription("");
+      try {
+        const response = await addEmergencyClosure({
+          date: emergencyDate,
+          description: emergencyDescription,
+        });
+        if (response.success) {
+          const formattedDate = formatDate(emergencyDate);
+          const newClosure = {
+            _id: response.data._id,
+            date: formattedDate,
+            description: emergencyDescription,
+          };
+          setEmergencyClosures([...emergencyClosures, newClosure]);
+          setEmergencyDate("");
+          setEmergencyDescription("");
+          toast.success("Emergency closure added successfully");
+        }
+      } catch (error) {
+        toast.error("Failed to add emergency closure");
+        console.error("Error:", error);
+      }
     }
   };
 
+  const handleDeleteEmergencyClosure = async (closureId) => {
+    try {
+      const response = await deleteEmergencyClosure(closureId);
+      if (response.success) {
+        setEmergencyClosures(
+          emergencyClosures.filter((closure) => closure._id !== closureId)
+        );
+        toast.success("Emergency closure deleted successfully");
+      }
+    } catch (error) {
+      toast.error("Failed to delete emergency closure");
+      console.error("Error:", error);
+    }
+  };
   const renderContent = () => {
     switch (activeTab) {
       case 1:
@@ -124,19 +350,12 @@ const Configuration = () => {
                 <div className="skipping-meal-option">
                   <h4>Skip Meal</h4>
                   <FormControl fullWidth variant="outlined">
-                    <InputLabel>Day</InputLabel>
+                    <InputLabel>Select Days</InputLabel>
                     <Select
                       value={selectedDays}
                       onChange={handleDaysChange}
-                      input={<OutlinedInput label="Day" />}
-                      MenuProps={{
-                        PaperProps: {
-                          style: {
-                            maxHeight: 48 * 4.5 + 8, // Max height for dropdown
-                            width: 250,
-                          },
-                        },
-                      }}
+                      input={<OutlinedInput label="Select Days" />}
+                      MenuProps={MenuProps}
                     >
                       {daysOptions.map((day) => (
                         <MenuItem key={day} value={day}>
@@ -150,19 +369,12 @@ const Configuration = () => {
                 <div className="plan-start">
                   <h4>Plan Start After</h4>
                   <FormControl fullWidth variant="outlined">
-                    <InputLabel>Day</InputLabel>
+                    <InputLabel>Select Days</InputLabel>
                     <Select
                       value={userPlanStart}
                       onChange={handleUserPlanStartChange}
-                      input={<OutlinedInput label="Day" />}
-                      MenuProps={{
-                        PaperProps: {
-                          style: {
-                            maxHeight: 48 * 4.5 + 8, // Max height for dropdown
-                            width: 250,
-                          },
-                        },
-                      }}
+                      input={<OutlinedInput label="Select Days" />}
+                      MenuProps={MenuProps}
                     >
                       {daysOptions.map((day) => (
                         <MenuItem key={day} value={day}>
@@ -177,19 +389,36 @@ const Configuration = () => {
               <div className="fixed-weekly-holidays-option">
                 <h4>Fixed Weekly Holidays</h4>
                 <div className="weekly-holidays">
-                  {Object.keys(weeklyHolidays).map((day) => (
-                    <div key={day} className="holiday-toggle">
-                      <span className="day-label">{day}</span>
-                      <label className="switch">
-                        <input
-                          type="checkbox"
-                          checked={weeklyHolidays[day]}
-                          onChange={() => handleToggleChange(day)}
-                        />
-                        <span className="slider round"></span>
-                      </label>
-                    </div>
-                  ))}
+                  <FormControl fullWidth variant="outlined">
+                    <InputLabel>Select Day</InputLabel>
+                    <Select
+                      value={weeklyHolidayInput}
+                      onChange={handleWeeklyHolidayChange}
+                      input={<OutlinedInput label="Select Day" />}
+                      MenuProps={MenuProps}
+                    >
+                      {weekDays
+                        .filter((day) => !selectedWeeklyHolidays.includes(day))
+                        .map((day) => (
+                          <MenuItem key={day} value={day}>
+                            {day}
+                          </MenuItem>
+                        ))}
+                    </Select>
+                  </FormControl>
+                  <div className="selected-days">
+                    {selectedWeeklyHolidays.map((day) => (
+                      <div key={day} className="selected-day">
+                        {day}
+                        <button
+                          className="day-remove-btn"
+                          onClick={() => handleRemoveWeeklyHoliday(day)}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -214,14 +443,14 @@ const Configuration = () => {
                 </div>
                 <div className="holiday-list-container">
                   <ul className="holiday-list">
-                    {nationalHolidays.map((holiday, index) => (
-                      <li key={index} className="holiday-item">
+                    {nationalHolidays.map((holiday) => (
+                      <li key={holiday._id} className="holiday-item">
                         <span className="holiday-text">
                           {holiday.date} - {holiday.name}
                         </span>
                         <button
                           className="holiday-delete-btn"
-                          onClick={() => handleDeleteHoliday(index)}
+                          onClick={() => handleDeleteHoliday(holiday._id)}
                         >
                           Delete
                         </button>
@@ -231,6 +460,7 @@ const Configuration = () => {
                 </div>
               </div>
             </div>
+
             <div className="second-line">
               <div className="emergency-day-off-option">
                 <h4>Emergency Day Off</h4>
@@ -247,27 +477,39 @@ const Configuration = () => {
                   onChange={(e) => setEmergencyDescription(e.target.value)}
                 />
                 <button onClick={handleEmergencyDayOff}>Send</button>
+
+                <div className="emergency-list-container">
+                  <ul className="emergency-list">
+                    {emergencyClosures.map((closure) => (
+                      <li key={closure._id} className="emergency-item">
+                        <span className="emergency-text">
+                          {closure.date} - {closure.description}
+                        </span>
+                        <button
+                          className="emergency-delete-btn"
+                          onClick={() =>
+                            handleDeleteEmergencyClosure(closure._id)
+                          }
+                        >
+                          Delete
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
-              {/* Number of Skips Section */}
+
               <div className="number-of-skips-option">
                 <h4>Number of Skips</h4>
-
                 <div className="plan-selection">
                   <h5>1 Week Plan</h5>
                   <FormControl fullWidth variant="outlined">
-                    <InputLabel>Day</InputLabel>
+                    <InputLabel>Select Days</InputLabel>
                     <Select
-                      value={weekPlan}
-                      onChange={handleWeekPlanChange}
-                      input={<OutlinedInput label="Day" />}
-                      MenuProps={{
-                        PaperProps: {
-                          style: {
-                            maxHeight: 48 * 4.5 + 8, // Max height for dropdown
-                            width: 250,
-                          },
-                        },
-                      }}
+                      value={skipAllowances.week}
+                      onChange={handleWeekSkipChange}
+                      input={<OutlinedInput label="Select Days" />}
+                      MenuProps={MenuProps}
                     >
                       {daysOptions.map((day) => (
                         <MenuItem key={day} value={day}>
@@ -281,19 +523,12 @@ const Configuration = () => {
                 <div className="plan-selection">
                   <h5>2 Week Plan</h5>
                   <FormControl fullWidth variant="outlined">
-                    <InputLabel>Day</InputLabel>
+                    <InputLabel>Select Days</InputLabel>
                     <Select
-                      value={twoWeekPlan}
-                      onChange={handleTwoWeekPlanChange}
-                      input={<OutlinedInput label="Day" />}
-                      MenuProps={{
-                        PaperProps: {
-                          style: {
-                            maxHeight: 48 * 4.5 + 8, // Max height for dropdown
-                            width: 250,
-                          },
-                        },
-                      }}
+                      value={skipAllowances.twoWeek}
+                      onChange={handleTwoWeekSkipChange}
+                      input={<OutlinedInput label="Select Days" />}
+                      MenuProps={MenuProps}
                     >
                       {daysOptions.map((day) => (
                         <MenuItem key={day} value={day}>
@@ -307,19 +542,12 @@ const Configuration = () => {
                 <div className="plan-selection">
                   <h5>1 Month Plan</h5>
                   <FormControl fullWidth variant="outlined">
-                    <InputLabel>Day</InputLabel>
+                    <InputLabel>Select Days</InputLabel>
                     <Select
-                      value={monthPlan}
-                      onChange={handleMonthPlanChange}
-                      input={<OutlinedInput label="Day" />}
-                      MenuProps={{
-                        PaperProps: {
-                          style: {
-                            maxHeight: 48 * 4.5 + 8, // Max height for dropdown
-                            width: 250,
-                          },
-                        },
-                      }}
+                      value={skipAllowances.month}
+                      onChange={handleMonthSkipChange}
+                      input={<OutlinedInput label="Select Days" />}
+                      MenuProps={MenuProps}
                     >
                       {daysOptions.map((day) => (
                         <MenuItem key={day} value={day}>
@@ -389,9 +617,9 @@ const Configuration = () => {
                       value={latitude}
                       onChange={(e) => setLatitude(e.target.value)}
                       inputProps={{
-                        step: 0.000001, // Precision for decimal values
+                        step: 0.000001,
                       }}
-                      fullWidth // Use fullWidth for the Material-UI TextField
+                      fullWidth
                       sx={{ width: "100%" }}
                     />
                   </div>
@@ -404,9 +632,9 @@ const Configuration = () => {
                       value={longitude}
                       onChange={(e) => setLongitude(e.target.value)}
                       inputProps={{
-                        step: 0.000001, // Precision for decimal values
+                        step: 0.000001,
                       }}
-                      fullWidth // Use fullWidth for the Material-UI TextField
+                      fullWidth
                       sx={{ width: "100%" }}
                     />
                   </div>
@@ -420,6 +648,10 @@ const Configuration = () => {
         return <div>Content for other tabs...</div>;
     }
   };
+
+  if (loading) {
+    return <div>Loading configuration...</div>;
+  }
 
   return (
     <div className="configuration">
@@ -438,10 +670,7 @@ const Configuration = () => {
             Location
           </button>
         </div>
-        <button
-          className="update-button"
-          onClick={() => console.log("Update button clicked")}
-        >
+        <button className="update-button" onClick={handleUpdateConfiguration}>
           Update
         </button>
       </div>
