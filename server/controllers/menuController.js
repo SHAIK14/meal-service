@@ -3,13 +3,13 @@ const WeeklyMenu = require("../models/admin/WeeklyMenu");
 const Plan = require("../models/admin/Plan");
 const Item = require("../models/admin/Item");
 
-// Helper function to determine current day number
-const getCurrentDayNumber = (startDate) => {
-  const today = new Date();
+// Helper function to determine day number for any date
+const getDayNumberForDate = (startDate, targetDate) => {
   const start = new Date(startDate);
+  const target = new Date(targetDate);
 
   // Get days since subscription started
-  const daysSinceStart = Math.floor((today - start) / (1000 * 60 * 60 * 24));
+  const daysSinceStart = Math.floor((target - start) / (1000 * 60 * 60 * 24));
 
   // Add 1 because days are 1-based in the database
   const dayNumber = (daysSinceStart % 7) + 1;
@@ -17,6 +17,7 @@ const getCurrentDayNumber = (startDate) => {
   // Ensure day number is between 1 and 7
   return dayNumber > 7 ? dayNumber % 7 : dayNumber;
 };
+
 // Helper function to check if it's a delivery day
 const isDeliveryDay = (planDuration, currentDayNumber) => {
   switch (planDuration) {
@@ -32,9 +33,6 @@ const isDeliveryDay = (planDuration, currentDayNumber) => {
 };
 
 // Get today's menu for all active subscriptions
-
-// Get today's menu for all active subscriptions
-
 const getTodaySubscriptionMenus = async (req, res) => {
   try {
     // 1. Get active subscriptions
@@ -45,15 +43,6 @@ const getTodaySubscriptionMenus = async (req, res) => {
       endDate: { $gte: new Date() },
     }).populate("plan.planId");
 
-    console.log(
-      "Active Subscriptions:",
-      activeSubscriptions.map((sub) => ({
-        orderId: sub.orderId,
-        planId: sub.plan.planId._id,
-        packages: sub.plan.selectedPackages,
-      }))
-    );
-
     // 2. Get weekly menus for all active subscriptions
     const weeklyMenus = await WeeklyMenu.find({
       plan: {
@@ -63,42 +52,29 @@ const getTodaySubscriptionMenus = async (req, res) => {
 
     const todayMenus = await Promise.all(
       activeSubscriptions.map(async (subscription) => {
-        const currentDayNumber = getCurrentDayNumber(subscription.startDate);
+        const currentDayNumber = getDayNumberForDate(
+          subscription.startDate,
+          new Date()
+        );
         const weeklyMenu = weeklyMenus.find(
           (menu) =>
             menu.plan.toString() === subscription.plan.planId._id.toString()
         );
 
-        console.log(`\nProcessing ${subscription.orderId}:`);
-        console.log(`Day: ${currentDayNumber}`);
-        console.log("Weekly Menu:", {
-          planId: weeklyMenu?.plan,
-          hasMenu: weeklyMenu?.weekMenu instanceof Map,
-          availableDays: weeklyMenu?.weekMenu
-            ? Array.from(weeklyMenu.weekMenu.keys())
-            : [],
-        });
-
         const menuItems = {};
 
         if (weeklyMenu?.weekMenu && weeklyMenu.weekMenu instanceof Map) {
-          // Get the day menu using Map.get()
           const dayMenu = weeklyMenu.weekMenu.get(currentDayNumber.toString());
-          console.log(`Day ${currentDayNumber} menu:`, dayMenu);
 
           if (dayMenu && dayMenu instanceof Map) {
-            // Process each selected package
             for (const packageType of subscription.plan.selectedPackages) {
               const packageItems = dayMenu.get(packageType);
-              console.log(`${packageType} items:`, packageItems);
 
               if (packageItems && Array.isArray(packageItems)) {
-                // Get the items data
                 const items = await Item.find({
                   _id: { $in: packageItems },
                 });
 
-                console.log(`Found ${items.length} items for ${packageType}`);
                 menuItems[packageType] = items.map((item) => ({
                   nameEnglish: item.nameEnglish,
                   nameArabic: item.nameArabic,
@@ -118,19 +94,12 @@ const getTodaySubscriptionMenus = async (req, res) => {
           dayNumber: currentDayNumber,
           packages: subscription.plan.selectedPackages,
           menuItems,
+          isDeliveryDay: isDeliveryDay(
+            subscription.plan.duration,
+            currentDayNumber
+          ),
         };
       })
-    );
-
-    console.log(
-      "Final response:",
-      todayMenus.map((menu) => ({
-        subscriptionId: menu.subscriptionId,
-        dayNumber: menu.dayNumber,
-        itemCounts: Object.entries(menu.menuItems).map(
-          ([pkg, items]) => `${pkg}: ${items.length} items`
-        ),
-      }))
     );
 
     res.status(200).json({
@@ -146,7 +115,152 @@ const getTodaySubscriptionMenus = async (req, res) => {
     });
   }
 };
-// Get current week's menu for a specific subscription
+
+// Get menu for a specific date
+const getMenuForDate = async (req, res) => {
+  try {
+    const { date } = req.query;
+    const targetDate = date ? new Date(date) : new Date();
+
+    // 1. Get active subscriptions
+    const activeSubscriptions = await SubscriptionOrder.find({
+      user: req.user._id,
+      status: "active",
+      startDate: { $lte: targetDate },
+      endDate: { $gte: targetDate },
+    }).populate("plan.planId");
+
+    // 2. Get weekly menus for all active subscriptions
+    const weeklyMenus = await WeeklyMenu.find({
+      plan: {
+        $in: activeSubscriptions.map((sub) => sub.plan.planId._id),
+      },
+    });
+
+    const menus = await Promise.all(
+      activeSubscriptions.map(async (subscription) => {
+        const dayNumber = getDayNumberForDate(
+          subscription.startDate,
+          targetDate
+        );
+        const weeklyMenu = weeklyMenus.find(
+          (menu) =>
+            menu.plan.toString() === subscription.plan.planId._id.toString()
+        );
+
+        const menuItems = {};
+
+        if (weeklyMenu?.weekMenu && weeklyMenu.weekMenu instanceof Map) {
+          const dayMenu = weeklyMenu.weekMenu.get(dayNumber.toString());
+
+          if (dayMenu && dayMenu instanceof Map) {
+            for (const packageType of subscription.plan.selectedPackages) {
+              const packageItems = dayMenu.get(packageType);
+
+              if (packageItems && Array.isArray(packageItems)) {
+                const items = await Item.find({
+                  _id: { $in: packageItems },
+                });
+
+                menuItems[packageType] = items.map((item) => ({
+                  nameEnglish: item.nameEnglish,
+                  nameArabic: item.nameArabic,
+                  calories: item.calories,
+                  protein: item.protein,
+                  carbs: item.carbs,
+                  fat: item.fat,
+                }));
+              }
+            }
+          }
+        }
+
+        return {
+          subscriptionId: subscription.orderId,
+          planName: subscription.plan.planId.nameEnglish,
+          dayNumber,
+          packages: subscription.plan.selectedPackages,
+          menuItems,
+          isDeliveryDay: isDeliveryDay(subscription.plan.duration, dayNumber),
+        };
+      })
+    );
+
+    res.status(200).json({
+      success: true,
+      data: menus,
+    });
+  } catch (error) {
+    console.error("Error in getMenuForDate:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch menus",
+      error: error.message,
+    });
+  }
+};
+
+// Get subscription dates and delivery status
+const getSubscriptionDates = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    const subscription = await SubscriptionOrder.findOne({
+      orderId,
+      user: req.user._id,
+      status: "active",
+    }).populate("plan.planId");
+
+    if (!subscription) {
+      return res.status(404).json({
+        success: false,
+        message: "Subscription not found or not active",
+      });
+    }
+
+    // Calculate all available dates in subscription period
+    const dates = [];
+    let currentDate = new Date(subscription.startDate);
+    const endDate = new Date(subscription.endDate);
+
+    while (currentDate <= endDate) {
+      const dayNumber = getDayNumberForDate(
+        subscription.startDate,
+        currentDate
+      );
+
+      dates.push({
+        date: new Date(currentDate),
+        dayNumber,
+        isDeliveryDay: isDeliveryDay(subscription.plan.duration, dayNumber),
+      });
+
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        subscriptionId: subscription.orderId,
+        planName: subscription.plan.planId.nameEnglish,
+        planDuration: subscription.plan.duration,
+        startDate: subscription.startDate,
+        endDate: subscription.endDate,
+        selectedPackages: subscription.plan.selectedPackages,
+        dates,
+      },
+    });
+  } catch (error) {
+    console.error("Error in getSubscriptionDates:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch subscription dates",
+      error: error.message,
+    });
+  }
+};
+
+// Get weekly menu for a specific subscription
 const getWeeklySubscriptionMenu = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -186,7 +300,7 @@ const getWeeklySubscriptionMenu = async (req, res) => {
     // Format menu by days and packages
     const formattedMenu = {};
     for (let day = 1; day <= subscription.plan.planId.duration; day++) {
-      const dayMenu = weeklyMenu.weekMenu.get(`day${day}`);
+      const dayMenu = weeklyMenu.weekMenu.get(day.toString());
       formattedMenu[`day${day}`] = {};
 
       subscription.plan.selectedPackages.forEach((package) => {
@@ -214,59 +328,9 @@ const getWeeklySubscriptionMenu = async (req, res) => {
   }
 };
 
-// Update weekly menu for next cycle
-const updateWeeklyMenuCycle = async (req, res) => {
-  try {
-    const { orderId } = req.params;
-
-    const subscription = await SubscriptionOrder.findOne({
-      orderId,
-      user: req.user._id,
-      status: "active",
-    });
-
-    if (!subscription) {
-      return res.status(404).json({
-        success: false,
-        message: "Subscription not found or not active",
-      });
-    }
-
-    const currentMenu = await WeeklyMenu.findById(subscription.menuSchedule);
-
-    // Create new weekly menu for next cycle
-    const newWeeklyMenu = new WeeklyMenu({
-      plan: subscription.plan.planId,
-      subscriptionOrder: subscription._id,
-      status: "active",
-      weekNumber: currentMenu.weekNumber + 1,
-      cycleNumber: currentMenu.cycleNumber + 1,
-      weekMenu: currentMenu.weekMenu, // Copy previous week's menu structure
-    });
-
-    await newWeeklyMenu.save();
-
-    // Update subscription with new menu
-    subscription.menuSchedule = newWeeklyMenu._id;
-    await subscription.save();
-
-    res.status(200).json({
-      success: true,
-      message: "Weekly menu cycle updated successfully",
-      data: newWeeklyMenu,
-    });
-  } catch (error) {
-    console.error("Error updating menu cycle:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to update menu cycle",
-      error: error.message,
-    });
-  }
-};
-
 module.exports = {
   getTodaySubscriptionMenus,
+  getMenuForDate,
+  getSubscriptionDates,
   getWeeklySubscriptionMenu,
-  updateWeeklyMenuCycle,
 };

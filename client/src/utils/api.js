@@ -462,25 +462,48 @@ export const getWeeklyMenu = async (orderId) => {
   }
 };
 
-export const updateMenuCycle = async (orderId) => {
+// Get menu for a specific date
+export const getMenuForDate = async (date) => {
   const token = await AsyncStorage.getItem("userToken");
   try {
-    const response = await fetch(`${API_URL}/menu/cycle/${orderId}`, {
-      method: "POST",
+    const response = await fetch(`${API_URL}/menu/date?date=${date}`, {
       headers: {
-        "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || "Failed to update menu cycle");
+      throw new Error(errorData.message || "Failed to fetch menu for date");
     }
 
     return response.json();
   } catch (error) {
-    console.error("Error in updateMenuCycle:", error);
+    console.error("Error in getMenuForDate:", error);
+    throw error;
+  }
+};
+
+// Get all available dates for a subscription
+export const getSubscriptionDates = async (orderId) => {
+  const token = await AsyncStorage.getItem("userToken");
+  try {
+    const response = await fetch(`${API_URL}/menu/dates/${orderId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        errorData.message || "Failed to fetch subscription dates"
+      );
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error in getSubscriptionDates:", error);
     throw error;
   }
 };
