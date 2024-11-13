@@ -1,12 +1,5 @@
 const mongoose = require("mongoose");
 
-const PackagePricingSchema = new mongoose.Schema({
-  totalPrice: { type: Number, default: 0 },
-  discountPercentage: { type: Number, default: 0, min: 0, max: 100 },
-  finalPrice: { type: Number, default: 0 },
-  isCouponEligible: { type: Boolean, default: false },
-});
-
 const PlanSchema = new mongoose.Schema(
   {
     nameEnglish: { type: String, required: true },
@@ -40,11 +33,14 @@ const PlanSchema = new mongoose.Schema(
     },
     packagePricing: {
       type: Map,
-      of: PackagePricingSchema,
-      default: new Map(),
+      of: Number,
+      default: new Map(), // Changed from required to default empty Map
     },
-    totalPrice: { type: Number, default: 0 },
-    duration: { type: Number, required: true, min: 1, max: 7 },
+    currency: {
+      type: String,
+      default: "SAR",
+      required: true,
+    },
   },
   { timestamps: true }
 );

@@ -11,12 +11,17 @@ import {
   updateBasicConfig,
   updateLocationSettings,
   updateWeeklyHolidays,
-  getNationalHolidays,
   addNationalHoliday,
   deleteNationalHoliday,
   getEmergencyClosures,
   addEmergencyClosure,
   deleteEmergencyClosure,
+  getDeliveryTimeSlots,
+  updateDeliveryTimeSlots,
+  getPlanDurations,
+  addPlanDuration,
+  updatePlanDuration,
+  deletePlanDuration,
 } from "../utils/api";
 import toast from "react-hot-toast";
 
@@ -31,45 +36,53 @@ const MenuProps = {
   },
 };
 
+// Duration days mapping for validation
+const DURATION_DAYS = {
+  "1_week": 7,
+  "2_week": 14,
+  "3_week": 21,
+  "1_month": 30,
+  "2_month": 60,
+  "3_month": 90,
+};
+
 const Configuration = () => {
   const [activeTab, setActiveTab] = useState(1);
   const [loading, setLoading] = useState(true);
 
-  // Initialize all skip-related states to 0
+  // Existing states
   const [selectedDays, setSelectedDays] = useState(0);
   const [userPlanStart, setUserPlanStart] = useState(0);
-
-  // Skip allowances
   const [skipAllowances, setSkipAllowances] = useState({
     week: 0,
     twoWeek: 0,
     month: 0,
   });
-
   const [selectedCountry, setSelectedCountry] = useState("");
   const [selectedCurrency, setSelectedCurrency] = useState("");
-
-  // Weekly holidays state
   const [selectedWeeklyHolidays, setSelectedWeeklyHolidays] = useState([]);
   const [weeklyHolidayInput, setWeeklyHolidayInput] = useState("");
-
-  // Holiday states
   const [nationalHolidays, setNationalHolidays] = useState([]);
   const [holidayDate, setHolidayDate] = useState("");
   const [holidayName, setHolidayName] = useState("");
-
-  // Emergency closure states
   const [emergencyClosures, setEmergencyClosures] = useState([]);
   const [emergencyDate, setEmergencyDate] = useState("");
   const [emergencyDescription, setEmergencyDescription] = useState("");
-
-  // Location states
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
 
-  const today = new Date().toISOString().split("T")[0];
-  const daysOptions = Array.from({ length: 8 }, (_, i) => i); // Changed to include 0
+  // New states for delivery time slots
+  const [deliveryTimeSlots, setDeliveryTimeSlots] = useState([]);
+  const [newSlotFrom, setNewSlotFrom] = useState("");
+  const [newSlotTo, setNewSlotTo] = useState("");
 
+  // New states for plan durations
+  const [planDurations, setPlanDurations] = useState([]);
+  const [newDurationType, setNewDurationType] = useState("");
+  const [newMinDays, setNewMinDays] = useState("");
+
+  const today = new Date().toISOString().split("T")[0];
+  const daysOptions = Array.from({ length: 8 }, (_, i) => i);
   const weekDays = [
     "Sunday",
     "Monday",
@@ -89,7 +102,7 @@ const Configuration = () => {
     { name: "United Arab Emirates", currency: "UAE Dirham (AED)" },
   ];
 
-  // Format date to display without time
+  // Format date helper
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-GB", {
       day: "2-digit",
@@ -97,76 +110,86 @@ const Configuration = () => {
       year: "numeric",
     });
   };
+  const validateTimeRange = (fromTime, toTime) => {
+    const [fromHours, fromMinutes] = fromTime.split(":").map(Number);
+    const [toHours, toMinutes] = toTime.split(":").map(Number);
 
+    const fromTotal = fromHours * 60 + fromMinutes;
+    const toTotal = toHours * 60 + toMinutes;
+
+    return toTotal > fromTotal;
+  };
+  // Fetch all data on component mount
   useEffect(() => {
-    fetchConfiguration();
-    fetchEmergencyClosures();
+    const fetchAllData = async () => {
+      setLoading(true);
+      try {
+        const [
+          configResponse,
+          emergencyResponse,
+          timeSlotsResponse,
+          durationsResponse,
+        ] = await Promise.all([
+          getConfiguration(),
+          getEmergencyClosures(),
+          getDeliveryTimeSlots(),
+          getPlanDurations(),
+        ]);
+
+        if (configResponse.success) {
+          const config = configResponse.data;
+          setSelectedDays(config?.skipMealDays ?? 0);
+          setUserPlanStart(config?.planStartDelay ?? 0);
+          setSelectedWeeklyHolidays(config?.weeklyHolidays || []);
+          setNationalHolidays(
+            (config?.nationalHolidays || []).map((holiday) => ({
+              ...holiday,
+              date: formatDate(holiday.date),
+            }))
+          );
+          setSkipAllowances({
+            week: config?.skipAllowances?.week ?? 0,
+            twoWeek: config?.skipAllowances?.twoWeek ?? 0,
+            month: config?.skipAllowances?.month ?? 0,
+          });
+          setSelectedCountry(config?.country || "");
+          setSelectedCurrency(config?.currency || "");
+          setLatitude(config?.coordinates?.latitude || "");
+          setLongitude(config?.coordinates?.longitude || "");
+        }
+
+        if (emergencyResponse.success) {
+          setEmergencyClosures(
+            emergencyResponse.data.map((closure) => ({
+              ...closure,
+              date: formatDate(closure.date),
+            }))
+          );
+        }
+
+        if (timeSlotsResponse.success) {
+          setDeliveryTimeSlots(timeSlotsResponse.data);
+        }
+
+        if (durationsResponse.success) {
+          setPlanDurations(durationsResponse.data);
+        }
+      } catch (error) {
+        console.error("Error loading data:", error);
+        if (error.response?.status !== 404) {
+          toast.error("Failed to load configuration");
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAllData();
   }, []);
 
-  const fetchConfiguration = async () => {
-    try {
-      setLoading(true);
-      const response = await getConfiguration();
-      if (response.success) {
-        const config = response.data;
-        // Set default values to 0 if not present
-        setSelectedDays(config?.skipMealDays ?? 0);
-        setUserPlanStart(config?.planStartDelay ?? 0);
-
-        // Handle weekly holidays array
-        setSelectedWeeklyHolidays(config?.weeklyHolidays || []);
-
-        // Format dates for national holidays
-        const formattedHolidays = (config?.nationalHolidays || []).map(
-          (holiday) => ({
-            ...holiday,
-            date: formatDate(holiday.date),
-          })
-        );
-        setNationalHolidays(formattedHolidays);
-
-        // Set skip allowances with defaults
-        setSkipAllowances({
-          week: config?.skipAllowances?.week ?? 0,
-          twoWeek: config?.skipAllowances?.twoWeek ?? 0,
-          month: config?.skipAllowances?.month ?? 0,
-        });
-
-        // Set location settings
-        setSelectedCountry(config?.country || "");
-        setSelectedCurrency(config?.currency || "");
-        setLatitude(config?.coordinates?.latitude || "");
-        setLongitude(config?.coordinates?.longitude || "");
-      }
-    } catch (error) {
-      console.error("Error loading configuration:", error);
-      // Don't show error toast if it's the first time loading
-      if (error.response?.status !== 404) {
-        toast.error("Failed to load configuration");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchEmergencyClosures = async () => {
-    try {
-      const response = await getEmergencyClosures();
-      if (response.success) {
-        const formattedClosures = response.data.map((closure) => ({
-          ...closure,
-          date: formatDate(closure.date),
-        }));
-        setEmergencyClosures(formattedClosures);
-      }
-    } catch (error) {
-      console.error("Error fetching emergency closures:", error);
-    }
-  };
-
+  // All existing handlers
   const handleUpdateConfiguration = async () => {
     try {
-      // Update basic config with new skipAllowances structure
       const basicConfigResponse = await updateBasicConfig({
         skipMealDays: selectedDays,
         planStartDelay: userPlanStart,
@@ -177,12 +200,10 @@ const Configuration = () => {
         },
       });
 
-      // Update weekly holidays (already in array format)
       const weeklyHolidaysResponse = await updateWeeklyHolidays(
         selectedWeeklyHolidays
       );
 
-      // Update location settings
       const locationResponse = await updateLocationSettings({
         country: selectedCountry,
         currency: selectedCurrency,
@@ -207,7 +228,6 @@ const Configuration = () => {
     }
   };
 
-  // Updated handlers for skip allowances
   const handleWeekSkipChange = (e) => {
     setSkipAllowances((prev) => ({
       ...prev,
@@ -340,6 +360,138 @@ const Configuration = () => {
       console.error("Error:", error);
     }
   };
+
+  // New handlers for delivery time slots
+  // Update the handleAddTimeSlot function
+  const handleAddTimeSlot = async () => {
+    if (!newSlotFrom || !newSlotTo) {
+      toast.error("Please fill in both time fields");
+      return;
+    }
+    if (!validateTimeRange(newSlotFrom, newSlotTo)) {
+      toast.error("End time must be after start time");
+      return;
+    }
+
+    // Convert 24h format to 12h format with AM/PM
+    const formatTime = (time24) => {
+      const [hours, minutes] = time24.split(":");
+      const hour = parseInt(hours);
+      const ampm = hour >= 12 ? "PM" : "AM";
+      const hour12 = hour % 12 || 12;
+      return `${hour12}:${minutes} ${ampm}`;
+    };
+
+    const newSlot = {
+      fromTime: formatTime(newSlotFrom),
+      toTime: formatTime(newSlotTo),
+      isActive: true,
+    };
+
+    try {
+      const updatedSlots = [...deliveryTimeSlots, newSlot];
+      const response = await updateDeliveryTimeSlots({
+        timeSlots: updatedSlots,
+      });
+
+      if (response.success) {
+        setDeliveryTimeSlots(updatedSlots);
+        setNewSlotFrom("");
+        setNewSlotTo("");
+        toast.success("Time slot added successfully");
+      }
+    } catch (error) {
+      console.error("Error in handleAddTimeSlot:", error);
+      toast.error(error.response?.data?.message || "Failed to add time slot");
+    }
+  };
+
+  const handleDeleteTimeSlot = async (index) => {
+    try {
+      const updatedSlots = deliveryTimeSlots.filter((_, i) => i !== index);
+      const response = await updateDeliveryTimeSlots({
+        timeSlots: updatedSlots,
+      });
+
+      if (response.success) {
+        setDeliveryTimeSlots(updatedSlots);
+        toast.success("Time slot deleted successfully");
+      }
+    } catch (error) {
+      toast.error("Failed to delete time slot");
+    }
+  };
+
+  // New handlers for plan durations
+  const handleAddPlanDuration = async () => {
+    if (!newDurationType || !newMinDays) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    const maxDays = DURATION_DAYS[newDurationType];
+    if (!maxDays) {
+      toast.error("Invalid duration type");
+      return;
+    }
+
+    if (parseInt(newMinDays) > maxDays) {
+      toast.error(
+        `Minimum days cannot exceed ${maxDays} for this duration type`
+      );
+      return;
+    }
+
+    try {
+      const response = await addPlanDuration({
+        durationType: newDurationType,
+        minDays: parseInt(newMinDays),
+      });
+
+      if (response.success) {
+        setPlanDurations([...planDurations, response.data]);
+        setNewDurationType("");
+        setNewMinDays("");
+        toast.success("Plan duration added successfully");
+      }
+    } catch (error) {
+      console.error("Error in handleAddPlanDuration:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to add plan duration"
+      );
+    }
+  };
+
+  const handleUpdatePlanDuration = async (planId, isActive) => {
+    try {
+      const response = await updatePlanDuration(planId, { isActive });
+
+      if (response.success) {
+        setPlanDurations(
+          planDurations.map((plan) =>
+            plan._id === planId ? { ...plan, isActive } : plan
+          )
+        );
+        toast.success("Plan duration updated successfully");
+      }
+    } catch (error) {
+      toast.error("Failed to update plan duration");
+    }
+  };
+
+  const handleDeletePlanDuration = async (planId) => {
+    try {
+      const response = await deletePlanDuration(planId);
+
+      if (response.success) {
+        setPlanDurations(planDurations.filter((plan) => plan._id !== planId));
+        toast.success("Plan duration deleted successfully");
+      }
+    } catch (error) {
+      toast.error("Failed to delete plan duration");
+    }
+  }; // This closes the last handler from part 1
+
   const renderContent = () => {
     switch (activeTab) {
       case 1:
@@ -644,8 +796,108 @@ const Configuration = () => {
           </div>
         );
 
+      case 3:
+        return (
+          <div className="tab-content">
+            <div className="delivery-times-wrapper">
+              <h4>Delivery Time Slots</h4>
+              <div className="time-slot-inputs">
+                <TextField
+                  label="From Time"
+                  type="time"
+                  value={newSlotFrom}
+                  onChange={(e) => setNewSlotFrom(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  inputProps={{ step: 300 }}
+                />
+                <TextField
+                  label="To Time"
+                  type="time"
+                  value={newSlotTo}
+                  onChange={(e) => setNewSlotTo(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  inputProps={{ step: 300 }}
+                />
+                <button onClick={handleAddTimeSlot}>Add Time Slot</button>
+              </div>
+
+              <div className="time-slots-list">
+                {deliveryTimeSlots.map((slot, index) => (
+                  <div key={index} className="time-slot-item">
+                    <span>
+                      {slot.fromTime || ""} - {slot.toTime || ""}
+                    </span>
+                    <button onClick={() => handleDeleteTimeSlot(index)}>
+                      Delete
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="plan-durations-wrapper">
+              <h4>Plan Durations</h4>
+              <div className="plan-duration-inputs">
+                <FormControl fullWidth variant="outlined">
+                  <InputLabel>Duration Type</InputLabel>
+                  <Select
+                    value={newDurationType}
+                    onChange={(e) => setNewDurationType(e.target.value)}
+                    input={<OutlinedInput label="Duration Type" />}
+                  >
+                    {Object.entries(DURATION_DAYS).map(([type, days]) => (
+                      <MenuItem key={type} value={type}>
+                        {type.replace("_", " ")} ({days} days)
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <TextField
+                  label="Minimum Days"
+                  type="number"
+                  value={newMinDays}
+                  onChange={(e) => setNewMinDays(e.target.value)}
+                  inputProps={{ min: 1 }}
+                />
+                <button onClick={handleAddPlanDuration}>
+                  Add Plan Duration
+                </button>
+              </div>
+              <div className="plan-durations-list">
+                {planDurations.map((plan) => (
+                  <div key={plan._id} className="plan-duration-item">
+                    <span>
+                      {plan.durationType
+                        ? plan.durationType.replace("_", " ")
+                        : ""}{" "}
+                      - Min: {plan.minDays} days
+                    </span>
+                    <div className="plan-duration-controls">
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={plan.isActive}
+                          onChange={(e) =>
+                            handleUpdatePlanDuration(plan._id, e.target.checked)
+                          }
+                        />
+                        Active
+                      </label>
+                      <button
+                        onClick={() => handleDeletePlanDuration(plan._id)}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+
       default:
-        return <div>Content for other tabs...</div>;
+        return null;
     }
   };
 
@@ -668,6 +920,12 @@ const Configuration = () => {
             onClick={() => setActiveTab(2)}
           >
             Location
+          </button>
+          <button
+            className={activeTab === 3 ? "active" : ""}
+            onClick={() => setActiveTab(3)}
+          >
+            Delivery & Plans
           </button>
         </div>
         <button className="update-button" onClick={handleUpdateConfiguration}>

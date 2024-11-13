@@ -44,5 +44,26 @@ router.delete(
   adminAuth,
   configController.deleteEmergencyClosure
 );
+// Delivery Time Slots Routes
+router.get("/delivery-slots", adminAuth, configController.getDeliveryTimeSlots);
+router.put(
+  "/delivery-slots",
+  adminAuth,
+  configController.updateDeliveryTimeSlots
+);
+
+// Plan Duration Routes
+router.get("/plan-durations", adminAuth, configController.getPlanDurations);
+router.post("/plan-duration", adminAuth, configController.addPlanDuration);
+router.put(
+  "/plan-duration/:planId",
+  adminAuth,
+  configController.updatePlanDuration
+);
+router.delete(
+  "/plan-duration/:planId",
+  adminAuth,
+  configController.deletePlanDuration
+);
 
 module.exports = router;

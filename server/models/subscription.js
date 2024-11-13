@@ -19,10 +19,9 @@ const SubscriptionOrderSchema = new mongoose.Schema(
         required: true,
       },
       name: String,
-      duration: Number, // days per week
-      selectedDuration: {
+      durationType: {
         type: String,
-        enum: ["1 Week", "2 Weeks", "1 Month"],
+        enum: ["1_week", "2_week", "1_month"],
         required: true,
       },
       selectedPackages: [
@@ -31,20 +30,44 @@ const SubscriptionOrderSchema = new mongoose.Schema(
           enum: ["breakfast", "lunch", "dinner", "snacks"],
         },
       ],
-      mealPlanType: {
-        type: String,
-        enum: ["One Meal", "Combo Meal", "Full Day Meal"],
+      totalDays: {
+        type: Number,
         required: true,
+      },
+      extraDaysAdded: {
+        type: Number,
+        default: 0,
+      },
+      subscriptionDays: [
+        {
+          date: {
+            type: Date,
+            required: true,
+          },
+          isAvailable: {
+            type: Boolean,
+            required: true,
+          },
+          unavailableReason: String,
+        },
+      ],
+      deliveryTime: {
+        fromTime: String,
+        toTime: String,
+        _id: {
+          type: mongoose.Schema.Types.ObjectId,
+          required: true,
+        },
       },
     },
     pricing: {
-      originalPrice: {
+      dailyRate: {
         type: Number,
         required: true,
       },
-      packageDiscounts: {
+      totalPrice: {
         type: Number,
-        default: 0,
+        required: true,
       },
       voucherDiscount: {
         type: Number,
@@ -56,11 +79,11 @@ const SubscriptionOrderSchema = new mongoose.Schema(
       },
     },
     voucher: {
-      voucherId: {
+      _id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Voucher",
       },
-      code: String,
+      promoCode: String,
       discountType: {
         type: String,
         enum: ["percentage", "flat"],
@@ -68,13 +91,18 @@ const SubscriptionOrderSchema = new mongoose.Schema(
       discountValue: Number,
     },
     deliveryAddress: {
-      fullAddress: {
+      type: {
+        type: String,
+        enum: ["Home", "Office", "Other"],
+        required: true,
+      },
+      street: {
         type: String,
         required: true,
       },
-      saveAs: {
+      area: {
         type: String,
-        enum: ["Home", "Office", "Other"],
+        required: true,
       },
       coordinates: {
         type: {
@@ -85,10 +113,6 @@ const SubscriptionOrderSchema = new mongoose.Schema(
       },
     },
     payment: {
-      transactionId: {
-        type: String,
-        required: true,
-      },
       method: {
         type: String,
         enum: ["Visa/Mastercard", "STC Pay"],
@@ -101,7 +125,7 @@ const SubscriptionOrderSchema = new mongoose.Schema(
       },
       details: {
         cardHolderName: String,
-        lastFourDigits: String,
+        cardNumber: String,
         stcPhoneNumber: String,
       },
     },
@@ -109,10 +133,6 @@ const SubscriptionOrderSchema = new mongoose.Schema(
       type: String,
       enum: ["active", "completed", "cancelled", "paused"],
       default: "active",
-    },
-    menuSchedule: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "WeeklyMenu",
     },
     startDate: {
       type: Date,
@@ -122,12 +142,8 @@ const SubscriptionOrderSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
-    cycleRenewalDate: Date,
-    lastRenewalDate: Date,
   },
   { timestamps: true }
 );
-
-// Generate unique orderId before saving
 
 module.exports = mongoose.model("SubscriptionOrder", SubscriptionOrderSchema);

@@ -21,8 +21,7 @@ const PlanCreate = () => {
     isIndividual: false,
     isMultiple: false,
     package: [],
-    duration: 5,
-    service: "", // New field for service
+    service: "",
   });
   const [showPackageWarning, setShowPackageWarning] = useState(false);
   const [showServiceWarning, setShowServiceWarning] = useState(false);
@@ -30,11 +29,13 @@ const PlanCreate = () => {
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     if (name === "package") {
+      const updatedPackages = checked
+        ? [...newPlan.package, value]
+        : newPlan.package.filter((item) => item !== value);
+
       setNewPlan((prevState) => ({
         ...prevState,
-        package: checked
-          ? [...prevState.package, value]
-          : prevState.package.filter((item) => item !== value),
+        package: updatedPackages,
       }));
       setShowPackageWarning(true);
     } else if (name === "service") {
@@ -70,6 +71,7 @@ const PlanCreate = () => {
       alert("Please select a service type.");
       return;
     }
+
     try {
       let imageUrl = "";
       if (newPlan.image) {
@@ -99,7 +101,6 @@ const PlanCreate = () => {
     <div className="admin-plan-create-wrapper">
       <h1>Create New Plan</h1>
       <form onSubmit={handleSavePlan} className="admin-plan-create-form">
-        {/* Existing image container code */}
         <div className="admin-image-container">
           <label htmlFor="file-upload" className="admin-custom-file-upload">
             {selectedImage ? (
@@ -135,7 +136,6 @@ const PlanCreate = () => {
           )}
         </div>
         <div className="admin-form-container">
-          {/* Service Selection - New Addition */}
           <div className="admin-form-group-category">
             <label className="admin-select-label">Service Type:</label>
             <select
@@ -161,7 +161,6 @@ const PlanCreate = () => {
             </div>
           )}
 
-          {/* Existing form fields */}
           <input
             type="text"
             name="nameEnglish"
@@ -205,7 +204,7 @@ const PlanCreate = () => {
                 onChange={handleInputChange}
                 className="admin-checkbox"
               />
-              Veg-plan
+              <span>Veg-plan</span>
             </label>
             <label className="admin-checkbox-label">
               <input
@@ -215,7 +214,7 @@ const PlanCreate = () => {
                 onChange={handleInputChange}
                 className="admin-checkbox"
               />
-              Non-Veg plan
+              <span>Non-Veg plan</span>
             </label>
             <label className="admin-checkbox-label">
               <input
@@ -225,7 +224,7 @@ const PlanCreate = () => {
                 onChange={handleInputChange}
                 className="admin-checkbox"
               />
-              Individual Plan
+              <span>Individual Plan</span>
             </label>
             <label className="admin-checkbox-label">
               <input
@@ -235,47 +234,38 @@ const PlanCreate = () => {
                 onChange={handleInputChange}
                 className="admin-checkbox"
               />
-              Multiple Plan
+              <span>Multiple Plan</span>
             </label>
           </div>
+
           <div className="admin-checkbox-group">
-            <label className="admin-checkbox-label">Package:</label>
-            {["breakfast", "lunch", "dinner", "snacks"].map((option) => (
-              <label key={option} className="admin-checkbox-label">
-                <input
-                  type="checkbox"
-                  name="package"
-                  value={option}
-                  checked={newPlan.package.includes(option)}
-                  onChange={handleInputChange}
-                  className="admin-checkbox"
-                />
-                {option.charAt(0).toUpperCase() + option.slice(1)}
-              </label>
-            ))}
+            <label>Package Selection:</label>
+            <div className="admin-package-options">
+              {["breakfast", "lunch", "dinner", "snacks"].map((option) => (
+                <label key={option} className="admin-checkbox-label">
+                  <input
+                    type="checkbox"
+                    name="package"
+                    value={option}
+                    checked={newPlan.package.includes(option)}
+                    onChange={handleInputChange}
+                    className="admin-checkbox"
+                  />
+                  <span>
+                    {option.charAt(0).toUpperCase() + option.slice(1)}
+                  </span>
+                </label>
+              ))}
+            </div>
           </div>
           {showPackageWarning && (
-            <div className="package-warning">
-              Warning: Please select packages carefully. Cannot modify later to
-              prevent data loss.
+            <div className="admin-warning-message">
+              <AlertTriangle size={16} />
+              <span>
+                Warning: Package selection cannot be modified after creation.
+              </span>
             </div>
           )}
-          <div className="admin-form-group-category">
-            <label className="admin-select-label">Duration (days):</label>
-            <select
-              name="duration"
-              value={newPlan.duration}
-              onChange={handleInputChange}
-              required
-              className="admin-select"
-            >
-              {[1, 2, 3, 4, 5, 6, 7].map((day) => (
-                <option key={day} value={day}>
-                  {day}
-                </option>
-              ))}
-            </select>
-          </div>
           <div className="admin-form-btn">
             <button
               type="button"

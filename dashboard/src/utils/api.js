@@ -572,3 +572,84 @@ export const deleteEmergencyClosure = async (closureId) => {
     };
   }
 };
+// Add these functions to your existing api.js file
+
+// Delivery Time Slots
+export const getDeliveryTimeSlots = async () => {
+  try {
+    const response = await api.get("/admin/config/delivery-slots");
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Error in getDeliveryTimeSlots:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "An unexpected error occurred",
+    };
+  }
+};
+
+export const updateDeliveryTimeSlots = async (timeSlotsData) => {
+  try {
+    const response = await api.put("/admin/config/delivery-slots", timeSlotsData);
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Error in updateDeliveryTimeSlots:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "An unexpected error occurred",
+    };
+  }
+};
+
+// Plan Durations
+export const getPlanDurations = async () => {
+  try {
+    const response = await api.get("/admin/config/plan-durations");
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Error in getPlanDurations:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "An unexpected error occurred",
+    };
+  }
+};
+
+export const addPlanDuration = async (durationData) => {
+  try {
+    const response = await api.post("/admin/config/plan-duration", durationData);
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Error in addPlanDuration:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "An unexpected error occurred",
+    };
+  }
+};
+
+export const updatePlanDuration = async (planId, durationData) => {
+  try {
+    const response = await api.put(`/admin/config/plan-duration/${planId}`, durationData);
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Error in updatePlanDuration:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "An unexpected error occurred",
+    };
+  }
+};
+
+export const deletePlanDuration = async (planId) => {
+  try {
+    const response = await api.delete(`/admin/config/plan-duration/${planId}`);
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Error in deletePlanDuration:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "An unexpected error occurred",
+    };
+  }
+};

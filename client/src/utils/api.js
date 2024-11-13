@@ -5,7 +5,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 // const API_URL = "http://localhost:5000/api";
 const getApiUrl = () => {
   if (__DEV__) {
-    const localIpAddress = "192.168.1.105"; // Replace with your actual IP address if different
+    const localIpAddress = "172.20.10.5"; // Replace with your actual IP address if different
 
     return `http://${localIpAddress}:5000/api`;
   } else {
@@ -141,10 +141,23 @@ export const getUserAddress = async () => {
 };
 
 //  plan-related API calls
-export const getAllPlans = async () => {
+export const getAllPlans = async (filters = {}) => {
   const token = await AsyncStorage.getItem("userToken");
   try {
-    const response = await fetch(`${API_URL}/plans`, {
+    // Build query string from filters
+    const queryParams = new URLSearchParams();
+    if (filters.service) queryParams.append("service", filters.service);
+    if (filters.isVeg) queryParams.append("isVeg", filters.isVeg);
+    if (filters.isNonVeg) queryParams.append("isNonVeg", filters.isNonVeg);
+    if (filters.isIndividual)
+      queryParams.append("isIndividual", filters.isIndividual);
+    if (filters.isMultiple)
+      queryParams.append("isMultiple", filters.isMultiple);
+
+    const queryString = queryParams.toString();
+    const url = `${API_URL}/plans${queryString ? `?${queryString}` : ""}`;
+
+    const response = await fetch(url, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -158,6 +171,27 @@ export const getAllPlans = async () => {
     return response.json();
   } catch (error) {
     console.error("Error in getAllPlans:", error);
+    throw error;
+  }
+};
+
+export const getPlansByService = async (service) => {
+  const token = await AsyncStorage.getItem("userToken");
+  try {
+    const response = await fetch(`${API_URL}/plans/service/${service}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to fetch plans by service");
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error in getPlansByService:", error);
     throw error;
   }
 };
@@ -197,7 +231,19 @@ export const getPlanWeeklyMenu = async (planId) => {
       throw new Error(errorData.message || "Failed to fetch weekly menu");
     }
 
-    return response.json();
+    const data = await response.json();
+
+    return {
+      success: data.success,
+      data: {
+        weekMenu: data.data.weekMenu,
+        packagePricing: data.data.packagePricing,
+        currency: data.data.currency,
+        status: data.data.status,
+        weekNumber: data.data.weekNumber,
+        cycleNumber: data.data.cycleNumber,
+      },
+    };
   } catch (error) {
     console.error("Error in getPlanWeeklyMenu:", error);
     throw error;
@@ -228,6 +274,28 @@ export const getItemsBatch = async (itemIds) => {
   }
 };
 
+// Helper functions for data formatting
+export const formatPlanData = (plan) => {
+  return {
+    ...plan,
+    packagePricing: plan.packagePricing
+      ? Object.fromEntries(plan.packagePricing)
+      : {},
+    weekMenu: plan.weekMenu ? formatWeekMenuData(plan.weekMenu) : null,
+  };
+};
+
+export const formatWeekMenuData = (weekMenu) => {
+  if (!weekMenu) return null;
+
+  const formattedMenu = {};
+  for (const [day, meals] of Object.entries(weekMenu)) {
+    formattedMenu[day] = Object.fromEntries(meals);
+  }
+  return formattedMenu;
+};
+
+// promo code
 export const getAvailableVouchers = async () => {
   const token = await AsyncStorage.getItem("userToken");
   try {
@@ -268,7 +336,6 @@ export const getAvailableVouchers = async () => {
   }
 };
 
-// Validate a promo code
 export const validateVoucher = async (promoCode) => {
   const token = await AsyncStorage.getItem("userToken");
   try {
@@ -505,6 +572,28 @@ export const getSubscriptionDates = async (orderId) => {
     return response.json();
   } catch (error) {
     console.error("Error in getSubscriptionDates:", error);
+    throw error;
+  }
+};
+// user config
+
+export const getConfig = async () => {
+  const token = await AsyncStorage.getItem("userToken");
+  try {
+    const response = await fetch(`${API_URL}/config`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to fetch configuration");
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error in getConfig:", error);
     throw error;
   }
 };

@@ -17,6 +17,33 @@ const configSchema = new mongoose.Schema(
       min: 0,
       max: 7,
     },
+    // Delivery Time Slots
+    deliveryTimeSlots: [
+      {
+        fromTime: String, // Format: "HH:mm AM/PM"
+        toTime: String, // Format: "HH:mm AM/PM"
+        isActive: Boolean,
+      },
+    ],
+
+    // Plan Durations
+    planDurations: [
+      {
+        durationType: {
+          type: String,
+          enum: ["1_week", "2_week", "3_week", "1_month", "2_month", "3_month"],
+          required: true,
+        },
+        minDays: {
+          type: Number,
+          required: true,
+        },
+        isActive: {
+          type: Boolean,
+          default: true,
+        },
+      },
+    ],
 
     // Weekly Holidays - Changed to array of strings
     weeklyHolidays: {

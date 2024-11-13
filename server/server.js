@@ -17,6 +17,7 @@ const adminSubscriptionRoutes = require("./routes/admin/adminSubscriptionRoutes"
 const adminUserRoutes = require("./routes/admin/adminUserRoutes");
 const menuRoutes = require("./routes/menuRoutes");
 const configRoutes = require("./routes/admin/adminConfigRoutes");
+const userconfigRoutes = require("./routes/userConfigRoutes");
 dotenv.config();
 const app = express();
 
@@ -56,6 +57,7 @@ app.use("/api/admin/subscriptions", adminSubscriptionRoutes);
 app.use("/api/admin/users", adminUserRoutes);
 app.use("/api/menu", menuRoutes);
 app.use("/api/admin/config", configRoutes);
+app.use("/api/config", userconfigRoutes);
 const PORT = process.env.PORT || 5000;
 const HOST = "0.0.0.0";
 

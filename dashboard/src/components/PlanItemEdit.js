@@ -9,69 +9,31 @@ import {
   getItemById,
 } from "../utils/api";
 
+const WEEK_DAYS = [
+  "sunday",
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+];
+
+const DEFAULT_CURRENCY = "SAR";
+
 const PlanItemEdit = () => {
   const { planId } = useParams();
   const navigate = useNavigate();
 
   const [plan, setPlan] = useState(null);
-  const [selectedDay, setSelectedDay] = useState("1");
+  const [selectedDay, setSelectedDay] = useState(WEEK_DAYS[0]);
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [weekMenu, setWeekMenu] = useState({});
   const [availableMeals, setAvailableMeals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [packageDiscounts, setPackageDiscounts] = useState({});
-  const [currency, setCurrency] = useState("");
-
-  const initializePackageDiscounts = useCallback(
-    (packages, existingPricing = {}) => {
-      const initialDiscounts = {};
-      packages.forEach((pkg) => {
-        initialDiscounts[pkg] = {
-          discountValue:
-            existingPricing[pkg]?.discountPercentage?.toString() || "",
-          isCouponEligible: existingPricing[pkg]?.isCouponEligible || false,
-        };
-      });
-      setPackageDiscounts(initialDiscounts);
-    },
-    []
-  );
-
-  const fetchPlanDetails = useCallback(async () => {
-    try {
-      const result = await getPlanById(planId);
-      if (result.success) {
-        setPlan(result.data.plan);
-        setSelectedPackage(result.data.plan.package[0]);
-
-        // Initialize empty week menu if needed
-        const initialWeekMenu = {};
-        for (let i = 1; i <= result.data.plan.duration; i++) {
-          initialWeekMenu[i] = {};
-          result.data.plan.package.forEach((pkg) => {
-            initialWeekMenu[i][pkg] = [];
-          });
-        }
-        setWeekMenu((prev) => ({ ...prev, ...initialWeekMenu }));
-
-        // Initialize discounts with existing package pricing if available
-        if (result.data.plan.packagePricing) {
-          initializePackageDiscounts(
-            result.data.plan.package,
-            result.data.plan.packagePricing
-          );
-        } else {
-          initializePackageDiscounts(result.data.plan.package);
-        }
-      } else {
-        setError(result.error || "Failed to fetch plan details");
-      }
-    } catch (error) {
-      setError("An error occurred while fetching plan details");
-    }
-  }, [planId, initializePackageDiscounts]);
-
+  const [packagePrices, setPackagePrices] = useState({});
+  const [currency, setCurrency] = useState(DEFAULT_CURRENCY);
   const fetchMealDetails = async (mealId) => {
     if (!mealId) {
       console.warn("Attempted to fetch meal with undefined ID");
@@ -96,6 +58,40 @@ const PlanItemEdit = () => {
     }
   };
 
+  const fetchPlanDetails = useCallback(async () => {
+    if (!planId) return;
+
+    try {
+      const result = await getPlanById(planId);
+      if (result.success) {
+        setPlan(result.data.plan);
+        setSelectedPackage(result.data.plan.package[0]);
+        setCurrency(result.data.plan.currency || DEFAULT_CURRENCY);
+
+        // Initialize weekMenu with all days
+        const initialWeekMenu = {};
+        WEEK_DAYS.forEach((day) => {
+          initialWeekMenu[day] = {};
+          result.data.plan.package.forEach((pkg) => {
+            initialWeekMenu[day][pkg] = [];
+          });
+        });
+        setWeekMenu(initialWeekMenu);
+
+        // Initialize package prices
+        const initialPrices = {};
+        result.data.plan.package.forEach((pkg) => {
+          initialPrices[pkg] = 0;
+        });
+        setPackagePrices(initialPrices);
+      } else {
+        setError(result.error || "Failed to fetch plan details");
+      }
+    } catch (error) {
+      setError("An error occurred while fetching plan details");
+    }
+  }, [planId]);
+
   const fetchWeekMenu = useCallback(async () => {
     try {
       const result = await getWeekMenu(planId);
@@ -110,6 +106,7 @@ const PlanItemEdit = () => {
             // Filter out undefined/null meals before processing
             const validMeals = meals.filter((mealId) => mealId);
 
+            // Fetch complete meal details for each meal ID
             processedWeekMenu[day][pkg] = await Promise.all(
               validMeals.map(async (mealId) => {
                 const meal = await fetchMealDetails(mealId);
@@ -126,14 +123,11 @@ const PlanItemEdit = () => {
 
         setWeekMenu(processedWeekMenu);
 
-        // Set currency from available meals instead of week menu
-        const firstValidMeal = Object.values(processedWeekMenu)
-          .flatMap((day) => Object.values(day))
-          .flat()
-          .find((meal) => meal?.prices?.[0]?.currency);
-
-        if (firstValidMeal?.prices?.[0]?.currency) {
-          setCurrency(firstValidMeal.prices[0].currency);
+        if (result.data.packagePricing) {
+          setPackagePrices(result.data.packagePricing);
+        }
+        if (result.data.currency) {
+          setCurrency(result.data.currency);
         }
       } else {
         setError(result.error || "Failed to fetch week menu");
@@ -142,20 +136,14 @@ const PlanItemEdit = () => {
       setError("An error occurred while fetching week menu");
     }
   }, [planId]);
-
   const fetchAvailableMeals = useCallback(async () => {
     try {
       const result = await getAllItems();
       if (result.success) {
-        // Filter meals based on plan service
         const filteredMeals = result.items.filter(
-          (meal) => meal.services && meal.services[plan.service]
+          (meal) => meal.services && meal.services[plan?.service]
         );
         setAvailableMeals(filteredMeals);
-
-        if (result.items?.[0]?.prices?.[0]?.currency) {
-          setCurrency(result.items[0].prices[0].currency);
-        }
       } else {
         setError(result.error || "Failed to fetch available meals");
       }
@@ -179,7 +167,6 @@ const PlanItemEdit = () => {
     fetchData();
   }, [fetchPlanDetails, fetchWeekMenu]);
 
-  // Separate effect for fetching meals after plan is loaded
   useEffect(() => {
     if (plan?.service) {
       fetchAvailableMeals();
@@ -230,112 +217,52 @@ const PlanItemEdit = () => {
     }));
   };
 
-  const calculatePackagePrices = () => {
-    const packageDetails = {};
+  const handlePriceChange = (pkg, value) => {
+    const numValue = parseFloat(value);
+    if (isNaN(numValue) || numValue < 0) return;
 
-    for (let day in weekMenu) {
-      for (let pkg in weekMenu[day]) {
-        const packageTotal = (weekMenu[day][pkg] || []).reduce((acc, meal) => {
-          const price = meal?.prices?.[0]?.sellingPrice || 0;
-          return acc + price;
-        }, 0);
-
-        if (!packageDetails[pkg]) {
-          packageDetails[pkg] = { totalPrice: 0 };
-        }
-        packageDetails[pkg].totalPrice += packageTotal;
-      }
-    }
-
-    for (let pkg in packageDetails) {
-      const discountPercent =
-        parseFloat(packageDiscounts[pkg]?.discountValue) || 0;
-      const discountAmount =
-        (packageDetails[pkg].totalPrice * discountPercent) / 100;
-
-      packageDetails[pkg] = {
-        ...packageDetails[pkg],
-        discountPercent,
-        discountAmount,
-        isCouponEligible: packageDiscounts[pkg]?.isCouponEligible || false,
-        finalPrice: packageDetails[pkg].totalPrice - discountAmount,
-      };
-    }
-
-    return packageDetails;
-  };
-
-  const handleDiscountChange = (pkg, field, value) => {
-    if (field === "discountValue") {
-      if (value === "") {
-        setPackageDiscounts((prev) => ({
-          ...prev,
-          [pkg]: { ...prev[pkg], discountValue: "" },
-        }));
-        return;
-      }
-
-      const numValue = parseFloat(value);
-      if (isNaN(numValue) || numValue < 0 || numValue > 100) return;
-
-      const cleanValue = numValue.toString();
-
-      setPackageDiscounts((prev) => ({
-        ...prev,
-        [pkg]: { ...prev[pkg], discountValue: cleanValue },
-      }));
-    } else {
-      setPackageDiscounts((prev) => ({
-        ...prev,
-        [pkg]: { ...prev[pkg], [field]: value },
-      }));
-    }
+    setPackagePrices((prev) => ({
+      ...prev,
+      [pkg]: numValue,
+    }));
   };
 
   const handleSavePlan = async () => {
-    try {
-      // Convert weekMenu to only include meal IDs
-      const weekMenuIds = {};
-      for (const [day, packages] of Object.entries(weekMenu)) {
-        weekMenuIds[day] = {};
-        for (const [pkg, meals] of Object.entries(packages)) {
-          weekMenuIds[day][pkg] = meals.map((meal) => meal._id);
-        }
-      }
+    if (!planId) {
+      setError("Invalid plan ID");
+      return;
+    }
 
-      const packageDetails = calculatePackagePrices();
-      const packagePricing = {};
+    const missingPrices = Object.entries(packagePrices)
+      .filter(([_, price]) => !price || price === 0)
+      .map(([pkg]) => pkg);
 
-      for (const [pkg, details] of Object.entries(packageDetails)) {
-        packagePricing[pkg] = {
-          totalPrice: details.totalPrice,
-          discountPercentage:
-            parseFloat(packageDiscounts[pkg]?.discountValue) || 0,
-          finalPrice: details.finalPrice,
-          isCouponEligible: packageDiscounts[pkg]?.isCouponEligible || false,
-        };
-      }
-
-      const grandTotal = Object.values(packageDetails).reduce(
-        (acc, pkg) => acc + pkg.finalPrice,
-        0
+    if (missingPrices.length > 0) {
+      alert(
+        `Please set prices for the following packages: ${missingPrices.join(
+          ", "
+        )}`
       );
+      return;
+    }
 
-      const result = await updateWeekMenu(planId, {
-        weekMenu: weekMenuIds,
-        packagePricing,
-        totalPrice: grandTotal,
-      });
+    try {
+      const updateData = {
+        weekMenu,
+        packagePricing: packagePrices,
+        currency,
+      };
+
+      const result = await updateWeekMenu(planId, updateData);
 
       if (result.success) {
-        alert("Plan items updated successfully");
+        alert("Plan updated successfully");
         navigate("/plans");
       } else {
-        setError(result.error || "Failed to update plan items");
+        setError(result.error || "Failed to update plan");
       }
     } catch (error) {
-      setError("An error occurred while updating plan items");
-      console.error("Update error:", error);
+      setError("An error occurred while updating plan");
     }
   };
 
@@ -343,7 +270,6 @@ const PlanItemEdit = () => {
   if (error) return <div className="error">{error}</div>;
   if (!plan) return <div className="error">Plan not found</div>;
 
-  const packagePrices = calculatePackagePrices();
   return (
     <div className="plan-item-selection-container">
       <h1>Edit Items for {plan.nameEnglish}</h1>
@@ -357,18 +283,15 @@ const PlanItemEdit = () => {
       </div>
 
       <div className="days-nav">
-        {[...Array(plan.duration)].map((_, index) => {
-          const day = (index + 1).toString();
-          return (
-            <button
-              key={day}
-              className={`day-button ${selectedDay === day ? "active" : ""}`}
-              onClick={() => setSelectedDay(day)}
-            >
-              Day {day}
-            </button>
-          );
-        })}
+        {WEEK_DAYS.map((day) => (
+          <button
+            key={day}
+            className={`day-button ${selectedDay === day ? "active" : ""}`}
+            onClick={() => setSelectedDay(day)}
+          >
+            {day.charAt(0).toUpperCase() + day.slice(1)}
+          </button>
+        ))}
       </div>
 
       <div className="package-nav">
@@ -387,7 +310,7 @@ const PlanItemEdit = () => {
 
       <div className="content-wrapper">
         <div className="available-meals">
-          <h2>Available {plan.service} Meals</h2>
+          <h2>Available Meals</h2>
           <div className="meals-list">
             {availableMeals.length > 0 ? (
               availableMeals.map((meal) => (
@@ -404,12 +327,6 @@ const PlanItemEdit = () => {
                       alt={meal.nameEnglish}
                       className="meal-image"
                     />
-                    <div className="meal-overlay">
-                      <p className="meal-calories">{meal.calories} kcal</p>
-                      <p className="meal-price">
-                        {meal.prices?.[0]?.sellingPrice || 0} {currency}
-                      </p>
-                    </div>
                   </div>
                   <h3 className="meal-name">{meal.nameEnglish}</h3>
                 </div>
@@ -426,7 +343,8 @@ const PlanItemEdit = () => {
           onDrop={handleDrop}
         >
           <h2>
-            Selected Meals for Day {selectedDay} -{" "}
+            Selected Meals for{" "}
+            {selectedDay.charAt(0).toUpperCase() + selectedDay.slice(1)} -{" "}
             {selectedPackage?.charAt(0).toUpperCase() +
               selectedPackage?.slice(1)}
           </h2>
@@ -440,12 +358,6 @@ const PlanItemEdit = () => {
                       alt={meal.nameEnglish}
                       className="meal-image"
                     />
-                    <div className="meal-overlay">
-                      <p className="meal-calories">{meal.calories} kcal</p>
-                      <p className="meal-price">
-                        {meal.prices?.[0]?.sellingPrice || 0} {currency}
-                      </p>
-                    </div>
                     <button
                       className="remove-button"
                       onClick={() => handleRemoveMeal(meal._id)}
@@ -466,73 +378,31 @@ const PlanItemEdit = () => {
         </div>
       </div>
 
-      <div className="pricing-section">
-        {Object.entries(packagePrices).map(([pkg, details]) => (
-          <div key={pkg} className="package-pricing">
-            <div className="package-price-info">
-              <span className="package-name">
-                {pkg.charAt(0).toUpperCase() + pkg.slice(1)}
-              </span>
-              <span className="package-total">
-                Total: {details.totalPrice.toFixed(2)} {currency}
-              </span>
-            </div>
-
-            <div className="discount-section">
-              <div className="discount-input-group">
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={packageDiscounts[pkg]?.discountValue}
-                  onChange={(e) =>
-                    handleDiscountChange(pkg, "discountValue", e.target.value)
-                  }
-                  placeholder="Discount "
-                  className="discount-input"
-                />
-                <span className="percentage-symbol">%</span>
-              </div>
-
-              <label className="coupon-toggle">
-                <input
-                  type="checkbox"
-                  checked={packageDiscounts[pkg]?.isCouponEligible}
-                  onChange={(e) =>
-                    handleDiscountChange(
-                      pkg,
-                      "isCouponEligible",
-                      e.target.checked
-                    )
-                  }
-                />
-                <span>Coupon Eligible</span>
+      <div className="package-pricing-section">
+        <h2>Package Prices (Per Day)</h2>
+        <div className="package-prices">
+          {plan.package.map((pkg) => (
+            <div key={pkg} className="package-price-input">
+              <label>
+                {pkg.charAt(0).toUpperCase() + pkg.slice(1)}:
+                <div className="price-input-wrapper">
+                  <input
+                    type="number"
+                    value={packagePrices[pkg] || ""}
+                    onChange={(e) => handlePriceChange(pkg, e.target.value)}
+                    placeholder="Enter price per day"
+                    min="0"
+                    required
+                  />
+                  <span className="currency">{currency}</span>
+                </div>
               </label>
             </div>
-
-            {details.discountPercent > 0 && (
-              <div className="discount-info">
-                {details.discountAmount.toFixed(2)} {currency} off (
-                {details.discountPercent}%)
-              </div>
-            )}
-
-            <div className="final-price">
-              Final: {details.finalPrice.toFixed(2)} {currency}
-            </div>
-          </div>
-        ))}
-
-        <div className="total-section">
-          <span>Grand Total:</span>
-          <span>
-            {Object.values(packagePrices)
-              .reduce((acc, pkg) => acc + pkg.finalPrice, 0)
-              .toFixed(2)}{" "}
-            {currency}
-          </span>
+          ))}
         </div>
+      </div>
 
+      <div className="actions-section">
         <button className="save-button" onClick={handleSavePlan}>
           Save Plan
         </button>

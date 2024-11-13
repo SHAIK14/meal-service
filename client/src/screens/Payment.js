@@ -12,6 +12,7 @@ import {
   Modal,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { format } from "date-fns";
 import {
   getUserAddress,
   getAvailableVouchers,
@@ -20,11 +21,20 @@ import {
 } from "../utils/api";
 
 const Payment = ({ route, navigation }) => {
-  const { plan } = route.params;
-  console.log("Plan in Payment screen from the navigation:", plan);
+  const { subscriptionData } = route.params;
+
+  // Format subscription days to be serializable
+  const formattedSubscriptionData = {
+    ...subscriptionData,
+    subscriptionDays: subscriptionData.subscriptionDays.map((day) => ({
+      ...day,
+      date: format(new Date(day.date), "yyyy-MM-dd"),
+    })),
+  };
 
   // Address State
   const [userAddress, setUserAddress] = useState(null);
+  const [formattedAddress, setFormattedAddress] = useState(null);
 
   // Voucher States
   const [showVoucherModal, setShowVoucherModal] = useState(false);
@@ -33,7 +43,7 @@ const Payment = ({ route, navigation }) => {
   const [isLoadingVouchers, setIsLoadingVouchers] = useState(false);
   const [voucherError, setVoucherError] = useState("");
 
-  // Payment States - Set STC Pay as default
+  // Payment States
   const [isChecked, setIsChecked] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("STC Pay");
   const [cardHolderName, setCardHolderName] = useState("");
@@ -43,6 +53,17 @@ const Payment = ({ route, navigation }) => {
   const [stcPhoneNumber, setStcPhoneNumber] = useState("");
   const [isFormValid, setIsFormValid] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [finalAmount, setFinalAmount] = useState(subscriptionData.totalPrice);
+
+  // Format address for display
+  // const formatAddress = (address) => {
+  //   if (!address) return null;
+  //   return {
+  //     type: address.saveAs,
+  //     details: `${address.street}, ${address.area}`,
+  //   };
+  // };
+
   useEffect(() => {
     fetchUserAddress();
     fetchAvailableVouchers();
@@ -53,6 +74,7 @@ const Payment = ({ route, navigation }) => {
     try {
       const response = await getUserAddress();
       setUserAddress(response?.address || null);
+      console.log(userAddress);
     } catch (error) {
       console.error("Error fetching address:", error);
       setUserAddress(null);
@@ -62,26 +84,22 @@ const Payment = ({ route, navigation }) => {
   const fetchAvailableVouchers = async () => {
     setIsLoadingVouchers(true);
     try {
-      console.log("Fetching available vouchers...");
       const response = await getAvailableVouchers();
-      console.log("Voucher response:", response);
-
       if (response.success) {
         setAvailableVouchers(response.data);
-        if (response.data.length === 0) {
-          console.log("No vouchers available");
-        }
       }
     } catch (error) {
-      console.error("Detailed error fetching vouchers:", error);
+      console.error("Error fetching vouchers:", error);
       setVoucherError(error.message || "Failed to load vouchers");
     } finally {
       setIsLoadingVouchers(false);
     }
   };
 
-  const calculateDiscount = (voucher, originalPrice) => {
+  const calculateDiscount = (voucher) => {
     if (!voucher) return 0;
+
+    const originalPrice = subscriptionData.totalPrice;
 
     if (voucher.discountType === "percentage") {
       const rawDiscount = (originalPrice * voucher.discountValue) / 100;
@@ -93,22 +111,21 @@ const Payment = ({ route, navigation }) => {
     }
   };
 
-  const calculateFinalPrice = () => {
-    const originalPrice = plan.pricing.final;
-    if (!selectedVoucher) return originalPrice.toFixed(2);
-
-    const discountAmount = calculateDiscount(selectedVoucher, originalPrice);
-    return Math.max(0, originalPrice - discountAmount).toFixed(2);
+  const updateFinalAmount = () => {
+    const discount = selectedVoucher ? calculateDiscount(selectedVoucher) : 0;
+    setFinalAmount(subscriptionData.totalPrice - discount);
   };
+
+  useEffect(() => {
+    updateFinalAmount();
+  }, [selectedVoucher]);
 
   const handleSelectVoucher = async (voucher) => {
     try {
       const validationResult = await validateVoucher(voucher.promoCode);
-
       if (validationResult.success) {
         setSelectedVoucher(voucher);
         setShowVoucherModal(false);
-        Alert.alert("Success", "Voucher applied successfully!");
       } else {
         Alert.alert("Error", validationResult.message);
       }
@@ -121,7 +138,13 @@ const Payment = ({ route, navigation }) => {
     setSelectedVoucher(null);
   };
 
+  // Find the validateForm function and update it:
   const validateForm = () => {
+    if (!userAddress) {
+      setIsFormValid(false);
+      return;
+    }
+
     if (paymentMethod === "Visa/Mastercard") {
       setIsFormValid(
         isChecked &&
@@ -152,6 +175,7 @@ const Payment = ({ route, navigation }) => {
       .slice(0, 19);
     setCardNumber(formatted);
   };
+
   const handleCheckout = async () => {
     if (!userAddress) {
       Alert.alert("Error", "Please add a delivery address");
@@ -165,18 +189,27 @@ const Payment = ({ route, navigation }) => {
 
     setLoading(true);
     try {
-      const subscriptionData = {
-        planDetails: {
-          planId: plan.id, // Changed from _id to id
-          name: plan.name, // Changed from nameEnglish to name
-          duration: plan.duration,
+      // Extract street and area from fullAddress
+      const addressParts = userAddress.fullAddress.split(",");
+
+      const paymentData = {
+        plan: {
+          id: formattedSubscriptionData.id,
+          planId: formattedSubscriptionData.id,
+          name: formattedSubscriptionData.name,
+          selectedPackages: formattedSubscriptionData.selectedPackages,
+          durationType: formattedSubscriptionData.durationType,
+          startDate: formattedSubscriptionData.startDate,
+          endDate: formattedSubscriptionData.endDate,
+          deliveryTime: formattedSubscriptionData.deliveryTime,
+          totalDays: formattedSubscriptionData.totalDays,
+          subscriptionDays: formattedSubscriptionData.subscriptionDays,
         },
-        selectedPackages: plan.package,
-        duration: plan.selectedDuration,
         pricing: {
-          original: plan.pricing.original,
-          savings: plan.pricing.savings,
-          final: parseFloat(calculateFinalPrice()),
+          dailyRate: subscriptionData.dailyRate, // Use the dailyRate directly from subscriptionData
+          totalPrice: formattedSubscriptionData.totalPrice,
+          finalAmount: finalAmount,
+          discount: selectedVoucher ? calculateDiscount(selectedVoucher) : 0,
         },
         voucherDetails: selectedVoucher
           ? {
@@ -185,10 +218,11 @@ const Payment = ({ route, navigation }) => {
               discountType: selectedVoucher.discountType,
               discountValue: selectedVoucher.discountValue,
             }
-          : undefined,
+          : null,
         deliveryAddress: {
-          fullAddress: userAddress.fullAddress,
-          saveAs: userAddress.saveAs,
+          type: userAddress.saveAs,
+          street: addressParts[0].trim(), // First part of the address
+          area: addressParts[1].trim(), // Second part of the address
           coordinates: userAddress.coordinates,
         },
         paymentDetails: {
@@ -196,7 +230,7 @@ const Payment = ({ route, navigation }) => {
           ...(paymentMethod === "Visa/Mastercard"
             ? {
                 cardHolderName,
-                cardNumber,
+                cardNumber: cardNumber.replace(/\s/g, ""),
               }
             : {
                 stcPhoneNumber,
@@ -204,9 +238,13 @@ const Payment = ({ route, navigation }) => {
         },
       };
 
-      console.log("Sending subscription data:", subscriptionData); // For debugging
+      // Debug log to see what we're sending
+      console.log(
+        "Payment Data being sent:",
+        JSON.stringify(paymentData, null, 2)
+      );
 
-      const response = await createSubscription(subscriptionData);
+      const response = await createSubscription(paymentData);
 
       if (response.success) {
         Alert.alert(
@@ -221,8 +259,12 @@ const Payment = ({ route, navigation }) => {
         );
       }
     } catch (error) {
-      console.error("Error in createSubscription:", error);
-      Alert.alert("Error", "Failed to create subscription. Please try again.");
+      console.error("Error in checkout:", error);
+      // Add more detailed error message
+      Alert.alert(
+        "Error",
+        `Failed to process payment: ${error.message}. Please try again.`
+      );
     } finally {
       setLoading(false);
     }
@@ -302,52 +344,40 @@ const Payment = ({ route, navigation }) => {
         <View style={styles.summaryCard}>
           <Text style={styles.cardTitle}>Order Summary</Text>
           <View style={styles.planInfo}>
-            <Text style={styles.planName}>{plan.name}</Text>
-            <Text style={styles.planDuration}>
-              {plan.selectedDuration} • {plan.duration} days/week
+            <Text style={styles.planName}>{subscriptionData.name}</Text>
+            <Text style={styles.planType}>
+              {subscriptionData.durationType.replace("_", " ")}
             </Text>
-            <Text style={styles.planType}>{plan.mealPlanType}</Text>
+            <Text style={styles.planDuration}>
+              Selected: {subscriptionData.selectedPackages.join(" & ")}
+            </Text>
+            <Text style={styles.planDetails}>
+              Total Days: {subscriptionData.totalDays}
+            </Text>
           </View>
 
           <View style={styles.priceBreakdown}>
-            {plan.pricing.savings > 0 && (
-              <>
-                <View style={styles.priceRow}>
-                  <Text style={styles.priceLabel}>Original Price</Text>
-                  <Text style={styles.originalPrice}>
-                    {plan.pricing.original.toFixed(2)} SAR
-                  </Text>
-                </View>
-                <View style={styles.priceRow}>
-                  <Text style={styles.priceLabel}>Package Savings</Text>
-                  <Text style={styles.savingsPrice}>
-                    -{plan.pricing.savings.toFixed(2)} SAR
-                  </Text>
-                </View>
-              </>
-            )}
             <View style={styles.priceRow}>
               <Text style={styles.priceLabel}>Subtotal</Text>
               <Text style={styles.subtotalPrice}>
-                {plan.pricing.final.toFixed(2)} SAR
+                {subscriptionData.totalPrice} SAR
               </Text>
             </View>
+
             {selectedVoucher && (
               <View style={styles.priceRow}>
                 <Text style={styles.priceLabel}>Promo Discount</Text>
                 <Text style={styles.promoPrice}>
-                  -
-                  {calculateDiscount(
-                    selectedVoucher,
-                    plan.pricing.final
-                  ).toFixed(2)}{" "}
-                  SAR
+                  -{calculateDiscount(selectedVoucher).toFixed(2)} SAR
                 </Text>
               </View>
             )}
+
             <View style={[styles.priceRow, styles.finalPriceRow]}>
               <Text style={styles.finalPriceLabel}>Total</Text>
-              <Text style={styles.finalPrice}>{calculateFinalPrice()} SAR</Text>
+              <Text style={styles.finalPrice}>
+                {finalAmount.toFixed(2)} SAR
+              </Text>
             </View>
           </View>
         </View>
@@ -459,7 +489,6 @@ const Payment = ({ route, navigation }) => {
       </ScrollView>
 
       {/* Checkout Button */}
-
       <View style={styles.checkoutContainer}>
         <TouchableOpacity
           style={[
@@ -473,13 +502,13 @@ const Payment = ({ route, navigation }) => {
             <ActivityIndicator color="#FFFFFF" />
           ) : (
             <Text style={styles.checkoutButtonText}>
-              Pay {calculateFinalPrice()} SAR
+              Pay {finalAmount.toFixed(2)} SAR
             </Text>
           )}
         </TouchableOpacity>
       </View>
 
-      {/* Voucher Selection Modal */}
+      {/* Voucher Modal */}
       <Modal
         visible={showVoucherModal}
         animationType="slide"

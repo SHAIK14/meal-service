@@ -48,6 +48,7 @@
   font-size: 20px;
   margin-top: 10px;
 }
+
 .admin-warning-message {
   display: flex;
   align-items: center;
@@ -66,23 +67,8 @@
   flex-shrink: 0;
 }
 
-/* If you want to style the service dropdown differently from other selects */
-.admin-select[name="service"] {
-  font-weight: 500;
-  color: #2c3e50;
-  margin-bottom: 5px;
-}
 .admin-form-container {
   width: 100%;
-}
-.package-warning {
-  background-color: #fff3cd;
-  border: 1px solid #ffeeba;
-  color: #856404;
-  padding: 10px;
-  margin-top: 10px;
-  border-radius: 4px;
-  font-size: 0.9em;
 }
 
 .admin-form-container input[type="text"],
@@ -101,26 +87,6 @@
   resize: vertical;
 }
 
-.admin-checkbox-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 15px;
-  margin: 20px 0;
-}
-
-.admin-checkbox-group label {
-  display: flex;
-  align-items: center;
-  font-size: 16px;
-  cursor: pointer;
-}
-
-.admin-checkbox-group input[type="checkbox"] {
-  margin-right: 10px;
-  width: 20px;
-  height: 20px;
-}
-
 .admin-form-group-category {
   display: flex;
   align-items: center;
@@ -131,6 +97,61 @@
   margin-right: 10px;
 }
 
+/* Updated Checkbox Styles */
+.admin-checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin: 20px 0;
+}
+
+.admin-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  min-width: 120px;
+}
+
+.admin-checkbox {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #666;
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+  background: white;
+  margin: 0;
+}
+
+.admin-checkbox:checked {
+  background: #4caf50;
+  border-color: #4caf50;
+}
+
+.admin-checkbox:checked::after {
+  content: "✓";
+  font-size: 14px;
+  color: white;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Package Selection Styles */
+.admin-package-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+/* Button Styles */
 .admin-form-btn {
   display: flex;
   justify-content: flex-end;
@@ -165,6 +186,13 @@
   background-color: #45a049;
 }
 
+/* Service Select Specific Style */
+.admin-select[name="service"] {
+  font-weight: 500;
+  color: #2c3e50;
+  margin-bottom: 5px;
+}
+
 @media (max-width: 850px) {
   .admin-plan-create-wrapper {
     padding: 10px;
@@ -187,7 +215,7 @@
     font-size: 14px;
   }
 
-  .admin-checkbox-group input[type="checkbox"] {
+  .admin-checkbox {
     width: 16px;
     height: 16px;
   }

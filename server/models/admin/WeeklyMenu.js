@@ -21,8 +21,24 @@ const WeeklyMenuSchema = new mongoose.Schema({
         },
       ],
     },
+    validate: {
+      validator: function (map) {
+        const validDays = [
+          "sunday",
+          "monday",
+          "tuesday",
+          "wednesday",
+          "thursday",
+          "friday",
+          "saturday",
+        ];
+        return Array.from(map.keys()).every((day) =>
+          validDays.includes(day.toLowerCase())
+        );
+      },
+      message: "Week menu must contain valid days of the week",
+    },
   },
-
   status: {
     type: String,
     enum: ["pending", "active", "completed"],

@@ -485,3 +485,189 @@ h5 {
   width: 100%;
   padding: 8px;
 }
+/* Delivery Times Styles */
+.delivery-times-wrapper {
+  padding: 20px;
+  background-color: white;
+  box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+
+.time-slot-inputs {
+  display: flex;
+  gap: 15px;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.time-slot-inputs button {
+  padding: 15px 20px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  height: 56px; /* Match TextField height */
+}
+
+.time-slot-inputs button:hover {
+  background-color: #45a049;
+}
+
+.time-slots-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.time-slots-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.time-slots-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 5px;
+}
+
+.time-slots-list::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 5px;
+}
+
+.time-slots-list::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.time-slot-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  box-shadow: rgba(149, 157, 165, 0.1) 0px 4px 12px;
+}
+
+.time-slot-item button {
+  background-color: #ff4444;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.time-slot-item button:hover {
+  background-color: #cc0000;
+}
+
+/* Plan Durations Styles */
+.plan-durations-wrapper {
+  padding: 20px;
+  background-color: white;
+  box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+  border-radius: 4px;
+}
+
+.plan-duration-inputs {
+  display: flex;
+  gap: 15px;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.plan-duration-inputs button {
+  padding: 15px 20px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  height: 56px; /* Match other inputs */
+}
+
+.plan-duration-inputs button:hover {
+  background-color: #45a049;
+}
+
+.plan-durations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.plan-durations-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.plan-durations-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 5px;
+}
+
+.plan-durations-list::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 5px;
+}
+
+.plan-durations-list::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.plan-duration-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  box-shadow: rgba(149, 157, 165, 0.1) 0px 4px 12px;
+}
+
+.plan-duration-controls {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.plan-duration-controls label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.plan-duration-controls input[type="checkbox"] {
+  display: inline-block; /* Override the previous none */
+  width: 16px;
+  height: 16px;
+}
+
+.plan-duration-controls button {
+  background-color: #ff4444;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.plan-duration-controls button:hover {
+  background-color: #cc0000;
+}
+
+/* Time input specific styles */
+input[type="time"] {
+  padding: 15px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px;
+}

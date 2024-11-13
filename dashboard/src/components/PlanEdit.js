@@ -22,7 +22,6 @@ const PlanEdit = () => {
     isIndividual: false,
     isMultiple: false,
     package: [],
-    duration: null,
     service: "",
   });
 
@@ -146,7 +145,6 @@ const PlanEdit = () => {
           )}
         </div>
         <div className="admin-form-container">
-          {/* Service Display Section */}
           <div className="admin-form-group-category">
             <label className="admin-select-label">Service Type:</label>
             <select
@@ -206,7 +204,7 @@ const PlanEdit = () => {
                 onChange={handleInputChange}
                 className="admin-checkbox"
               />
-              Veg-plan
+              <span>Veg-plan</span>
             </label>
             <label className="admin-checkbox-label">
               <input
@@ -216,7 +214,7 @@ const PlanEdit = () => {
                 onChange={handleInputChange}
                 className="admin-checkbox"
               />
-              Non-Veg plan
+              <span>Non-Veg plan</span>
             </label>
             <label className="admin-checkbox-label">
               <input
@@ -226,7 +224,7 @@ const PlanEdit = () => {
                 onChange={handleInputChange}
                 className="admin-checkbox"
               />
-              Individual Plan
+              <span>Individual Plan</span>
             </label>
             <label className="admin-checkbox-label">
               <input
@@ -236,45 +234,35 @@ const PlanEdit = () => {
                 onChange={handleInputChange}
                 className="admin-checkbox"
               />
-              Multiple Plan
+              <span>Multiple Plan</span>
             </label>
           </div>
+
           <div className="admin-checkbox-group">
-            <label className="admin-checkbox-label">Package:</label>
-            {["breakfast", "lunch", "dinner", "snacks"].map((option) => (
-              <label key={option} className="admin-checkbox-label">
-                <input
-                  type="checkbox"
-                  name="package"
-                  value={option}
-                  checked={plan.package.includes(option)}
-                  disabled
-                  className="admin-checkbox"
-                />
-                {option.charAt(0).toUpperCase() + option.slice(1)}
-              </label>
-            ))}
-          </div>
-          <div className="package-warning">
-            Packages cannot be modified. Create a new plan for different
-            packages.
-          </div>
-          <div className="admin-form-group-category">
-            <label className="admin-select-label">Duration (days):</label>
-            <select
-              name="duration"
-              value={plan.duration}
-              onChange={handleInputChange}
-              required
-              className="admin-select"
-            >
-              {[1, 2, 3, 4, 5, 6, 7].map((day) => (
-                <option key={day} value={day}>
-                  {day}
-                </option>
+            <label>Package Selection:</label>
+            <div className="admin-package-options">
+              {["breakfast", "lunch", "dinner", "snacks"].map((option) => (
+                <label key={option} className="admin-checkbox-label">
+                  <input
+                    type="checkbox"
+                    name="package"
+                    value={option}
+                    checked={plan.package.includes(option)}
+                    disabled
+                    className="admin-checkbox"
+                  />
+                  <span>
+                    {option.charAt(0).toUpperCase() + option.slice(1)}
+                  </span>
+                </label>
               ))}
-            </select>
+            </div>
           </div>
+          <div className="admin-warning-message">
+            <AlertTriangle size={16} />
+            <span>Packages cannot be modified after plan creation.</span>
+          </div>
+
           <div className="admin-form-btn">
             <button
               type="button"
