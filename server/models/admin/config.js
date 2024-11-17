@@ -38,13 +38,17 @@ const configSchema = new mongoose.Schema(
           type: Number,
           required: true,
         },
+        skipDays: {
+          type: Number,
+          required: true,
+          default: 0,
+        },
         isActive: {
           type: Boolean,
           default: true,
         },
       },
     ],
-
     // Weekly Holidays - Changed to array of strings
     weeklyHolidays: {
       type: [String],
@@ -76,28 +80,6 @@ const configSchema = new mongoose.Schema(
         compensationDays: { type: Number, default: 1 },
       },
     ],
-
-    // Skip Allowances - Combined into one object
-    skipAllowances: {
-      week: {
-        type: Number,
-        default: 0,
-        min: 0,
-        max: 7,
-      },
-      twoWeek: {
-        type: Number,
-        default: 0,
-        min: 0,
-        max: 14,
-      },
-      month: {
-        type: Number,
-        default: 0,
-        min: 0,
-        max: 31,
-      },
-    },
 
     // Location Settings
     country: {

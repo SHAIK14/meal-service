@@ -2,531 +2,821 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
-  ScrollView,
   StyleSheet,
-  ActivityIndicator,
-  RefreshControl,
+  ScrollView,
   TouchableOpacity,
-  Modal,
+  ActivityIndicator,
+  SafeAreaView,
+  Dimensions,
+  Image,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Picker } from "@react-native-picker/picker";
-import { Calendar } from "react-native-calendars";
+import { format, isToday, isBefore, isAfter, addDays } from "date-fns";
 import {
-  getActiveSubscriptions,
-  getMenuForDate,
-  getSubscriptionDates,
-} from "../../utils/api";
+  getActiveSubscriptionMenus,
+  getConfig,
+  getSubscriptionTodayMenu,
+  getSubscriptionUpcomingMenus,
+} from "../../utils/api.js";
+
+const { width } = Dimensions.get("window");
 
 const SubscriptionPage = () => {
+  // States for data management
+  const [loading, setLoading] = useState(true);
   const [activeSubscriptions, setActiveSubscriptions] = useState([]);
   const [selectedSubscription, setSelectedSubscription] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [menus, setMenus] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [menuForDate, setMenuForDate] = useState(null);
+  const [upcomingMenus, setUpcomingMenus] = useState([]);
+  const [config, setConfig] = useState(null);
+  const [error, setError] = useState(null);
+  const [selectedPackage, setSelectedPackage] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [showCalendar, setShowCalendar] = useState(false);
 
-  // Get correct day number based on weekday (Sun=1, Mon=2, etc)
-  const getAdminDayNumber = (date) => {
-    const dayOfWeek = new Date(date).getDay();
-    return dayOfWeek === 0 ? 1 : dayOfWeek + 1;
-  };
-
-  // Format date to YYYY-MM-DD
-  const formatDate = (date) => {
-    const d = new Date(date);
-    return d.toISOString().split("T")[0];
-  };
-
-  // Check if date is a delivery day based on plan duration
-  const isDeliveryDay = (date, planDuration) => {
-    const dayOfWeek = new Date(date).getDay();
-    switch (planDuration) {
-      case 5:
-        return dayOfWeek !== 5 && dayOfWeek !== 6; // Not Friday or Saturday
-      case 6:
-        return dayOfWeek !== 5; // Not Friday
-      case 7:
-        return true; // All days
-      default:
-        return false;
-    }
-  };
-
-  // Fetch initial data
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const subscriptionsRes = await getActiveSubscriptions();
-      const subscriptions = subscriptionsRes.data || [];
-      setActiveSubscriptions(subscriptions);
-
-      if (subscriptions.length > 0) {
-        const defaultSub = subscriptions[0];
-        setSelectedSubscription(defaultSub);
-        await fetchMenuForDate(selectedDate);
-      }
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Initial data fetch
   useEffect(() => {
-    fetchData();
+    fetchInitialData();
   }, []);
 
-  const handleSubscriptionChange = async (subscription) => {
+  // Fetch all required data
+  const fetchInitialData = async () => {
     try {
       setLoading(true);
-      setSelectedSubscription(subscription);
-      await fetchMenuForDate(selectedDate);
-    } catch (error) {
-      console.error("Error changing subscription:", error);
+      setError(null);
+
+      const [configResponse, subscriptionsResponse] = await Promise.all([
+        getConfig(),
+        getActiveSubscriptionMenus(),
+      ]);
+
+      setConfig(configResponse.data);
+
+      if (
+        subscriptionsResponse.success &&
+        subscriptionsResponse.data.length > 0
+      ) {
+        const subscriptions = subscriptionsResponse.data;
+        setActiveSubscriptions(subscriptions);
+
+        const firstSub = subscriptions[0];
+        setSelectedSubscription(firstSub);
+        setSelectedPackage(firstSub.plan.selectedPackages[0]);
+
+        // Set initial selected date based on subscription status
+        const today = new Date();
+        const startDate = new Date(firstSub.startDate);
+
+        if (isBefore(today, startDate)) {
+          setSelectedDate(startDate); // Show start date menu if plan hasn't started
+        } else {
+          setSelectedDate(today); // Show today's menu if plan is active
+        }
+
+        await fetchSubscriptionDetails(firstSub.orderId);
+      }
+    } catch (err) {
+      console.error("Error fetching initial data:", err);
+      setError("Failed to load subscription data");
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchMenuForDate = async (date) => {
+  const fetchMenuForDate = async (orderId, date) => {
     try {
-      setLoading(true);
-      const formattedDate = formatDate(date);
-      const dayNumber = getAdminDayNumber(date).toString();
-      const menuRes = await getMenuForDate(formattedDate);
+      const formattedDate = format(date, "yyyy-MM-dd");
+      const response = await getSubscriptionTodayMenu(orderId, formattedDate);
 
-      // Filter and process menus for the correct day
-      const filteredMenus = (menuRes.data || []).map((menu) => ({
-        ...menu,
-        dayNumber,
-      }));
-
-      setMenus(filteredMenus);
+      if (response.success) {
+        const menuData = response.data;
+        setMenuForDate({
+          isAvailable: menuData.isAvailable,
+          menu: menuData.menu || {},
+          reason: menuData.reason,
+          deliveryTime: selectedSubscription?.plan.deliveryTime,
+        });
+      }
     } catch (error) {
-      console.error("Error fetching menu:", error);
-    } finally {
-      setLoading(false);
+      console.error("Error fetching menu for date:", error);
     }
   };
 
-  const handleDateSelect = (date) => {
-    const selectedDateTime = new Date(date.timestamp);
-    const isDateValid = isDeliveryDay(
-      selectedDateTime,
-      selectedSubscription?.plan.duration
-    );
+  const handleDaySelect = async (date) => {
+    setSelectedDate(date);
+    if (selectedSubscription) {
+      const formattedSelectedDate = format(date, "yyyy-MM-dd");
 
-    if (isDateValid) {
-      setSelectedDate(selectedDateTime);
-      setShowCalendar(false);
-      fetchMenuForDate(selectedDateTime);
-    }
-  };
-
-  const getMarkedDates = () => {
-    if (!selectedSubscription) return {};
-
-    const markedDates = {};
-    const start = new Date(selectedSubscription.startDate);
-    const end = new Date(selectedSubscription.endDate);
-    let current = new Date(start);
-
-    while (current <= end) {
-      const dateString = formatDate(current);
-      const isDelivery = isDeliveryDay(
-        current,
-        selectedSubscription.plan.duration
+      // First check in upcomingMenus
+      const selectedDayMenu = upcomingMenus.find(
+        (day) =>
+          format(new Date(day.date), "yyyy-MM-dd") === formattedSelectedDate
       );
-      const isSelected = formatDate(selectedDate) === dateString;
 
-      if (current >= start && current <= end) {
-        markedDates[dateString] = {
-          marked: isDelivery,
-          disabled: !isDelivery,
-          disableTouchEvent: !isDelivery,
-          selected: isSelected,
-          selectedColor: "#0066CC",
-          selectedTextColor: "#FFFFFF",
-        };
+      if (selectedDayMenu) {
+        setMenuForDate({
+          isAvailable: selectedDayMenu.isAvailable,
+          menu: selectedDayMenu.menu || {},
+          reason: selectedDayMenu.unavailableReason,
+          deliveryTime: selectedSubscription.plan.deliveryTime,
+        });
+      } else {
+        // If not found in upcomingMenus, fetch from server
+        await fetchMenuForDate(selectedSubscription.orderId, date);
+      }
+    }
+  };
+
+  const fetchSubscriptionDetails = async (orderId) => {
+    try {
+      const [menuResponse, upcomingResponse] = await Promise.all([
+        getSubscriptionTodayMenu(orderId),
+        getSubscriptionUpcomingMenus(orderId),
+      ]);
+
+      if (menuResponse.success) {
+        setMenuForDate(menuResponse.data);
       }
 
-      current.setDate(current.getDate() + 1);
+      if (upcomingResponse.success) {
+        // Process and set upcoming menus
+        const processedUpcomingMenus = upcomingResponse.data.map((day) => ({
+          ...day,
+          date: new Date(day.date),
+        }));
+        setUpcomingMenus(processedUpcomingMenus);
+
+        // If it's an upcoming subscription, set the menu for the start date
+        if (selectedSubscription?.status === "upcoming") {
+          const startDateMenu = processedUpcomingMenus.find(
+            (menu) =>
+              format(menu.date, "yyyy-MM-dd") ===
+              format(new Date(selectedSubscription.startDate), "yyyy-MM-dd")
+          );
+          if (startDateMenu) {
+            setMenuForDate({
+              isAvailable: startDateMenu.isAvailable,
+              menu: startDateMenu.menu || {},
+              reason: startDateMenu.unavailableReason,
+              deliveryTime: selectedSubscription.plan.deliveryTime,
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching subscription details:", err);
+      setError("Failed to load menu details");
+    }
+  };
+
+  const handleSubscriptionSelect = async (subscription) => {
+    setSelectedSubscription(subscription);
+    setSelectedPackage(subscription.plan.selectedPackages[0]);
+    await fetchSubscriptionDetails(subscription.orderId);
+  };
+
+  const isHolidayDate = (date) => {
+    if (!config) return false;
+
+    const dayName = format(date, "EEEE");
+    const dateStr = format(date, "yyyy-MM-dd");
+
+    // Check weekly holidays
+    if (config.weeklyHolidays.includes(dayName)) {
+      return { isHoliday: true, reason: "Weekend Holiday" };
     }
 
-    return markedDates;
+    // Check national holidays
+    const nationalHoliday = config.nationalHolidays.find(
+      (h) => format(new Date(h.date), "yyyy-MM-dd") === dateStr
+    );
+    if (nationalHoliday) {
+      return {
+        isHoliday: true,
+        reason: `National Holiday: ${nationalHoliday.name}`,
+      };
+    }
+
+    // Check emergency closures
+    const emergencyClosure = config.emergencyClosures.find(
+      (c) => format(new Date(c.date), "yyyy-MM-dd") === dateStr
+    );
+    if (emergencyClosure) {
+      return {
+        isHoliday: true,
+        reason: `Emergency Closure: ${emergencyClosure.description}`,
+      };
+    }
+
+    return { isHoliday: false, reason: null };
+  };
+
+  const getSubscriptionStatus = (subscription) => {
+    const today = new Date();
+    const startDate = new Date(subscription.startDate);
+    const endDate = new Date(subscription.endDate);
+
+    if (isBefore(today, startDate)) {
+      const daysToStart = Math.ceil(
+        (startDate - today) / (1000 * 60 * 60 * 24)
+      );
+      return {
+        status: "upcoming",
+        message: `Starts in ${daysToStart} day${daysToStart > 1 ? "s" : ""}`,
+      };
+    }
+
+    if (isAfter(today, endDate)) {
+      return { status: "completed", message: "Subscription ended" };
+    }
+
+    const daysToEnd = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
+    if (daysToEnd <= 3) {
+      return {
+        status: "ending",
+        message: `Ends in ${daysToEnd} day${daysToEnd > 1 ? "s" : ""}`,
+      };
+    }
+
+    return { status: "active", message: "Active" };
+  };
+
+  const getMenuSectionTitle = () => {
+    if (!selectedDate) return "";
+
+    const today = new Date();
+    if (format(selectedDate, "yyyy-MM-dd") === format(today, "yyyy-MM-dd")) {
+      return "Today's Menu";
+    }
+    return format(selectedDate, "EEEE, dd MMMM");
+  };
+
+  const processMenuItems = (menu) => {
+    if (!menu) return [];
+
+    return Object.entries(menu).map(([packageType, items]) => ({
+      packageType,
+      items: Array.isArray(items) ? items : [],
+    }));
   };
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchData();
+    await fetchInitialData();
     setRefreshing(false);
   };
 
-  const renderSubscriptionPicker = () => {
-    if (!activeSubscriptions.length) return null;
+  const getDeliveryStatus = () => {
+    if (!selectedSubscription || !menuForDate) return null;
 
-    return (
-      <View style={styles.pickerContainer}>
-        <Picker
-          selectedValue={selectedSubscription?.orderId}
-          onValueChange={(itemValue) => {
-            const subscription = activeSubscriptions.find(
-              (sub) => sub.orderId === itemValue
-            );
-            handleSubscriptionChange(subscription);
-          }}
-          style={styles.picker}
-        >
-          {activeSubscriptions.map((subscription) => (
-            <Picker.Item
-              key={subscription.orderId}
-              label={`${subscription.plan.planId.nameEnglish} (${subscription.plan.duration} days/week)`}
-              value={subscription.orderId}
-            />
-          ))}
-        </Picker>
-      </View>
-    );
-  };
+    const currentTime = new Date();
+    const deliveryTime = new Date();
+    const [hours, minutes] =
+      selectedSubscription.plan.deliveryTime.fromTime.split(":");
+    deliveryTime.setHours(parseInt(hours), parseInt(minutes), 0);
 
-  const renderDateSelector = () => {
-    const dayNumber = getAdminDayNumber(selectedDate);
-    return (
-      <TouchableOpacity
-        style={styles.dateSelector}
-        onPress={() => setShowCalendar(true)}
-      >
-        <Text style={styles.dateSelectorText}>
-          {selectedDate.toLocaleDateString("en-US", {
-            weekday: "long",
-            month: "long",
-            day: "numeric",
-          })}
-        </Text>
-        <Text style={styles.dayNumber}>Day {dayNumber}</Text>
-      </TouchableOpacity>
-    );
-  };
-
-  const renderCalendarModal = () => (
-    <Modal visible={showCalendar} transparent={true} animationType="slide">
-      <View style={styles.modalContainer}>
-        <View style={styles.calendarContainer}>
-          <Calendar
-            markedDates={getMarkedDates()}
-            minDate={selectedSubscription?.startDate}
-            maxDate={selectedSubscription?.endDate}
-            onDayPress={handleDateSelect}
-            theme={{
-              selectedDayBackgroundColor: "#0066CC",
-              selectedDayTextColor: "#FFFFFF",
-              todayTextColor: "#0066CC",
-              disabledTextColor: "#CCCCCC",
-            }}
-          />
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={() => setShowCalendar(false)}
-          >
-            <Text style={styles.closeButtonText}>Close</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  );
-
-  const renderMenuItems = (items) => {
-    if (!items || items.length === 0) {
-      return (
-        <View style={styles.noItemsContainer}>
-          <Text style={styles.noMenuText}>No items available for this day</Text>
-        </View>
-      );
+    if (isAfter(currentTime, deliveryTime)) {
+      return "Delivered";
     }
 
-    return items.map((item, index) => (
-      <View key={index} style={styles.menuItem}>
-        <View style={styles.menuItemHeader}>
-          <Text style={styles.menuItemName}>{item.nameEnglish}</Text>
-          <Text style={styles.menuItemCalories}>{item.calories} cal</Text>
-        </View>
-        <Text style={styles.menuItemNameAr}>{item.nameArabic}</Text>
-        <View style={styles.nutritionInfo}>
-          <Text style={styles.nutritionText}>P: {item.protein}g</Text>
-          <Text style={styles.nutritionText}>C: {item.carbs}g</Text>
-          <Text style={styles.nutritionText}>F: {item.fat}g</Text>
-        </View>
-      </View>
-    ));
+    return "Pending Delivery";
   };
 
-  const renderSubscriptionMenu = (menu) => {
-    if (menu.subscriptionId !== selectedSubscription?.orderId) return null;
-
-    const dayNumber = getAdminDayNumber(selectedDate);
-
+  // Render helper for menu items
+  const renderMenuItems = ({ items }) => {
     return (
-      <View key={menu.subscriptionId} style={styles.menuCard}>
-        <View style={styles.menuHeader}>
-          <Text style={styles.planName}>Day {dayNumber} Menu</Text>
-        </View>
-        {menu.packages.map((packageType) => (
-          <View key={packageType} style={styles.packageContainer}>
-            <Text style={styles.packageTitle}>
-              {packageType.charAt(0).toUpperCase() + packageType.slice(1)}
-            </Text>
-            <View style={styles.menuItemsContainer}>
-              {renderMenuItems(menu.menuItems[packageType])}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.menuItemsScroll}
+      >
+        {items.map((item) => (
+          <View key={item._id} style={styles.menuItemCard}>
+            <Image
+              source={{ uri: item.image }}
+              style={styles.menuItemImage}
+              // defaultSource={require("../../assets/placeholder-food.png")}
+            />
+            <View style={styles.menuItemDetails}>
+              <Text style={styles.menuItemName} numberOfLines={1}>
+                {item.nameEnglish}
+              </Text>
+              <Text style={styles.menuItemDesc} numberOfLines={2}>
+                {item.descriptionEnglish}
+              </Text>
+              {item.calories && (
+                <Text style={styles.caloriesText}>
+                  {item.calories} calories
+                </Text>
+              )}
             </View>
           </View>
         ))}
-      </View>
+      </ScrollView>
     );
   };
 
-  if (loading && !menus.length) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0066CC" />
-      </View>
-    );
-  }
-
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        {renderSubscriptionPicker()}
-        {renderDateSelector()}
-        {renderCalendarModal()}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>My Subscriptions</Text>
+      </View>
 
-        {loading ? (
-          <ActivityIndicator style={styles.menuLoader} color="#0066CC" />
-        ) : menus.length > 0 ? (
-          <View style={styles.menusContainer}>
-            {menus.map(renderSubscriptionMenu)}
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#C5A85F" />
+        </View>
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={fetchInitialData}
+          >
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : activeSubscriptions.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>No active subscriptions found</Text>
+        </View>
+      ) : (
+        <ScrollView
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Active Subscriptions Horizontal Scroll */}
+          <View style={styles.subscriptionsContainer}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {activeSubscriptions.map((subscription) => {
+                const { status, message } = getSubscriptionStatus(subscription);
+                return (
+                  <TouchableOpacity
+                    key={subscription.orderId}
+                    style={[
+                      styles.subscriptionCard,
+                      selectedSubscription?.orderId === subscription.orderId &&
+                        styles.selectedCard,
+                    ]}
+                    onPress={() => handleSubscriptionSelect(subscription)}
+                  >
+                    <Text
+                      style={[
+                        styles.planName,
+                        selectedSubscription?.orderId ===
+                          subscription.orderId && styles.selectedCardText,
+                      ]}
+                    >
+                      {subscription.plan.name.english}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.packageInfo,
+                        selectedSubscription?.orderId ===
+                          subscription.orderId && styles.selectedCardText,
+                      ]}
+                    >
+                      {subscription.plan.selectedPackages.join(" & ")}
+                    </Text>
+                    <View
+                      style={[styles.statusBadge, styles[`status${status}`]]}
+                    >
+                      <Text style={styles.statusText}>{message}</Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
           </View>
-        ) : (
-          <View style={styles.noSubscriptionContainer}>
-            <Text style={styles.noSubscriptionText}>
-              No menu available for selected date
-            </Text>
-          </View>
-        )}
-      </ScrollView>
+
+          {selectedSubscription && (
+            <View style={styles.contentContainer}>
+              {/* Upcoming Days Preview */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Upcoming Days</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.upcomingDaysScroll}
+                >
+                  {upcomingMenus.map((day) => {
+                    const holidayCheck = isHolidayDate(new Date(day.date));
+                    const isSelected =
+                      format(new Date(day.date), "yyyy-MM-dd") ===
+                      format(selectedDate, "yyyy-MM-dd");
+
+                    return (
+                      <TouchableOpacity
+                        key={day.date}
+                        style={[
+                          styles.dayCard,
+                          holidayCheck.isHoliday && styles.holidayCard,
+                          isSelected && styles.selectedDayCard,
+                        ]}
+                        onPress={() => handleDaySelect(new Date(day.date))}
+                      >
+                        <Text style={styles.dayName}>
+                          {format(new Date(day.date), "EEE")}
+                        </Text>
+                        <Text style={styles.dayDate}>
+                          {format(new Date(day.date), "dd")}
+                        </Text>
+                        {holidayCheck.isHoliday ? (
+                          <Text style={styles.holidayText}>
+                            {holidayCheck.reason.split(":")[1]?.trim() ||
+                              holidayCheck.reason}
+                          </Text>
+                        ) : (
+                          <View style={styles.packageIndicators}>
+                            {selectedSubscription.plan.selectedPackages.map(
+                              (pkg) => (
+                                <View
+                                  key={pkg}
+                                  style={[
+                                    styles.packageDot,
+                                    day.menu?.[pkg] && styles.activePackageDot,
+                                  ]}
+                                />
+                              )
+                            )}
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+
+              {/* Selected Day Menu Section */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>{getMenuSectionTitle()}</Text>
+
+                {/* Package Selector */}
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.packageSelector}
+                >
+                  {selectedSubscription.plan.selectedPackages.map((pkg) => (
+                    <TouchableOpacity
+                      key={pkg}
+                      style={[
+                        styles.packageButton,
+                        selectedPackage === pkg && styles.selectedPackage,
+                      ]}
+                      onPress={() => setSelectedPackage(pkg)}
+                    >
+                      <Text
+                        style={[
+                          styles.packageButtonText,
+                          selectedPackage === pkg && styles.selectedPackageText,
+                        ]}
+                      >
+                        {pkg.charAt(0).toUpperCase() + pkg.slice(1)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+
+                {/* Menu Items */}
+                {menuForDate?.isAvailable ? (
+                  <View style={styles.menuContainer}>
+                    <View style={styles.deliveryInfo}>
+                      <Text style={styles.deliveryTime}>
+                        Delivery Time:{" "}
+                        {selectedSubscription.plan.deliveryTime.fromTime} -{" "}
+                        {selectedSubscription.plan.deliveryTime.toTime}
+                      </Text>
+                      {isToday(selectedDate) && (
+                        <Text style={styles.deliveryStatus}>
+                          {getDeliveryStatus()}
+                        </Text>
+                      )}
+                    </View>
+
+                    {menuForDate?.menu[selectedPackage] ? (
+                      renderMenuItems({
+                        items: menuForDate.menu[selectedPackage],
+                      })
+                    ) : (
+                      <View style={styles.unavailableContainer}>
+                        <Text style={styles.unavailableText}>
+                          No menu items available for {selectedPackage}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                ) : (
+                  <View style={styles.unavailableContainer}>
+                    <Text style={styles.unavailableText}>
+                      {selectedSubscription.status === "upcoming"
+                        ? "Subscription not started yet"
+                        : menuForDate?.reason ||
+                          "Menu not available for this day"}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          )}
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#fff",
   },
+  header: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+    backgroundColor: "#fff",
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: "600",
+    color: "#333",
+  },
+
+  // Loading, Error, and Empty States
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
   },
-
-  // Picker Styles
-  pickerContainer: {
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
-  },
-  picker: {
-    height: 50,
-    backgroundColor: "#F8F9FA",
-    borderRadius: 8,
-  },
-
-  // Date Selector Styles
-  dateSelector: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 16,
-    backgroundColor: "#FFFFFF",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
-  },
-  dateSelectorText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333333",
-  },
-  dayNumber: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#666666",
-    backgroundColor: "#F0F0F0",
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-
-  // Calendar Modal Styles
-  modalContainer: {
+  errorContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    padding: 20,
   },
-  calendarContainer: {
-    width: "90%",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+  errorText: {
+    fontSize: 16,
+    color: "#ff4444",
+    textAlign: "center",
+    marginBottom: 16,
   },
-  closeButton: {
-    marginTop: 16,
+  retryButton: {
     padding: 12,
-    backgroundColor: "#0066CC",
+    backgroundColor: "#C5A85F",
     borderRadius: 8,
-    alignItems: "center",
   },
-  closeButtonText: {
-    color: "#FFFFFF",
+  retryText: {
+    color: "#fff",
     fontSize: 16,
     fontWeight: "500",
   },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+  },
 
-  // Menu Container
-  menusContainer: {
+  // Subscription Cards
+  subscriptionsContainer: {
     padding: 16,
   },
-  menuCard: {
-    backgroundColor: "#FFFFFF",
+  subscriptionCard: {
+    backgroundColor: "#f8f8f8",
     borderRadius: 12,
-    marginBottom: 16,
+    padding: 16,
+    marginRight: 12,
+    width: width * 0.8,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  selectedCard: {
+    backgroundColor: "#C5A85F",
+  },
+  selectedCardText: {
+    color: "#fff",
+  },
+  planName: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 8,
+  },
+  packageInfo: {
+    fontSize: 14,
+    color: "#666",
+    marginBottom: 12,
+  },
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    alignSelf: "flex-start",
+  },
+  statusactive: {
+    backgroundColor: "#4CAF50",
+  },
+  statusupcoming: {
+    backgroundColor: "#2196F3",
+  },
+  statusending: {
+    backgroundColor: "#FF9800",
+  },
+  statuscompleted: {
+    backgroundColor: "#9E9E9E",
+  },
+  statusText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "500",
+  },
+
+  // Content Container
+  contentContainer: {
+    padding: 16,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 12,
+  },
+
+  // Upcoming Days
+  upcomingDaysScroll: {
+    marginTop: 8,
+  },
+  dayCard: {
+    width: width * 0.15,
+    height: width * 0.2,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    marginRight: 12,
+    padding: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#eee",
+  },
+  selectedDayCard: {
+    borderColor: "#C5A85F",
+    borderWidth: 2,
+  },
+  holidayCard: {
+    backgroundColor: "#f8f8f8",
+  },
+  dayName: {
+    fontSize: 12,
+    color: "#666",
+    marginBottom: 4,
+  },
+  dayDate: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 6,
+  },
+  holidayText: {
+    fontSize: 10,
+    color: "#ff4444",
+    textAlign: "center",
+    maxWidth: width * 0.13,
+  },
+  packageIndicators: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 4,
+  },
+  packageDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#eee",
+  },
+  activePackageDot: {
+    backgroundColor: "#C5A85F",
+  },
+
+  // Package Selector
+  packageSelector: {
+    marginBottom: 16,
+  },
+  packageButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: "#f0f0f0",
+    marginRight: 12,
+  },
+  selectedPackage: {
+    backgroundColor: "#C5A85F",
+  },
+  packageButtonText: {
+    fontSize: 14,
+    color: "#666",
+    fontWeight: "500",
+    textTransform: "capitalize",
+  },
+  selectedPackageText: {
+    color: "#fff",
+  },
+
+  // Menu Container and Items
+  menuContainer: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#eee",
+  },
+  deliveryInfo: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  deliveryTime: {
+    fontSize: 14,
+    color: "#666",
+  },
+  deliveryStatus: {
+    fontSize: 14,
+    color: "#C5A85F",
+    fontWeight: "500",
+  },
+  menuItemsScroll: {
+    marginHorizontal: -16,
+    paddingHorizontal: 16,
+  },
+  menuItemCard: {
+    width: width * 0.6,
+    marginRight: 16,
+    borderRadius: 12,
+    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
     overflow: "hidden",
   },
-  menuHeader: {
-    padding: 16,
-    backgroundColor: "#F8F9FA",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
+  menuItemImage: {
+    width: "100%",
+    height: width * 0.4,
+    resizeMode: "cover",
   },
-  planName: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#333333",
-  },
-
-  // Package Section
-  packageContainer: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
-  },
-  packageTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333333",
-    marginBottom: 12,
-    backgroundColor: "#F8F9FA",
-    padding: 8,
-    borderRadius: 8,
-  },
-  menuItemsContainer: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 8,
-  },
-
-  // Menu Items
-  menuItem: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
-  },
-  menuItemHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 4,
+  menuItemDetails: {
+    padding: 12,
   },
   menuItemName: {
     fontSize: 16,
-    fontWeight: "500",
-    color: "#333333",
-    flex: 1,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 4,
   },
-  menuItemNameAr: {
+  menuItemDesc: {
     fontSize: 14,
-    color: "#666666",
-    marginBottom: 8,
-    textAlign: "right",
+    color: "#666",
+    marginBottom: 4,
+    lineHeight: 20,
   },
-  menuItemCalories: {
-    fontSize: 14,
-    color: "#FF9500",
-    fontWeight: "500",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    backgroundColor: "#FFF5E6",
-    borderRadius: 4,
-  },
-  nutritionInfo: {
-    flexDirection: "row",
-    backgroundColor: "#F8F9FA",
-    padding: 8,
-    borderRadius: 6,
-    marginTop: 8,
-  },
-  nutritionText: {
+  caloriesText: {
     fontSize: 12,
-    color: "#666666",
-    marginRight: 16,
+    color: "#888",
     fontWeight: "500",
   },
 
-  // Empty States
-  noItemsContainer: {
-    padding: 24,
+  // Unavailable Container
+  unavailableContainer: {
+    padding: 20,
+    backgroundColor: "#f8f8f8",
+    borderRadius: 12,
     alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#F8F9FA",
-    borderRadius: 8,
   },
-  noMenuText: {
+  unavailableText: {
     fontSize: 14,
-    color: "#666666",
+    color: "#666",
     textAlign: "center",
-  },
-  noSubscriptionContainer: {
-    padding: 32,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  noSubscriptionText: {
-    fontSize: 16,
-    color: "#666666",
-    textAlign: "center",
-  },
-
-  // Loading States
-  menuLoader: {
-    marginTop: 24,
-    marginBottom: 24,
   },
 });
 

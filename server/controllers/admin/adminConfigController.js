@@ -15,11 +15,7 @@ const getConfiguration = async (req, res) => {
 
 const updateBasicConfig = async (req, res) => {
   try {
-    const {
-      skipMealDays,
-      planStartDelay,
-      skipAllowances, // Changed to match new schema
-    } = req.body;
+    const { skipMealDays, planStartDelay } = req.body;
 
     let config = await Config.findOneAndUpdate(
       {},
@@ -27,9 +23,6 @@ const updateBasicConfig = async (req, res) => {
         $set: {
           skipMealDays,
           planStartDelay,
-          "skipAllowances.week": skipAllowances.week,
-          "skipAllowances.twoWeek": skipAllowances.twoWeek,
-          "skipAllowances.month": skipAllowances.month,
         },
       },
       { new: true, upsert: true }
@@ -331,15 +324,23 @@ const getPlanDurations = async (req, res) => {
 };
 
 // Add plan duration
+// Modify addPlanDuration
 const addPlanDuration = async (req, res) => {
   try {
-    const { durationType, minDays } = req.body;
+    const { durationType, minDays, skipDays } = req.body; // Add skipDays to destructuring
 
     // Check max days for the duration type
     const maxDays = DURATION_DAYS[durationType];
     if (minDays > maxDays) {
       return res.status(400).json({
         message: `Minimum days cannot exceed ${maxDays} days for ${durationType}`,
+      });
+    }
+
+    // Validate skipDays
+    if (skipDays > maxDays) {
+      return res.status(400).json({
+        message: `Skip days cannot exceed ${maxDays} days for ${durationType}`,
       });
     }
 
@@ -358,7 +359,7 @@ const addPlanDuration = async (req, res) => {
       {},
       {
         $push: {
-          planDurations: { durationType, minDays, isActive: true },
+          planDurations: { durationType, minDays, skipDays, isActive: true },
         },
       },
       { new: true, upsert: true }
@@ -370,11 +371,11 @@ const addPlanDuration = async (req, res) => {
   }
 };
 
-// Update plan duration
+// Modify updatePlanDuration
 const updatePlanDuration = async (req, res) => {
   try {
     const { planId } = req.params;
-    const { minDays, isActive } = req.body;
+    const { minDays, skipDays, isActive } = req.body; // Add skipDays to destructuring
 
     // Get the plan to check duration type
     const config = await Config.findOne({ "planDurations._id": planId });
@@ -391,11 +392,18 @@ const updatePlanDuration = async (req, res) => {
       });
     }
 
+    if (skipDays > maxDays) {
+      return res.status(400).json({
+        message: `Skip days cannot exceed ${maxDays} days for ${plan.durationType}`,
+      });
+    }
+
     const updatedConfig = await Config.findOneAndUpdate(
       { "planDurations._id": planId },
       {
         $set: {
           "planDurations.$.minDays": minDays,
+          "planDurations.$.skipDays": skipDays,
           "planDurations.$.isActive": isActive,
         },
       },
@@ -407,7 +415,6 @@ const updatePlanDuration = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
-
 // Delete plan duration
 const deletePlanDuration = async (req, res) => {
   try {

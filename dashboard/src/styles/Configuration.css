@@ -1,673 +1,443 @@
-.configuration {
-  transition: margin-left 0.3s;
-  width: 70vw;
+/* Common styles */
+.config_container {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
+  background: #f8f9fa;
+}
+
+.config_loading {
   display: flex;
-  padding: 25px;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
+  height: 200px;
+  font-size: 16px;
+  color: #64748b;
 }
 
-.configuration.with-sidebar {
-  margin-left: 300px;
-  width: calc(100% - 250px);
-}
-
-.configuration.full-width {
-  width: 100%;
-  margin: auto;
-}
-.tabs {
-  display: flex;
-  width: 100%;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px;
-  border-bottom: 1px solid #ccc;
-}
-
-.tab-buttons {
-  display: flex;
-  gap: 10px;
-}
-.tab-buttons button {
-  padding: 10px 20px;
-  border: none;
-
-  cursor: pointer;
-}
-
-.tab-buttons button:hover {
-  background-color: grey;
-
-  color: white;
-}
-
-.update-button {
-  padding: 8px 16px;
-  background-color: rgb(13, 161, 13);
-  color: white;
-  border: none;
-
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.update-button:hover {
-  background-color: darkgreen;
-}
-
-.tab-buttons button.active {
-  background-color: black; /* Highlight color */
-  color: white;
-
-  font-weight: bold;
-  letter-spacing: 1px;
-}
-.tab-content {
-  padding: 20px;
-  gap: 20px;
-  border-radius: 4px;
-  width: 1200px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-.top-section-wrapper {
-  display: flex;
-  width: 100%;
-  flex-direction: row;
-  gap: 20px;
-}
-.top-section {
-  display: flex;
-  flex-direction: column;
-  width: 300px;
-  flex: 1;
-
-  gap: 20px;
-}
-.skipping-meal-option {
-  padding: 20px;
-  flex: 1;
-
-  background-color: white;
-  display: flex;
-  flex-direction: column;
-  box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
-  justify-content: center;
-}
-
-.user-plan-start-option {
-  padding: 20px;
-  flex: 1;
-
-  background-color: white;
-  display: flex;
-  flex-direction: column;
-  box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
-  justify-content: center;
-}
-.plan-start {
-  padding: 20px;
-  flex: 1;
-
-  background-color: white;
-  display: flex;
-  flex-direction: column;
-  box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
-  justify-content: center;
-}
-.fixed-weekly-holidays-option {
-  width: 200px;
-  padding: 20px;
-  flex: 1;
-
-  background-color: white;
-  display: flex;
-  flex-direction: column;
-  box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
-  justify-content: center;
-}
-
-.weekly-holidays {
-  display: flex;
-  flex-direction: column;
-}
-
-.holiday-toggle {
+/* Header and Tabs */
+.config_header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 0;
+  margin-bottom: 24px;
+  background: white;
+  padding: 16px 24px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.day-label {
-  flex-grow: 1;
+.config_tabs {
+  display: flex;
+  gap: 16px;
 }
 
-.switch {
+.config_tab-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 500;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.config_tab-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.config_tab-btn.active {
+  background: #0f172a;
+  color: white;
+}
+
+.config_update-btn {
+  padding: 12px 24px;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.config_update-btn:hover {
+  background: #059669;
+}
+
+/* Card Base Style */
+.config_card {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   position: relative;
-  display: inline-block;
-  width: 34px;
-  height: 20px;
 }
 
-input[type="checkbox"] {
-  display: none;
-}
-
-.slider {
-  /* Slider styles here */
+/* Update Indicator */
+.config_update-indicator {
   position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #ccc;
-  border-radius: 34px;
-  transition: background-color 0.2s;
+  top: 12px;
+  right: 12px;
+  padding: 4px 12px;
+  background: #10b981;
+  color: white;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  animation: fadeInOut 3s forwards;
+  z-index: 10;
 }
 
-input:checked + .slider {
-  background-color: red;
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  10% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  90% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
 }
 
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 18px;
-  width: 18px;
-  left: 2px;
-  bottom: 1px;
-  background-color: white;
-  border-radius: 50%;
-  transition: 0.4s;
+/* Divider */
+.config_divider {
+  width: 100%;
+  height: 1px;
+  background: #e2e8f0;
+  margin: 24px 0;
 }
 
-input:checked + .slider:before {
-  transform: translateX(14px);
-}
-/* Update weekly holidays section for dropdown */
-.weekly-holidays {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
+/* Basic Settings Layout */
+.config_basic-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-bottom: 24px;
 }
 
-.selected-days {
+.config_location-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.config_holiday-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+/* Basic Settings Components */
+.config_country-currency-inputs,
+.config_coordinates-inputs {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-top: 16px;
+}
+
+/* Weekly Holidays */
+.config_selected-days {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
-.selected-day {
+.config_selected-day {
   display: flex;
   align-items: center;
-  background-color: #f5f5f5;
-  padding: 8px 12px;
+  gap: 8px;
+  padding: 6px 12px;
+  background: #f1f5f9;
   border-radius: 4px;
   font-size: 14px;
-  box-shadow: rgba(149, 157, 165, 0.1) 0px 4px 12px;
 }
 
-.day-remove-btn {
+.config_day-remove-btn {
   background: none;
   border: none;
-  color: #666;
-  font-size: 18px;
+  color: #64748b;
   cursor: pointer;
-  padding: 0 5px;
-  margin-left: 5px;
+  padding: 0 4px;
+  font-size: 16px;
 }
 
-.day-remove-btn:hover {
-  color: red;
+.config_day-remove-btn:hover {
+  color: #ef4444;
 }
 
-/* Emergency closures list */
-.emergency-list-container {
-  margin-top: 15px;
-  max-height: 150px;
+/* Holiday and Emergency Sections */
+.config_holiday-inputs,
+.config_emergency-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.config_input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.config_date-input,
+.config_text-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.config_save-btn {
+  padding: 12px 24px;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  align-self: flex-end;
+  width: fit-content;
+}
+
+.config_save-btn:hover {
+  background: #059669;
+}
+
+/* Lists */
+.config_holiday-list,
+.config_emergency-list,
+.config_time-slot-list,
+.config_duration-list {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 300px;
   overflow-y: auto;
-  padding: 0 10px;
+  padding: 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
 }
 
-.emergency-list-container::-webkit-scrollbar {
-  width: 8px;
-}
-
-.emergency-list-container::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 5px;
-}
-
-.emergency-list-container::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 5px;
-}
-
-.emergency-list-container::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
-
-.emergency-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.emergency-item {
+/* Common List Items */
+.config_time-slot-item,
+.config_duration-item,
+.config_holiday-item,
+.config_emergency-item {
   display: flex;
   justify-content: space-between;
-  padding: 8px 0;
-  border-bottom: 1px solid #eee;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-radius: 6px;
+  transition: background 0.2s ease;
 }
 
-.emergency-delete-btn {
-  background-color: red;
-  border: none;
+.config_delete-btn {
+  padding: 8px 16px;
+  background: #ef4444;
   color: white;
-  padding: 8px;
-  border-radius: 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s ease;
 }
 
-/* Input placeholder styles */
-.MuiInputBase-input::placeholder {
-  color: #757575;
-  opacity: 1;
+.config_delete-btn:hover {
+  background: #dc2626;
 }
 
-.MuiSelect-select.MuiSelect-outlined.MuiInputBase-input.MuiOutlinedInput-input {
-  color: #333;
-}
-
-/* Adjust the fixed weekly holidays option width for the new dropdown */
-.fixed-weekly-holidays-option {
-  width: 300px; /* Increased width to accommodate dropdown */
-}
-.national-holidays-option {
-  width: 400px;
-  padding: 20px;
-  background-color: white;
-  box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+/* Delivery Time Slots */
+.config_time-slot-inputs {
   display: flex;
-  flex-direction: column;
-}
-.national-holidays-option .save-btn {
-  padding: 10px;
-  background-color: #4caf50;
-  border: none;
-  color: white;
+  gap: 16px;
+  margin-bottom: 20px;
 }
 
-h4 {
-  margin-bottom: 15px;
-  font-size: 18px;
-}
-
-.holiday-inputs {
-  display: flex; /* Flexbox layout for inputs and button */
-  flex-direction: column; /* Stack inputs vertically */
-  gap: 10px; /* Space between inputs */
-  box-sizing: border-box;
-}
-
-.holiday-date-input,
-.holiday-name-input {
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  box-sizing: border-box;
-  width: 100%;
-}
-
-.holiday-list-container {
+.config_time-input-group {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
   flex: 1;
+}
+
+/* Plan Durations */
+.config_duration-inputs {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.config_duration-select {
+  flex: 2;
+}
+
+.config_min-days-input {
+  flex: 1;
+}
+
+.config_duration-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.config_checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+/* Add Time Slot and Plan Duration Buttons */
+
+.config_add-btn {
+  padding: 12px 24px;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  height: 56px;
+  font-weight: 500;
+  width: auto;
+}
+
+.config_add-btn:hover {
+  background: #059669;
+}
+
+/* Modify existing time slot and duration input sections */
+.config_time-slot-inputs {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  align-items: flex-start; /* Align with Material-UI inputs */
+}
+
+.config_duration-inputs {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  align-items: flex-start; /* Align with Material-UI inputs */
+}
+/* Number of Skips */
+.config_skip-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.config_skip-item {
   display: flex;
   flex-direction: column;
-  margin-top: 15px;
-  overflow-y: auto;
-  max-height: 150px;
-  overflow-y: scroll;
-  padding: 0 10px;
-}
-.holiday-list-container::-webkit-scrollbar {
-  width: 8px;
+  gap: 12px;
 }
 
-.holiday-list-container::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 5px;
-}
-
-.holiday-list-container::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 5px;
-}
-
-.holiday-list-container::-webkit-scrollbar-thumb:hover {
-  background: #555;
+/* Headers */
+h4 {
+  color: #1e293b;
+  font-size: 18px;
+  font-weight: 500;
+  margin-bottom: 16px;
 }
 
 h5 {
-  margin-bottom: 10px;
-}
-
-.holiday-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.holiday-item {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 0;
-  border-bottom: 1px solid #eee;
-}
-
-.holiday-delete-btn {
-  background-color: red;
-  border: none;
-  color: white;
-  padding: 8px;
-  border-radius: 12px;
-}
-
-/* EMERGENCY  DAY */
-
-.emergency-day-off-option {
-  padding: 20px;
-  background-color: white;
-  box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
-  display: flex;
-  gap: 10px;
-  flex: 1;
-  flex-direction: column;
-}
-
-.emergency-day-off-option input[type="date"],
-.emergency-day-off-option input[type="text"],
-.emergency-day-off-option button {
-  box-sizing: border-box;
-}
-
-.emergency-day-off-option input[type="date"],
-.emergency-day-off-option input[type="text"] {
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 1em;
-  color: #333;
-  font-family: inherit;
-}
-
-.emergency-day-off-option button {
-  padding: 10px;
-  background-color: #4caf50;
-  color: white;
-  border: none;
-
-  font-size: 1em;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.emergency-day-off-option button:hover {
-  background-color: #45a049;
-}
-
-/* Number of skips */
-.second-line {
-  display: flex;
-  gap: 25px;
-}
-.number-of-skips-option {
-  padding: 20px;
-  background-color: white;
-  box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
-  display: flex;
-  flex: 1;
-
-  flex-direction: column;
-}
-
-/* Locations */
-
-/* Country Currency  */
-.Locations-Wrapper {
-  display: flex;
-  width: 100%;
-  flex: 1;
-  gap: 25px;
-}
-.country-currency-container {
-  padding: 20px;
-  flex: 1;
-  justify-content: center;
-  border-radius: 15px;
-  background-color: white;
-  box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
-  display: flex;
-  flex-direction: column;
-}
-.country-currency-selector {
-  display: flex;
-  gap: 15px;
-  justify-content: center;
-  align-items: center;
-}
-.location-cordinates {
-  padding: 20px;
-  justify-content: center;
-  border-radius: 15px;
-  background-color: white;
-  box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
-  display: flex;
-  flex-direction: column;
-}
-
-.coordinates-inputs {
-  display: flex;
-  gap: 20px;
-  flex: 1;
-  box-sizing: border-box;
-}
-
-.input-lable-wrapper {
-  display: flex;
-  flex-direction: column;
-  border: none;
-  flex: 1;
-  width: 100%;
-  padding: 8px;
-}
-/* Delivery Times Styles */
-.delivery-times-wrapper {
-  padding: 20px;
-  background-color: white;
-  box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
-  border-radius: 4px;
-  margin-bottom: 20px;
-}
-
-.time-slot-inputs {
-  display: flex;
-  gap: 15px;
-  align-items: flex-start;
-  margin-bottom: 20px;
-}
-
-.time-slot-inputs button {
-  padding: 15px 20px;
-  background-color: #4caf50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  height: 56px; /* Match TextField height */
-}
-
-.time-slot-inputs button:hover {
-  background-color: #45a049;
-}
-
-.time-slots-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 20px;
-  max-height: 200px;
-  overflow-y: auto;
-  padding-right: 10px;
-}
-
-.time-slots-list::-webkit-scrollbar {
-  width: 8px;
-}
-
-.time-slots-list::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 5px;
-}
-
-.time-slots-list::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 5px;
-}
-
-.time-slots-list::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
-
-.time-slot-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 15px;
-  background-color: #f5f5f5;
-  border-radius: 4px;
-  box-shadow: rgba(149, 157, 165, 0.1) 0px 4px 12px;
-}
-
-.time-slot-item button {
-  background-color: #ff4444;
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.time-slot-item button:hover {
-  background-color: #cc0000;
-}
-
-/* Plan Durations Styles */
-.plan-durations-wrapper {
-  padding: 20px;
-  background-color: white;
-  box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
-  border-radius: 4px;
-}
-
-.plan-duration-inputs {
-  display: flex;
-  gap: 15px;
-  align-items: flex-start;
-  margin-bottom: 20px;
-}
-
-.plan-duration-inputs button {
-  padding: 15px 20px;
-  background-color: #4caf50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  height: 56px; /* Match other inputs */
-}
-
-.plan-duration-inputs button:hover {
-  background-color: #45a049;
-}
-
-.plan-durations-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 20px;
-  max-height: 200px;
-  overflow-y: auto;
-  padding-right: 10px;
-}
-
-.plan-durations-list::-webkit-scrollbar {
-  width: 8px;
-}
-
-.plan-durations-list::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 5px;
-}
-
-.plan-durations-list::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 5px;
-}
-
-.plan-durations-list::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
-
-.plan-duration-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 15px;
-  background-color: #f5f5f5;
-  border-radius: 4px;
-  box-shadow: rgba(149, 157, 165, 0.1) 0px 4px 12px;
-}
-
-.plan-duration-controls {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.plan-duration-controls label {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.plan-duration-controls input[type="checkbox"] {
-  display: inline-block; /* Override the previous none */
-  width: 16px;
-  height: 16px;
-}
-
-.plan-duration-controls button {
-  background-color: #ff4444;
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.plan-duration-controls button:hover {
-  background-color: #cc0000;
-}
-
-/* Time input specific styles */
-input[type="time"] {
-  padding: 15px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  color: #334155;
   font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+/* Scrollbar Styling */
+.config_holiday-list::-webkit-scrollbar,
+.config_emergency-list::-webkit-scrollbar,
+.config_time-slot-list::-webkit-scrollbar,
+.config_duration-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.config_holiday-list::-webkit-scrollbar-track,
+.config_emergency-list::-webkit-scrollbar-track,
+.config_time-slot-list::-webkit-scrollbar-track,
+.config_duration-list::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.config_holiday-list::-webkit-scrollbar-thumb,
+.config_emergency-list::-webkit-scrollbar-thumb,
+.config_time-slot-list::-webkit-scrollbar-thumb,
+.config_duration-list::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .config_basic-row,
+  .config_skip-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 992px) {
+  .config_location-row,
+  .config_holiday-row {
+    grid-template-columns: 1fr;
+  }
+
+  .config_time-input-group,
+  .config_duration-inputs {
+    flex-direction: column;
+  }
+
+  .config_time-slot-inputs {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 768px) {
+  .config_basic-row,
+  .config_skip-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .config_country-currency-inputs,
+  .config_coordinates-inputs {
+    grid-template-columns: 1fr;
+  }
+
+  .config_header {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .config_tabs {
+    width: 100%;
+  }
+
+  .config_update-btn {
+    width: 100%;
+  }
 }

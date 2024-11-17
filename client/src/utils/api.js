@@ -5,7 +5,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 // const API_URL = "http://localhost:5000/api";
 const getApiUrl = () => {
   if (__DEV__) {
-    const localIpAddress = "172.20.10.5"; // Replace with your actual IP address if different
+    const localIpAddress = "192.168.1.105"; // Replace with your actual IP address if different
 
     return `http://${localIpAddress}:5000/api`;
   } else {
@@ -596,4 +596,101 @@ export const getConfig = async () => {
     console.error("Error in getConfig:", error);
     throw error;
   }
+};
+// Active Subscription APIs
+export const getActiveSubscriptionMenus = async () => {
+  const token = await AsyncStorage.getItem("userToken");
+  try {
+    // This will fetch all active subscriptions with today's menu
+    const response = await fetch(`${API_URL}/subscriptions/user/active`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        errorData.message || "Failed to fetch active subscription menus"
+      );
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error in getActiveSubscriptionMenus:", error);
+    throw error;
+  }
+};
+
+export const getSubscriptionTodayMenu = async (orderId) => {
+  const token = await AsyncStorage.getItem("userToken");
+  try {
+    const response = await fetch(
+      `${API_URL}/subscriptions/user/${orderId}/today-menu`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to fetch today's menu");
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error in getSubscriptionTodayMenu:", error);
+    throw error;
+  }
+};
+
+export const getSubscriptionUpcomingMenus = async (orderId) => {
+  const token = await AsyncStorage.getItem("userToken");
+  try {
+    const response = await fetch(
+      `${API_URL}/subscriptions/user/${orderId}/upcoming`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to fetch upcoming menus");
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error in getSubscriptionUpcomingMenus:", error);
+    throw error;
+  }
+};
+
+// Helper function to process subscription menu data
+export const processMenuData = (menuData) => {
+  return {
+    ...menuData,
+    isAvailable: menuData.isAvailable ?? false,
+    packages: menuData.packages ? Object.fromEntries(menuData.packages) : {},
+    deliveryTime: menuData.deliveryTime || null,
+    unavailableReason: menuData.unavailableReason || null,
+  };
+};
+
+// Helper function to format menu items
+export const formatMenuItem = (item) => {
+  return {
+    id: item._id,
+    nameEnglish: item.nameEnglish,
+    nameArabic: item.nameArabic,
+    descriptionEnglish: item.descriptionEnglish,
+    descriptionArabic: item.descriptionArabic,
+    image: item.image,
+    calories: item.calories,
+    ingredients: item.ingredients || [],
+  };
 };

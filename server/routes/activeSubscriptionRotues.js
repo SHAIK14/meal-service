@@ -1,0 +1,20 @@
+const express = require("express");
+const router = express.Router();
+const {
+  getUserActiveSubscriptions,
+
+  getCurrentDayMenu,
+  getUpcomingMenus,
+} = require("../controllers/activeSubscriptions");
+const { protect } = require("../middleware/authMiddleware");
+
+// Get user's active subscriptions
+router.get("/active", protect, getUserActiveSubscriptions);
+
+// Get current day menu for subscription
+router.get("/:orderId/today-menu", protect, getCurrentDayMenu);
+
+// Get upcoming menus for subscription
+router.get("/:orderId/upcoming", protect, getUpcomingMenus);
+
+module.exports = router;
