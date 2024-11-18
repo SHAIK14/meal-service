@@ -49,6 +49,20 @@ const SubscriptionOrderSchema = new mongoose.Schema(
             required: true,
           },
           unavailableReason: String,
+          isSkipped: {
+            type: Boolean,
+            default: false,
+          },
+          skippedAt: {
+            type: Date,
+          },
+          isExtensionDay: {
+            type: Boolean,
+            default: false,
+          },
+          originalSkippedDate: {
+            type: Date,
+          },
         },
       ],
       deliveryTime: {
@@ -58,6 +72,17 @@ const SubscriptionOrderSchema = new mongoose.Schema(
           type: mongoose.Schema.Types.ObjectId,
           required: true,
         },
+      },
+      skipMealStatus: {
+        totalSkipsAllowed: {
+          type: Number,
+          required: true,
+        },
+        skipsUsed: {
+          type: Number,
+          default: 0,
+        },
+        lastSkipDate: Date,
       },
     },
     pricing: {
@@ -142,8 +167,30 @@ const SubscriptionOrderSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
+    skipHistory: [
+      {
+        originalDate: {
+          type: Date,
+          required: true,
+        },
+        extensionDate: {
+          type: Date,
+          required: true,
+        },
+        skippedAt: {
+          type: Date,
+          default: Date.now,
+        },
+        reason: String,
+      },
+    ],
   },
   { timestamps: true }
 );
+
+// Add index for better query performance
+SubscriptionOrderSchema.index({ orderId: 1, user: 1 });
+SubscriptionOrderSchema.index({ "plan.subscriptionDays.date": 1 });
+SubscriptionOrderSchema.index({ startDate: 1, endDate: 1 });
 
 module.exports = mongoose.model("SubscriptionOrder", SubscriptionOrderSchema);

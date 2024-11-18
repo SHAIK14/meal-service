@@ -9,6 +9,7 @@ import {
   SafeAreaView,
   Dimensions,
   Image,
+  Modal,
 } from "react-native";
 import { format, isToday, isBefore, isAfter, addDays } from "date-fns";
 import {
@@ -16,12 +17,14 @@ import {
   getConfig,
   getSubscriptionTodayMenu,
   getSubscriptionUpcomingMenus,
-} from "../../utils/api.js";
+  getSkipAvailability,
+  skipSubscriptionDay,
+} from "../../utils/api";
 
 const { width } = Dimensions.get("window");
 
 const SubscriptionPage = () => {
-  // States for data management
+  // Existing states
   const [loading, setLoading] = useState(true);
   const [activeSubscriptions, setActiveSubscriptions] = useState([]);
   const [selectedSubscription, setSelectedSubscription] = useState(null);
@@ -33,10 +36,22 @@ const SubscriptionPage = () => {
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
+  // New states for skip functionality
+  const [skipModalVisible, setSkipModalVisible] = useState(false);
+  const [selectedSkipDate, setSelectedSkipDate] = useState(null);
+  const [skipInfo, setSkipInfo] = useState(null);
+  const [processingSkip, setProcessingSkip] = useState(false);
+  const [showSkipCalendar, setShowSkipCalendar] = useState(false);
+
   // Initial data fetch
   useEffect(() => {
     fetchInitialData();
   }, []);
+  useEffect(() => {
+    if (selectedSubscription) {
+      fetchSkipAvailability();
+    }
+  }, [selectedSubscription]);
 
   // Fetch all required data
   const fetchInitialData = async () => {
@@ -67,7 +82,8 @@ const SubscriptionPage = () => {
         const startDate = new Date(firstSub.startDate);
 
         if (isBefore(today, startDate)) {
-          setSelectedDate(startDate); // Show start date menu if plan hasn't started
+          setSelectedDate(startDate);
+          await fetchMenuForDate(firstSub.orderId, startDate); // Show start date menu if plan hasn't started
         } else {
           setSelectedDate(today); // Show today's menu if plan is active
         }
@@ -80,6 +96,155 @@ const SubscriptionPage = () => {
     } finally {
       setLoading(false);
     }
+  };
+  const fetchSkipAvailability = async () => {
+    try {
+      const response = await getSkipAvailability(selectedSubscription.orderId);
+      if (response.success) {
+        setSkipInfo(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching skip availability:", error);
+    }
+  };
+  // Function to check if a date can be skipped
+  const canSkipDate = (date) => {
+    if (!skipInfo || !config) return false;
+
+    const today = new Date();
+    const skipDate = new Date(date);
+    const minSkipDate = addDays(today, config.skipMealDays);
+
+    // Check minimum notice period
+    if (isBefore(skipDate, minSkipDate)) return false;
+
+    // Check if already at skip limit
+    if (skipInfo.skipsUsed >= skipInfo.maxSkipDays) return false;
+
+    // Check if date is already skipped
+    const isAlreadySkipped = upcomingMenus.find(
+      (day) =>
+        format(new Date(day.date), "yyyy-MM-dd") ===
+          format(skipDate, "yyyy-MM-dd") && day.isSkipped
+    );
+
+    if (isAlreadySkipped) return false;
+
+    return true;
+  };
+
+  const handleSkipDaySelect = (date) => {
+    if (canSkipDate(date)) {
+      setSelectedSkipDate(date);
+      setSkipModalVisible(true);
+    }
+  };
+  // Function to confirm skip
+  const confirmSkip = async () => {
+    if (!selectedSkipDate) return;
+
+    try {
+      setProcessingSkip(true);
+      const response = await skipSubscriptionDay(
+        selectedSubscription.orderId,
+        format(new Date(selectedSkipDate), "yyyy-MM-dd")
+      );
+
+      if (response.success) {
+        // Fetch fresh data after successful skip
+        await Promise.all([
+          fetchSkipAvailability(),
+          fetchSubscriptionDetails(selectedSubscription.orderId),
+        ]);
+        setSkipModalVisible(false);
+        setSelectedSkipDate(null);
+      } else {
+        // Handle error case
+        setError(response.error || "Failed to skip day");
+      }
+    } catch (error) {
+      console.error("Error skipping day:", error);
+      setError("Failed to skip day. Please try again.");
+    } finally {
+      setProcessingSkip(false);
+    }
+  };
+
+  // Function to find next available extension date
+  const findNextAvailableDate = (startDate) => {
+    let currentDate = addDays(new Date(startDate), 1);
+    while (true) {
+      const holidayCheck = isHolidayDate(currentDate);
+      if (!holidayCheck.isHoliday) {
+        return currentDate;
+      }
+      currentDate = addDays(currentDate, 1);
+    }
+  };
+
+  // Function to toggle skip calendar view
+  const toggleSkipCalendar = () => {
+    setShowSkipCalendar(!showSkipCalendar);
+  };
+
+  // Modified isHolidayDate to include skipped and extension days
+  const getDayStatus = (date) => {
+    if (!config || !upcomingMenus) return { status: "available", reason: null };
+
+    const dateStr = format(new Date(date), "yyyy-MM-dd");
+    console.log("GetDayStatus - checking date:", dateStr);
+    const dayName = format(new Date(date), "EEEE");
+
+    const menuDay = upcomingMenus.find(
+      (day) => format(new Date(day.date), "yyyy-MM-dd") === dateStr
+    );
+
+    console.log("Found menu day:", menuDay); // Debug log
+    console.log("GetDayStatus - found day:", {
+      date: dateStr,
+      isSkipped: menuDay?.isSkipped,
+      isExtensionDay: menuDay?.isExtensionDay,
+      unavailableReason: menuDay?.unavailableReason,
+    });
+
+    // Check skipped days first
+    if (menuDay?.isSkipped) {
+      return { status: "skipped", reason: "Skipped meal" };
+    }
+
+    // Then check extension days
+    if (menuDay?.isExtensionDay) {
+      return { status: "extension", reason: "Extension day" };
+    }
+
+    // Check weekly holidays
+    if (config.weeklyHolidays.includes(dayName)) {
+      return { status: "holiday", reason: "Weekend Holiday" };
+    }
+
+    // Check national holidays
+    const nationalHoliday = config.nationalHolidays.find(
+      (h) => format(new Date(h.date), "yyyy-MM-dd") === dateStr
+    );
+    if (nationalHoliday) {
+      return {
+        status: "holiday",
+        reason: `National Holiday: ${nationalHoliday.name}`,
+      };
+    }
+
+    // Check emergency closures
+    const emergencyClosure = config.emergencyClosures.find(
+      (c) => format(new Date(c.date), "yyyy-MM-dd") === dateStr
+    );
+    if (emergencyClosure) {
+      return {
+        status: "holiday",
+        reason: `Emergency Closure: ${emergencyClosure.description}`,
+      };
+    }
+
+    return { status: "available", reason: null };
   };
 
   const fetchMenuForDate = async (orderId, date) => {
@@ -114,9 +279,13 @@ const SubscriptionPage = () => {
 
       if (selectedDayMenu) {
         setMenuForDate({
-          isAvailable: selectedDayMenu.isAvailable,
-          menu: selectedDayMenu.menu || {},
-          reason: selectedDayMenu.unavailableReason,
+          isAvailable: selectedDayMenu.isSkipped
+            ? false
+            : selectedDayMenu.isAvailable,
+          menu: selectedDayMenu.isSkipped ? {} : selectedDayMenu.menu || {},
+          reason: selectedDayMenu.isSkipped
+            ? "Skipped"
+            : selectedDayMenu.unavailableReason,
           deliveryTime: selectedSubscription.plan.deliveryTime,
         });
       } else {
@@ -133,31 +302,41 @@ const SubscriptionPage = () => {
         getSubscriptionUpcomingMenus(orderId),
       ]);
 
-      if (menuResponse.success) {
-        setMenuForDate(menuResponse.data);
+      if (menuResponse.success && !selectedDate) {
+        // Set today's menu only if no date is selected
+        setMenuForDate({
+          isAvailable: menuResponse.data.isAvailable,
+          menu: menuResponse.data.menu || {},
+          reason: menuResponse.data.reason,
+          deliveryTime: selectedSubscription?.plan.deliveryTime,
+        });
       }
 
       if (upcomingResponse.success) {
-        // Process and set upcoming menus
         const processedUpcomingMenus = upcomingResponse.data.map((day) => ({
           ...day,
           date: new Date(day.date),
+          isSkipped: day.isSkipped || false,
+          isExtensionDay: day.isExtensionDay || false,
+          unavailableReason: day.unavailableReason,
+          menu: day.menu || {}, // Ensure menu object exists
         }));
         setUpcomingMenus(processedUpcomingMenus);
 
-        // If it's an upcoming subscription, set the menu for the start date
-        if (selectedSubscription?.status === "upcoming") {
-          const startDateMenu = processedUpcomingMenus.find(
+        // If a date is selected, update menu for that date
+        if (selectedDate) {
+          const selectedDayMenu = processedUpcomingMenus.find(
             (menu) =>
-              format(menu.date, "yyyy-MM-dd") ===
-              format(new Date(selectedSubscription.startDate), "yyyy-MM-dd")
+              format(new Date(menu.date), "yyyy-MM-dd") ===
+              format(selectedDate, "yyyy-MM-dd")
           );
-          if (startDateMenu) {
+
+          if (selectedDayMenu) {
             setMenuForDate({
-              isAvailable: startDateMenu.isAvailable,
-              menu: startDateMenu.menu || {},
-              reason: startDateMenu.unavailableReason,
-              deliveryTime: selectedSubscription.plan.deliveryTime,
+              isAvailable: selectedDayMenu.isAvailable,
+              menu: selectedDayMenu.menu,
+              reason: selectedDayMenu.unavailableReason,
+              deliveryTime: selectedSubscription?.plan.deliveryTime,
             });
           }
         }
@@ -388,6 +567,93 @@ const SubscriptionPage = () => {
               })}
             </ScrollView>
           </View>
+          {/* Skip Meals Section - Add this after subscription cards */}
+          {selectedSubscription && skipInfo && (
+            <View style={styles.skipSection}>
+              <View style={styles.skipHeader}>
+                <View style={styles.skipHeaderLeft}>
+                  <Text style={styles.skipTitle}>Skip Meals</Text>
+                  <Text style={styles.skipSubtitle}>
+                    {skipInfo.remainingSkips}/{skipInfo.maxSkipDays} skips
+                    available
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.skipCalendarButton}
+                  onPress={toggleSkipCalendar}
+                >
+                  <Text style={styles.skipCalendarButtonText}>
+                    {showSkipCalendar ? "Hide Calendar" : "Manage Skips"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {showSkipCalendar && (
+                <View style={styles.skipCalendarContainer}>
+                  <View style={styles.skipLegend}>
+                    <View style={styles.legendItem}>
+                      <View style={[styles.legendDot, styles.availableDot]} />
+                      <Text style={styles.legendText}>Available</Text>
+                    </View>
+                    <View style={styles.legendItem}>
+                      <View style={[styles.legendDot, styles.skippedDot]} />
+                      <Text style={styles.legendText}>Skipped</Text>
+                    </View>
+                    <View style={styles.legendItem}>
+                      <View style={[styles.legendDot, styles.extensionDot]} />
+                      <Text style={styles.legendText}>Extended</Text>
+                    </View>
+                    <View style={styles.legendItem}>
+                      <View style={[styles.legendDot, styles.holidayDot]} />
+                      <Text style={styles.legendText}>Holiday</Text>
+                    </View>
+                  </View>
+
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={styles.skipDaysScroll}
+                  >
+                    {upcomingMenus.map((day) => {
+                      const dayStatus = getDayStatus(new Date(day.date));
+                      const canSkip = canSkipDate(day.date);
+                      return (
+                        <TouchableOpacity
+                          key={day.date}
+                          style={[
+                            styles.skipDayCard,
+                            dayStatus.status === "skipped" && styles.skippedDay,
+                            dayStatus.status === "extension" &&
+                              styles.extensionDay,
+                            dayStatus.status === "holiday" && styles.holidayDay,
+                            canSkip && styles.availableToSkip,
+                          ]}
+                          onPress={() => handleSkipDaySelect(day.date)}
+                          disabled={!canSkip}
+                        >
+                          <Text style={styles.skipDayName}>
+                            {format(new Date(day.date), "EEE")}
+                          </Text>
+                          <Text style={styles.skipDayDate}>
+                            {format(new Date(day.date), "dd")}
+                          </Text>
+                          {dayStatus.reason && (
+                            <Text style={styles.skipDayStatus}>
+                              {dayStatus.status === "skipped"
+                                ? "Skipped"
+                                : dayStatus.status === "extension"
+                                ? "Extended"
+                                : dayStatus.reason.split(":")[0]}
+                            </Text>
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              )}
+            </View>
+          )}
 
           {selectedSubscription && (
             <View style={styles.contentContainer}>
@@ -412,6 +678,8 @@ const SubscriptionPage = () => {
                           styles.dayCard,
                           holidayCheck.isHoliday && styles.holidayCard,
                           isSelected && styles.selectedDayCard,
+                          day.isSkipped && styles.skippedDayCard, // Add this
+                          day.isExtensionDay && styles.extensionDayCard, // Add this
                         ]}
                         onPress={() => handleDaySelect(new Date(day.date))}
                       >
@@ -426,6 +694,10 @@ const SubscriptionPage = () => {
                             {holidayCheck.reason.split(":")[1]?.trim() ||
                               holidayCheck.reason}
                           </Text>
+                        ) : day.isSkipped ? ( // Add this condition
+                          <Text style={styles.holidayText}>Skipped</Text>
+                        ) : day.isExtensionDay ? ( // Add this condition
+                          <Text style={styles.extensionText}>Extended</Text>
                         ) : (
                           <View style={styles.packageIndicators}>
                             {selectedSubscription.plan.selectedPackages.map(
@@ -521,6 +793,48 @@ const SubscriptionPage = () => {
           )}
         </ScrollView>
       )}
+      {/* Skip Confirmation Modal */}
+      <Modal
+        visible={skipModalVisible}
+        transparent={true}
+        animationType="slide"
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>
+              Skip Meal for{" "}
+              {selectedSkipDate
+                ? format(new Date(selectedSkipDate), "EEEE, MMMM dd")
+                : ""}
+            </Text>
+            <Text style={styles.modalSubtitle}>
+              Your subscription will be extended by one day
+            </Text>
+
+            {processingSkip ? (
+              <ActivityIndicator size="large" color="#C5A85F" />
+            ) : (
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalCancelButton]}
+                  onPress={() => {
+                    setSkipModalVisible(false);
+                    setSelectedSkipDate(null);
+                  }}
+                >
+                  <Text style={styles.modalCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalConfirmButton]}
+                  onPress={confirmSkip}
+                >
+                  <Text style={styles.modalConfirmText}>Confirm Skip</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -653,6 +967,189 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#333",
     marginBottom: 12,
+  },
+  // Add these to your existing styles object
+  skipSection: {
+    padding: 16,
+    backgroundColor: "#fff",
+    marginBottom: 16,
+  },
+  skipHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  skipHeaderLeft: {
+    flex: 1,
+  },
+  skipTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 4,
+  },
+  skipSubtitle: {
+    fontSize: 14,
+    color: "#666",
+  },
+  skipCalendarButton: {
+    backgroundColor: "#C5A85F",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  skipCalendarButtonText: {
+    color: "#fff",
+    fontWeight: "500",
+    fontSize: 14,
+  },
+  skipCalendarContainer: {
+    backgroundColor: "#f8f8f8",
+    borderRadius: 12,
+    padding: 16,
+  },
+  skipLegend: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  legendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
+  },
+  legendText: {
+    fontSize: 12,
+    color: "#666",
+  },
+  availableDot: {
+    backgroundColor: "#C5A85F",
+  },
+  skippedDot: {
+    backgroundColor: "#FF6B6B",
+  },
+  extensionDot: {
+    backgroundColor: "#4CAF50",
+  },
+  holidayDot: {
+    backgroundColor: "#9E9E9E",
+  },
+  skipDaysScroll: {
+    marginHorizontal: -16,
+    paddingHorizontal: 16,
+  },
+  skipDayCard: {
+    width: width * 0.18,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: "#fff",
+    marginRight: 12,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#eee",
+  },
+  skippedDay: {
+    backgroundColor: "#FFEFEF",
+    borderColor: "#FF6B6B",
+  },
+  extensionDay: {
+    backgroundColor: "#E8F5E9",
+    borderColor: "#4CAF50",
+  },
+  holidayDay: {
+    backgroundColor: "#F5F5F5",
+    borderColor: "#9E9E9E",
+  },
+  availableToSkip: {
+    borderColor: "#C5A85F",
+    borderWidth: 2,
+  },
+  skipDayName: {
+    fontSize: 12,
+    color: "#666",
+    marginBottom: 4,
+  },
+  skipDayDate: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 4,
+  },
+  skipDayStatus: {
+    fontSize: 10,
+    textAlign: "center",
+    color: "#666",
+  },
+  // Add to your StyleSheet
+  skippedDayCard: {
+    backgroundColor: "#FFEFEF",
+    borderColor: "#FF6B6B",
+  },
+  extensionDayCard: {
+    backgroundColor: "#E8F5E9",
+    borderColor: "#4CAF50",
+  },
+  extensionText: {
+    fontSize: 10,
+    color: "#4CAF50",
+    textAlign: "center",
+    maxWidth: width * 0.13,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 8,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: "#666",
+    marginBottom: 24,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  modalCancelButton: {
+    backgroundColor: "#f5f5f5",
+  },
+  modalConfirmButton: {
+    backgroundColor: "#C5A85F",
+  },
+  modalCancelText: {
+    color: "#333",
+    fontWeight: "500",
+  },
+  modalConfirmText: {
+    color: "#fff",
+    fontWeight: "500",
   },
 
   // Upcoming Days

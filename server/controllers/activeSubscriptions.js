@@ -1,4 +1,4 @@
-const { format, isAfter } = require("date-fns");
+const { format, isAfter, addDays, isBefore } = require("date-fns");
 
 const SubscriptionOrder = require("../models/subscription");
 const WeeklyMenu = require("../models/admin/WeeklyMenu");
@@ -146,6 +146,12 @@ const getUpcomingMenus = async (req, res) => {
     );
 
     const processedDays = upcomingDays.map((day) => {
+      console.log("Processing day:", {
+        date: day.date,
+        isSkipped: day.isSkipped,
+        isExtensionDay: day.isExtensionDay,
+        unavailableReason: day.unavailableReason,
+      });
       const dayName = format(new Date(day.date), "EEEE").toLowerCase();
       const dayMenu = {};
 
@@ -172,6 +178,8 @@ const getUpcomingMenus = async (req, res) => {
         date: format(new Date(day.date), "yyyy-MM-dd"),
         dayName: format(new Date(day.date), "EEEE"),
         isAvailable: day.isAvailable,
+        isSkipped: day.isSkipped || false,
+        isExtensionDay: day.isExtensionDay || false,
         unavailableReason: day.unavailableReason,
         menu: Object.keys(dayMenu).length > 0 ? dayMenu : null,
       };
@@ -184,7 +192,14 @@ const getUpcomingMenus = async (req, res) => {
       Total items fetched: ${items.length}
       Total item IDs collected: ${itemIds.size}
     `);
-
+    console.log(
+      "Processed days with skip/extension status:",
+      processedDays.map((d) => ({
+        date: d.date,
+        isSkipped: d.isSkipped,
+        isExtensionDay: d.isExtensionDay,
+      }))
+    );
     res.status(200).json({
       success: true,
       data: processedDays,
@@ -267,9 +282,262 @@ const getCurrentDayMenu = async (req, res) => {
     });
   }
 };
+const getSkipDaysAvailability = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const userId = req.user._id;
+    const currentDate = new Date();
+
+    // Get subscription and config
+    const [subscription, config] = await Promise.all([
+      SubscriptionOrder.findOne({
+        orderId,
+        user: userId,
+        status: "active",
+      }).populate("plan.planId"),
+      Config.findOne(),
+    ]);
+
+    if (!subscription) {
+      return res.status(404).json({
+        success: false,
+        error: "Subscription not found",
+      });
+    }
+
+    // Get plan duration config
+    const planDuration = config.planDurations.find(
+      (d) => d.durationType === subscription.plan.durationType
+    );
+
+    if (!planDuration) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid plan duration",
+      });
+    }
+
+    // Count already skipped days
+    const skippedDays = subscription.plan.skipMealStatus?.skipsUsed || 0;
+
+    // Calculate remaining skip days
+    const remainingSkips = planDuration.skipDays - skippedDays;
+
+    // Get dates eligible for skipping
+    const eligibleDates = subscription.plan.subscriptionDays
+      .filter((day) => {
+        const dayDate = new Date(day.date);
+        // Must be:
+        // 1. After minimum skip days from now
+        // 2. Not already skipped or unavailable
+        // 3. Within subscription period
+        return (
+          isAfter(dayDate, addDays(currentDate, config.skipMealDays)) &&
+          isBefore(dayDate, new Date(subscription.endDate)) &&
+          day.isAvailable &&
+          !day.isSkipped
+        );
+      })
+      .map((day) => ({
+        date: format(new Date(day.date), "yyyy-MM-dd"),
+        dayName: format(new Date(day.date), "EEEE"),
+      }));
+
+    res.status(200).json({
+      success: true,
+      data: {
+        remainingSkips,
+        maxSkipDays: planDuration.skipDays,
+        minSkipNoticeDays: config.skipMealDays,
+        eligibleDates,
+      },
+    });
+  } catch (error) {
+    console.error("Error in getSkipDaysAvailability:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch skip availability",
+    });
+  }
+};
+
+const skipSubscriptionDay = async (req, res) => {
+  try {
+    // Get data from request
+    const { orderId } = req.params;
+    const { skipDate } = req.body;
+    const userId = req.user._id;
+    const currentDate = new Date();
+
+    // Step 1: Get subscription and config data
+    const [subscription, config] = await Promise.all([
+      SubscriptionOrder.findOne({
+        orderId,
+        user: userId,
+        status: "active",
+      }).populate("plan.planId"),
+      Config.findOne(),
+    ]);
+
+    if (!subscription) {
+      return res.status(404).json({
+        success: false,
+        error: "Subscription not found",
+      });
+    }
+
+    // Get plan duration settings
+    const planDuration = config.planDurations.find(
+      (d) => d.durationType === subscription.plan.durationType
+    );
+
+    // Step 2: Validate skip conditions
+    const skipDateObj = new Date(skipDate);
+
+    // Check notice period
+    if (isBefore(skipDateObj, addDays(currentDate, config.skipMealDays))) {
+      return res.status(400).json({
+        success: false,
+        error: `Must give at least ${config.skipMealDays} days notice for skipping meals`,
+      });
+    }
+
+    // Check within subscription period
+    if (!isBefore(skipDateObj, new Date(subscription.endDate))) {
+      return res.status(400).json({
+        success: false,
+        error: "Skip date must be within subscription period",
+      });
+    }
+
+    // Check skip limits
+    const skippedDays = subscription.plan.skipMealStatus?.skipsUsed || 0;
+    if (skippedDays >= planDuration.skipDays) {
+      return res.status(400).json({
+        success: false,
+        error: "Maximum skip days limit reached",
+      });
+    }
+
+    // Find a valid extension date
+    let extensionDate = addDays(new Date(subscription.endDate), 1);
+    while (true) {
+      const isHoliday = await checkIfHoliday(extensionDate, config);
+      if (!isHoliday) {
+        break;
+      }
+      extensionDate = addDays(extensionDate, 1);
+    }
+
+    // Step 3: First Update - Mark day as skipped
+    const updateResult = await SubscriptionOrder.findOneAndUpdate(
+      {
+        orderId,
+        user: userId,
+        "plan.subscriptionDays": {
+          $elemMatch: {
+            date: skipDateObj,
+            isAvailable: true,
+            isSkipped: { $ne: true },
+          },
+        },
+      },
+      {
+        $set: {
+          "plan.skipMealStatus": {
+            totalSkipsAllowed: planDuration.skipDays,
+            skipsUsed: skippedDays + 1,
+            lastSkipDate: new Date(),
+          },
+          "plan.subscriptionDays.$.isSkipped": true,
+          "plan.subscriptionDays.$.skippedAt": new Date(),
+          "plan.subscriptionDays.$.unavailableReason": "Skipped by user",
+        },
+      },
+      { new: true }
+    );
+
+    if (!updateResult) {
+      throw new Error("Failed to update skip status");
+    }
+
+    // Step 4: Second Update - Add extension day
+    const updatedSubscription = await SubscriptionOrder.findOneAndUpdate(
+      { orderId, user: userId },
+      {
+        $set: {
+          endDate: extensionDate,
+        },
+        $push: {
+          "plan.subscriptionDays": {
+            date: extensionDate,
+            isAvailable: true,
+            isExtensionDay: true,
+            originalSkippedDate: skipDateObj,
+          },
+          skipHistory: {
+            originalDate: skipDateObj,
+            extensionDate: extensionDate,
+            skippedAt: new Date(),
+            reason: "User requested skip",
+          },
+        },
+      },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+
+    // Return success response
+    res.status(200).json({
+      success: true,
+      data: {
+        skipDate: format(skipDateObj, "yyyy-MM-dd"),
+        newEndDate: format(extensionDate, "yyyy-MM-dd"),
+      },
+    });
+  } catch (error) {
+    console.error("Error in skipSubscriptionDay:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to skip subscription day",
+      details: error.message,
+    });
+  }
+};
+
+// Helper function to check if date is a holiday
+const checkIfHoliday = async (date, config) => {
+  const dayName = format(date, "EEEE");
+  const dateStr = format(date, "yyyy-MM-dd");
+
+  // Check weekly holidays
+  if (config.weeklyHolidays.includes(dayName)) {
+    return true;
+  }
+
+  // Check national holidays
+  const isNationalHoliday = config.nationalHolidays.some(
+    (holiday) => format(new Date(holiday.date), "yyyy-MM-dd") === dateStr
+  );
+
+  if (isNationalHoliday) {
+    return true;
+  }
+
+  // Check emergency closures
+  const isEmergencyClosure = config.emergencyClosures.some(
+    (closure) => format(new Date(closure.date), "yyyy-MM-dd") === dateStr
+  );
+
+  return isEmergencyClosure;
+};
 
 module.exports = {
   getUserActiveSubscriptions,
   getCurrentDayMenu,
   getUpcomingMenus,
+  getSkipDaysAvailability,
+  skipSubscriptionDay,
 };

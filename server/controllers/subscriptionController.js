@@ -1,6 +1,7 @@
 const SubscriptionOrder = require("../models/subscription");
 const User = require("../models/User");
 const Voucher = require("../models/admin/voucher");
+const Config = require("../models/admin/config");
 
 const createSubscriptionOrder = async (req, res) => {
   try {
@@ -24,6 +25,14 @@ const createSubscriptionOrder = async (req, res) => {
       sequence = (lastSequence + 1).toString().padStart(3, "0");
     }
     const orderId = `SUB${year}${month}${day}${sequence}`;
+    const config = await Config.findOne();
+    const planDuration = config.planDurations.find(
+      (d) => d.durationType === plan.durationType
+    );
+
+    if (!planDuration) {
+      throw new Error("Invalid plan duration");
+    }
 
     // Create new subscription order
     const subscriptionOrder = new SubscriptionOrder({
@@ -38,6 +47,10 @@ const createSubscriptionOrder = async (req, res) => {
         extraDaysAdded: plan.extraDaysAdded || 0,
         subscriptionDays: plan.subscriptionDays,
         deliveryTime: plan.deliveryTime,
+        skipMealStatus: {
+          totalSkipsAllowed: planDuration.skipDays,
+          skipsUsed: 0,
+        },
       },
       pricing: {
         dailyRate: pricing.dailyRate,

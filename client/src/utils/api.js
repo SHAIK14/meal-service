@@ -694,3 +694,56 @@ export const formatMenuItem = (item) => {
     ingredients: item.ingredients || [],
   };
 };
+
+// Get skip availability for a subscription
+export const getSkipAvailability = async (orderId) => {
+  const token = await AsyncStorage.getItem("userToken");
+  try {
+    const response = await fetch(
+      `${API_URL}/subscriptions/user/${orderId}/skip-availability`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to fetch skip availability");
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error in getSkipAvailability:", error);
+    throw error;
+  }
+};
+
+// Skip a meal for a specific date
+export const skipSubscriptionDay = async (orderId, skipDate) => {
+  const token = await AsyncStorage.getItem("userToken");
+  try {
+    const response = await fetch(
+      `${API_URL}/subscriptions/user/${orderId}/skip`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ skipDate }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to skip subscription day");
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error in skipSubscriptionDay:", error);
+    throw error;
+  }
+};
