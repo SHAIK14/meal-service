@@ -41,6 +41,10 @@ const PlanSchema = new mongoose.Schema(
       default: "SAR",
       required: true,
     },
+    isActive: {
+      type: Boolean,
+      default: false, // New plans are active by default
+    },
   },
   { timestamps: true }
 );
