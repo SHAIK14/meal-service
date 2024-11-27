@@ -21,6 +21,7 @@ const userconfigRoutes = require("./routes/userConfigRoutes");
 const activeSubscriptionRoutes = require("./routes/activeSubscriptionRotues");
 const kitchenAuthRoutes = require("./routes/kitchen/kitchenAuthRoutes");
 const kitchenRoutes = require("./routes/kitchen/kitchenRoutes");
+const DriverRegisterRoutes = require("./routes/admin/DriverRegisterRoute");
 
 dotenv.config();
 const app = express();
@@ -65,6 +66,7 @@ app.use("/api/config", userconfigRoutes);
 app.use("/api/subscriptions/user", activeSubscriptionRoutes);
 app.use("/api/kitchen", kitchenAuthRoutes);
 app.use("/api/kitchen", kitchenRoutes);
+app.use("/api/admin/drivers", DriverRegisterRoutes);
 const PORT = process.env.PORT || 5000;
 const HOST = "0.0.0.0";
 

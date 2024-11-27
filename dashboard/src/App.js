@@ -14,7 +14,9 @@ import PlanEdit from "./components/PlanEdit";
 import PlanItemSelection from "./components/Planitemselection";
 import PlanItemEdit from "./components/PlanItemEdit";
 import Items from "./components/items";
-import Delivery from "./components/delivery";
+import DriverRegistration from "./components/DriverRegistration";
+import DriverManagement from "./components/DriverManagement";
+import DriverRegisterEdit from "./components/DriverRegisterEdit";
 import Subscriptions from "./components/Subscriptions";
 import Users from "./components/users";
 import SelectItemPage from "./components/SelectItemPage";
@@ -82,7 +84,23 @@ const App = () => {
                   <Route path="/edit-item/:id" element={<ItemsEdit />} />
                   <Route path="/add-item" element={<AddItemPage />} />
                   <Route path="/payment-options" element={<PaymentPage />} />
-                  <Route path="/delivery" element={<Delivery />} />
+                  <Route
+                    path="/driver/register"
+                    element={<DriverRegistration />}
+                  />
+                  <Route
+                    path="/driver/edit/:driverId"
+                    element={<DriverRegisterEdit />}
+                  />
+                  <Route
+                    path="/driver/management"
+                    element={<DriverManagement />}
+                  />
+                  <Route
+                    path="/driver/edit/:driverId"
+                    element={<DriverRegistration />}
+                  />
+
                   <Route path="/banners-container" element={<Banners />} />
                   <Route path="/subscriptions" element={<Subscriptions />} />
                   <Route path="/users" element={<Users />} />

@@ -80,10 +80,18 @@ const Sidebar = () => {
         </li>
         <li>
           <NavLink
-            to="/delivery"
+            to="/driver/register"
             className={({ isActive }) => (isActive ? "active" : "")}
           >
-            <FaTruck className="icon" /> <span>Delivery</span>
+            <FaTruck className="icon" /> <span>DeliveryRegister</span>
+          </NavLink>
+        </li>
+        <li>
+          <NavLink
+            to="/driver/management"
+            className={({ isActive }) => (isActive ? "active" : "")}
+          >
+            <FaTruck className="icon" /> <span>DeliveryManagement</span>
           </NavLink>
         </li>
         <li>

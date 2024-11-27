@@ -1,4 +1,7 @@
 const Config = require("../../models/admin/config");
+const mongoose = require("mongoose");
+const SubscriptionOrder = require("../../models/subscription");
+const { format, addDays } = require("date-fns");
 
 // Base Configuration Controllers
 const getConfiguration = async (req, res) => {
@@ -58,11 +61,14 @@ const updateLocationSettings = async (req, res) => {
 };
 
 // Weekly Holidays Controllers
+// Weekly Holidays Controllers
 const updateWeeklyHolidays = async (req, res) => {
-  try {
-    const holidays = req.body; // Expecting array of strings ["Friday", "Sunday"]
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-    // Validate that all days are valid
+  try {
+    console.log("Starting weekly holidays update:", req.body);
+    const holidays = req.body; // Expecting array of strings ["Friday", "Sunday"]
     const validDays = [
       "Sunday",
       "Monday",
@@ -73,23 +79,153 @@ const updateWeeklyHolidays = async (req, res) => {
       "Saturday",
     ];
 
+    // 1. Validate days
     const isValid = holidays.every((day) => validDays.includes(day));
     if (!isValid) {
       return res.status(400).json({ message: "Invalid day provided" });
     }
 
-    let config = await Config.findOneAndUpdate(
+    // 2. Get old config to compare changes
+    const oldConfig = await Config.findOne();
+    const newHolidays = holidays.filter(
+      (day) => !oldConfig.weeklyHolidays.includes(day)
+    );
+
+    // 3. Update config
+    const config = await Config.findOneAndUpdate(
       {},
       { $set: { weeklyHolidays: holidays } },
       { new: true, upsert: true }
     );
+    console.log("Config updated with new holidays");
 
-    res.json(config);
+    // 4. If there are new holidays added, handle active subscriptions
+    if (newHolidays.length > 0) {
+      console.log("Processing new holidays:", newHolidays);
+      const activeSubscriptions = await SubscriptionOrder.find({
+        status: "active",
+        endDate: { $gte: new Date() },
+      });
+      console.log(`Found ${activeSubscriptions.length} active subscriptions`);
+
+      // 5. Process each subscription
+      for (const subscription of activeSubscriptions) {
+        console.log(`Processing subscription: ${subscription.orderId}`);
+
+        const affectedDays = subscription.plan.subscriptionDays.filter(
+          (day) =>
+            newHolidays.includes(format(new Date(day.date), "EEEE")) &&
+            day.isAvailable &&
+            !day.isSkipped
+        );
+
+        console.log(`Found ${affectedDays.length} affected days`);
+
+        // 6. If subscription has affected days, add extension days
+        if (affectedDays.length > 0) {
+          let lastDate = new Date(subscription.endDate);
+
+          // 7. Update each affected day and add extension
+          for (const day of affectedDays) {
+            console.log(`Processing day: ${format(day.date, "yyyy-MM-dd")}`);
+
+            // Find next available date
+            let extensionDate = addDays(lastDate, 1);
+            while (holidays.includes(format(extensionDate, "EEEE"))) {
+              extensionDate = addDays(extensionDate, 1);
+            }
+            console.log(
+              `Found extension date: ${format(extensionDate, "yyyy-MM-dd")}`
+            );
+
+            try {
+              // Step 1: Update the affected day
+              await SubscriptionOrder.updateOne(
+                {
+                  _id: subscription._id,
+                  "plan.subscriptionDays._id": day._id,
+                },
+                {
+                  $set: {
+                    "plan.subscriptionDays.$.isAvailable": false,
+                    "plan.subscriptionDays.$.unavailableReason":
+                      "Weekly Holiday",
+                  },
+                }
+              );
+              console.log("Updated affected day status");
+
+              // Step 2: Add extension day and update end date
+              const updatedSubscription =
+                await SubscriptionOrder.findByIdAndUpdate(
+                  subscription._id,
+                  {
+                    $set: { endDate: extensionDate },
+                    $push: {
+                      "plan.subscriptionDays": {
+                        date: extensionDate,
+                        isAvailable: true,
+                        isExtensionDay: true,
+                        originalSkippedDate: day.date,
+                      },
+                      skipHistory: {
+                        originalDate: day.date,
+                        extensionDate: extensionDate,
+                        reason: "Weekly Holiday",
+                        isSystemGenerated: true,
+                      },
+                    },
+                  },
+                  { new: true }
+                );
+
+              if (!updatedSubscription) {
+                throw new Error(
+                  `Failed to update subscription ${subscription.orderId}`
+                );
+              }
+
+              console.log(
+                `Successfully extended subscription to ${format(
+                  extensionDate,
+                  "yyyy-MM-dd"
+                )}`
+              );
+              lastDate = extensionDate;
+            } catch (updateError) {
+              console.error("Error updating subscription:", updateError);
+              throw updateError;
+            }
+          }
+        }
+      }
+    }
+
+    await session.commitTransaction();
+    console.log("Weekly holidays update completed successfully");
+
+    res.json({
+      success: true,
+      message: "Weekly holidays updated successfully",
+      data: config,
+      newHolidays,
+    });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error("Error in updateWeeklyHolidays:", {
+      error: error.message,
+      stack: error.stack,
+    });
+
+    await session.abortTransaction();
+    res.status(400).json({
+      success: false,
+      message: "Failed to update weekly holidays",
+      error: error.message,
+    });
+  } finally {
+    session.endSession();
   }
 };
-
 // National Holidays Controllers
 const getNationalHolidays = async (req, res) => {
   try {
@@ -104,9 +240,14 @@ const getNationalHolidays = async (req, res) => {
 };
 
 const addNationalHoliday = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
+    console.log("Starting addNationalHoliday process:", req.body);
     const { date, name } = req.body;
 
+    // 1. Add holiday to config
     const config = await Config.findOneAndUpdate(
       {},
       {
@@ -116,10 +257,156 @@ const addNationalHoliday = async (req, res) => {
       },
       { new: true, upsert: true }
     );
+    console.log("National holiday added to config:", { date, name });
 
-    res.json(config.nationalHolidays);
+    // 2. Find active subscriptions that might be affected
+    const holidayDate = new Date(date);
+    if (isNaN(holidayDate.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid date format",
+      });
+    }
+    // Prevent past dates
+    if (holidayDate < new Date()) {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot add holidays for past dates",
+      });
+    }
+
+    console.log("Validated holiday date:", format(holidayDate, "yyyy-MM-dd"));
+    const activeSubscriptions = await SubscriptionOrder.find({
+      status: "active",
+      endDate: { $gte: holidayDate },
+    });
+    console.log(`Found ${activeSubscriptions.length} active subscriptions`);
+
+    // 3. Process each subscription
+    for (const subscription of activeSubscriptions) {
+      console.log(`Processing subscription: ${subscription.orderId}`);
+
+      // Find if this subscription has delivery on holiday
+      const affectedDay = subscription.plan.subscriptionDays.find(
+        (day) =>
+          format(new Date(day.date), "yyyy-MM-dd") ===
+            format(holidayDate, "yyyy-MM-dd") &&
+          day.isAvailable &&
+          !day.isSkipped
+      );
+
+      if (affectedDay) {
+        console.log(
+          `Subscription ${subscription.orderId} has delivery on holiday:`,
+          affectedDay
+        );
+
+        let extensionDate = addDays(new Date(subscription.endDate), 1);
+
+        // Skip weekends and other holidays
+        while (
+          config.weeklyHolidays.includes(format(extensionDate, "EEEE")) ||
+          config.nationalHolidays.some(
+            (h) =>
+              format(new Date(h.date), "yyyy-MM-dd") ===
+              format(extensionDate, "yyyy-MM-dd")
+          )
+        ) {
+          console.log(
+            `${format(
+              extensionDate,
+              "yyyy-MM-dd"
+            )} is a holiday, checking next day`
+          );
+          extensionDate = addDays(extensionDate, 1);
+        }
+
+        console.log(
+          `Found extension date: ${format(extensionDate, "yyyy-MM-dd")}`
+        );
+
+        // Step 1: Update the affected day first
+        await SubscriptionOrder.updateOne(
+          {
+            _id: subscription._id,
+            "plan.subscriptionDays._id": affectedDay._id,
+          },
+          {
+            $set: {
+              "plan.subscriptionDays.$.isAvailable": false,
+              "plan.subscriptionDays.$.unavailableReason": `National Holiday - ${name}`,
+            },
+          }
+        );
+
+        // Step 2: Add extension day and update end date
+        const updatedSubscription = await SubscriptionOrder.findByIdAndUpdate(
+          subscription._id,
+          {
+            $set: {
+              endDate: extensionDate,
+            },
+            $push: {
+              "plan.subscriptionDays": {
+                date: extensionDate,
+                isAvailable: true,
+                isExtensionDay: true,
+                originalSkippedDate: affectedDay.date,
+              },
+              skipHistory: {
+                originalDate: affectedDay.date,
+                extensionDate: extensionDate,
+                reason: `National Holiday - ${name}`,
+                isSystemGenerated: true,
+              },
+            },
+          },
+          { new: true }
+        );
+        console.log(`Updated subscription ${subscription.orderId}:`, {
+          originalDate: format(affectedDay.date, "yyyy-MM-dd"),
+          extensionDate: format(extensionDate, "yyyy-MM-dd"),
+        });
+
+        if (!updatedSubscription) {
+          throw new Error(
+            `Failed to update subscription ${subscription.orderId}`
+          );
+        }
+
+        console.log(
+          `Successfully updated subscription ${subscription.orderId}`
+        );
+      } else {
+        console.log(
+          `No affected delivery found for subscription ${subscription.orderId}`
+        );
+      }
+    }
+
+    await session.commitTransaction();
+    console.log("National holiday process completed successfully");
+
+    res.json({
+      success: true,
+      message: "National holiday added and subscriptions updated",
+      data: config.nationalHolidays,
+      affectedSubscriptions: activeSubscriptions.length,
+    });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error("Error in addNationalHoliday:", {
+      error: error.message,
+      stack: error.stack,
+    });
+
+    await session.abortTransaction();
+    res.status(400).json({
+      success: false,
+      message: "Failed to add national holiday",
+      error: error.message,
+    });
+  } finally {
+    session.endSession();
   }
 };
 
@@ -187,9 +474,23 @@ const getEmergencyClosures = async (req, res) => {
 };
 
 const addEmergencyClosure = async (req, res) => {
-  try {
-    const { date, description, compensationDays } = req.body;
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
+  try {
+    console.log("Starting emergency closure addition:", req.body);
+    const { date, description, compensationDays = 1 } = req.body;
+
+    // Validate date
+    const closureDate = new Date(date);
+    if (isNaN(closureDate.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid date format",
+      });
+    }
+
+    // 1. Add to config
     const config = await Config.findOneAndUpdate(
       {},
       {
@@ -197,16 +498,173 @@ const addEmergencyClosure = async (req, res) => {
           emergencyClosures: {
             date,
             description,
-            compensationDays: compensationDays || 1,
+            compensationDays,
           },
         },
       },
       { new: true, upsert: true }
     );
+    console.log("Emergency closure added to config");
 
-    res.json(config.emergencyClosures);
+    // 2. Find affected active subscriptions
+    const activeSubscriptions = await SubscriptionOrder.find({
+      status: "active",
+      endDate: { $gte: closureDate },
+    });
+    console.log(`Found ${activeSubscriptions.length} active subscriptions`);
+
+    // 3. Process each subscription
+    for (const subscription of activeSubscriptions) {
+      console.log(`Processing subscription: ${subscription.orderId}`);
+
+      // Find affected delivery day
+      const affectedDay = subscription.plan.subscriptionDays.find(
+        (day) =>
+          format(new Date(day.date), "yyyy-MM-dd") ===
+            format(closureDate, "yyyy-MM-dd") &&
+          day.isAvailable &&
+          !day.isSkipped
+      );
+
+      if (affectedDay) {
+        console.log(
+          `Subscription ${subscription.orderId} affected by closure:`,
+          {
+            date: format(affectedDay.date, "yyyy-MM-dd"),
+          }
+        );
+
+        let currentExtensionDate = new Date(subscription.endDate);
+
+        // Calculate extension dates for compensation days
+        const extensionDates = [];
+        for (let i = 0; i < compensationDays; i++) {
+          let extensionDate = addDays(currentExtensionDate, 1);
+
+          // Skip holidays
+          while (
+            config.weeklyHolidays.includes(format(extensionDate, "EEEE")) ||
+            config.nationalHolidays.some(
+              (h) =>
+                format(new Date(h.date), "yyyy-MM-dd") ===
+                format(extensionDate, "yyyy-MM-dd")
+            ) ||
+            config.emergencyClosures.some(
+              (c) =>
+                format(new Date(c.date), "yyyy-MM-dd") ===
+                format(extensionDate, "yyyy-MM-dd")
+            )
+          ) {
+            console.log(
+              `${format(
+                extensionDate,
+                "yyyy-MM-dd"
+              )} is a holiday, checking next day`
+            );
+            extensionDate = addDays(extensionDate, 1);
+          }
+
+          extensionDates.push(extensionDate);
+          currentExtensionDate = extensionDate;
+        }
+
+        console.log(
+          "Extension dates calculated:",
+          extensionDates.map((d) => format(d, "yyyy-MM-dd"))
+        );
+
+        try {
+          // Step 1: Update the affected day
+          await SubscriptionOrder.updateOne(
+            {
+              _id: subscription._id,
+              "plan.subscriptionDays._id": affectedDay._id,
+            },
+            {
+              $set: {
+                "plan.subscriptionDays.$.isAvailable": false,
+                "plan.subscriptionDays.$.unavailableReason": `Emergency Closure - ${description}`,
+              },
+            }
+          );
+          console.log("Updated affected day status");
+
+          // Step 2: Add extension days and update end date
+          const extensionDaysToAdd = extensionDates.map((extensionDate) => ({
+            date: extensionDate,
+            isAvailable: true,
+            isExtensionDay: true,
+            originalSkippedDate: affectedDay.date,
+          }));
+
+          const updatedSubscription = await SubscriptionOrder.findByIdAndUpdate(
+            subscription._id,
+            {
+              $set: {
+                endDate: currentExtensionDate, // Last extension date
+              },
+              $push: {
+                "plan.subscriptionDays": {
+                  $each: extensionDaysToAdd,
+                },
+                skipHistory: {
+                  originalDate: affectedDay.date,
+                  extensionDate: currentExtensionDate,
+                  reason: `Emergency Closure - ${description}`,
+                  isSystemGenerated: true,
+                },
+              },
+            },
+            { new: true }
+          );
+
+          if (!updatedSubscription) {
+            throw new Error(
+              `Failed to update subscription ${subscription.orderId}`
+            );
+          }
+
+          console.log(
+            `Successfully extended subscription ${
+              subscription.orderId
+            } to ${format(currentExtensionDate, "yyyy-MM-dd")}`
+          );
+        } catch (updateError) {
+          console.error("Error updating subscription:", updateError);
+          throw updateError;
+        }
+      } else {
+        console.log(
+          `No delivery affected for subscription ${subscription.orderId}`
+        );
+      }
+    }
+
+    await session.commitTransaction();
+    console.log("Emergency closure process completed successfully");
+
+    res.json({
+      success: true,
+      message: "Emergency closure added and subscriptions updated",
+      data: config.emergencyClosures,
+      affectedSubscriptions: activeSubscriptions.length,
+      compensationDays,
+      closureDate: format(closureDate, "yyyy-MM-dd"),
+    });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error("Error in addEmergencyClosure:", {
+      error: error.message,
+      stack: error.stack,
+    });
+
+    await session.abortTransaction();
+    res.status(400).json({
+      success: false,
+      message: "Failed to add emergency closure",
+      error: error.message,
+    });
+  } finally {
+    session.endSession();
   }
 };
 

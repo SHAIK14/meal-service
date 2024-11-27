@@ -182,6 +182,10 @@ const SubscriptionOrderSchema = new mongoose.Schema(
           default: Date.now,
         },
         reason: String,
+        isSystemGenerated: {
+          type: Boolean,
+          default: false,
+        },
       },
     ],
   },
