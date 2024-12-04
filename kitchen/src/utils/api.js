@@ -79,5 +79,21 @@ export const getMealCounts = async (date) => {
   );
 };
 
-// Export the api instance in case it's needed elsewhere
+export const getOrdersForKOT = async (date) => {
+  return handleResponse(
+    api.get("/kitchen/orders-for-kot", {
+      params: { date },
+    })
+  );
+};
+
+export const generateKOT = async (orders, timeSlot) => {
+  return handleResponse(
+    api.post("/kitchen/generate-kot", {
+      orders,
+      timeSlot,
+    })
+  );
+};
+
 export default api;

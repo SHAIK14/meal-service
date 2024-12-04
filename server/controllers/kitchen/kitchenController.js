@@ -256,3 +256,169 @@ exports.getMealCountsByDate = async (req, res) => {
     });
   }
 };
+// Add these new functions to your existing kitchenController.js
+exports.getOrdersForKOT = async (req, res) => {
+  try {
+    const { date } = req.query;
+    if (!date) {
+      return res.status(400).json({
+        success: false,
+        message: "Date parameter is required",
+      });
+    }
+
+    const queryDate = new Date(date);
+    const startOfDay = new Date(queryDate.setHours(0, 0, 0, 0));
+    const endOfDay = new Date(queryDate.setHours(23, 59, 59, 999));
+
+    const days = [
+      "sunday",
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+    ];
+    const dayOfWeek = days[queryDate.getDay()];
+
+    // Get active subscriptions and weekly menus
+    const [activeSubscriptions, weeklyMenus] = await Promise.all([
+      SubscriptionOrder.find({
+        status: "active",
+        "plan.subscriptionDays": {
+          $elemMatch: {
+            date: { $gte: startOfDay, $lt: endOfDay },
+            isAvailable: true,
+            isSkipped: false,
+          },
+        },
+      }).populate([
+        {
+          path: "user",
+          select: "firstName lastName phoneNumber address",
+        },
+        {
+          path: "plan.planId",
+          select: "nameEnglish",
+        },
+      ]),
+      WeeklyMenu.find({
+        status: "active",
+      }).populate("plan", "nameEnglish"),
+    ]);
+
+    // Get all unique item IDs from menus
+    const itemIds = new Set();
+    weeklyMenus.forEach((menu) => {
+      const weekMenuArray = Array.from(menu.weekMenu || new Map());
+      const dayMenu = weekMenuArray.find(([day]) => day === dayOfWeek);
+      if (dayMenu) {
+        const [_, mealMap] = dayMenu;
+        Array.from(mealMap).forEach(([_, items]) => {
+          items.forEach((itemId) => itemIds.add(itemId.toString()));
+        });
+      }
+    });
+
+    // Fetch all items at once
+    const items = await Item.find({
+      _id: { $in: Array.from(itemIds) },
+    }).select("nameEnglish");
+    const itemsMap = new Map(items.map((item) => [item._id.toString(), item]));
+
+    // Group orders by delivery time with menu items
+    const groupedOrders = {};
+    for (const order of activeSubscriptions) {
+      const timeSlot = `${order.plan.deliveryTime.fromTime}-${order.plan.deliveryTime.toTime}`;
+      if (!groupedOrders[timeSlot]) {
+        groupedOrders[timeSlot] = [];
+      }
+
+      // Get menu items for this order
+      const menu = weeklyMenus.find(
+        (m) => m.plan.nameEnglish === order.plan.planId.nameEnglish
+      );
+      const orderItems = {};
+
+      if (menu) {
+        const weekMenuArray = Array.from(menu.weekMenu || new Map());
+        const dayMenu = weekMenuArray.find(([day]) => day === dayOfWeek);
+        if (dayMenu) {
+          const [_, mealMap] = dayMenu;
+          order.plan.selectedPackages.forEach((packageType) => {
+            const packageItems = Array.from(mealMap).find(
+              ([type]) => type === packageType
+            );
+            if (packageItems) {
+              const [_, itemIds] = packageItems;
+              orderItems[packageType] = itemIds
+                .map((id) => itemsMap.get(id.toString()))
+                .filter(Boolean)
+                .map((item) => item.nameEnglish);
+            }
+          });
+        }
+      }
+
+      groupedOrders[timeSlot].push({
+        customerName: `${order.user.firstName} ${order.user.lastName}`,
+        phoneNumber: order.user.phoneNumber,
+        address: order.deliveryAddress,
+        area: order.deliveryAddress.area,
+        packages: order.plan.selectedPackages,
+        planName: order.plan.planId.nameEnglish,
+        items: orderItems, // Now includes items for each package type
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: groupedOrders,
+    });
+  } catch (error) {
+    console.error("[Kitchen Controller] Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching orders for KOT",
+      error: error.message,
+    });
+  }
+};
+exports.generateKOT = async (req, res) => {
+  try {
+    const { orders, timeSlot } = req.body;
+    if (!orders || !timeSlot) {
+      return res.status(400).json({
+        success: false,
+        message: "Orders and time slot are required",
+      });
+    }
+
+    // Format KOT data for printing
+    const kotData = orders.map((order) => ({
+      customerName: order.customerName,
+      address: order.address,
+      area: order.area,
+      phoneNumber: order.phoneNumber,
+      timeSlot: timeSlot,
+      packages: order.packages,
+      items: order.items, // This will come from weekly menu
+    }));
+
+    // Here you would integrate with your printer
+    // For now, we'll just return the formatted data
+    return res.json({
+      success: true,
+      message: "KOT generated successfully",
+      data: kotData,
+    });
+  } catch (error) {
+    console.error("[Kitchen Controller] Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error generating KOT",
+      error: error.message,
+    });
+  }
+};

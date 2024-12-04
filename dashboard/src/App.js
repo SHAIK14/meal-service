@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+
 import {
   BrowserRouter as Router,
   Route,
@@ -28,6 +29,9 @@ import PaymentPage from "./components/payment";
 import Vouchers from "./components/Vouchers";
 import InvoiceTemplate from "./components/InvoiceTemplate";
 import Configuration from "./components/Configuration";
+import Branch from "./components/Branch";
+import AddBranch from "./components/AddBranch";
+import EditBranch from "./components/BranchEdit";
 
 const AuthenticatedLayout = ({ children }) => (
   <div
@@ -65,6 +69,12 @@ const App = () => {
             isLoggedIn ? (
               <AuthenticatedLayout>
                 <Routes>
+                  <Route path="/branches" element={<Branch />} />
+                  <Route path="/branches/add" element={<AddBranch />} />;
+                  <Route
+                    path="/branches/edit/:branchId"
+                    element={<EditBranch />}
+                  />
                   <Route path="/plans" element={<Plans />} />
                   <Route path="/plans/create" element={<PlanCreate />} />
                   <Route path="/plans/edit/:planId" element={<PlanEdit />} />
@@ -100,7 +110,6 @@ const App = () => {
                     path="/driver/edit/:driverId"
                     element={<DriverRegistration />}
                   />
-
                   <Route path="/banners-container" element={<Banners />} />
                   <Route path="/subscriptions" element={<Subscriptions />} />
                   <Route path="/users" element={<Users />} />

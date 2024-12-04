@@ -12,6 +12,7 @@ import {
   FaCreditCard,
   FaTicketAlt,
   FaBook,
+  FaBuilding,
 } from "react-icons/fa";
 import "../styles/Sidebar.css";
 
@@ -38,6 +39,14 @@ const Sidebar = () => {
         <FaBars />
       </div>
       <ul>
+        <li>
+          <NavLink
+            to="/branches"
+            className={({ isActive }) => (isActive ? "active" : "")}
+          >
+            <FaBuilding className="icon" /> <span>Branches</span>
+          </NavLink>
+        </li>
         <li>
           <NavLink
             to="/plans"

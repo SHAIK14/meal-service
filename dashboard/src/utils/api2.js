@@ -123,3 +123,72 @@ export const deleteDriver = async (driverId) => {
 };
 
 // Export for use in components
+// Branch management APIs
+export const createBranch = async (branchData) => {
+  return handleResponse(api.post("/admin/branches", branchData));
+};
+
+export const getAllBranches = async () => {
+  try {
+    const response = await api.get("/admin/branches");
+    return {
+      success: true,
+      data: response.data.data,
+    };
+  } catch (error) {
+    console.error("Error in getAllBranches:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "An unexpected error occurred",
+      data: [],
+    };
+  }
+};
+
+export const getBranchById = async (branchId) => {
+  try {
+    const response = await api.get(`/admin/branches/${branchId}`);
+    return {
+      success: true,
+      data: response.data.data,
+    };
+  } catch (error) {
+    console.error("Error in getBranchById:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "An unexpected error occurred",
+    };
+  }
+};
+
+export const updateBranch = async (branchId, branchData) => {
+  try {
+    const response = await api.put(`/admin/branches/${branchId}`, branchData);
+    return {
+      success: true,
+      data: response.data.data,
+    };
+  } catch (error) {
+    console.error("Error in updateBranch:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "An unexpected error occurred",
+    };
+  }
+};
+
+export const deleteBranch = async (branchId) => {
+  try {
+    const response = await api.delete(`/admin/branches/${branchId}`);
+    return {
+      success: true,
+      message: response.data.message,
+    };
+  } catch (error) {
+    console.error("Error in deleteBranch:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "An unexpected error occurred",
+    };
+  }
+};
