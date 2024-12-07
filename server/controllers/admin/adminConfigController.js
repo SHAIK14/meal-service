@@ -2,11 +2,19 @@ const Config = require("../../models/admin/config");
 const mongoose = require("mongoose");
 const SubscriptionOrder = require("../../models/subscription");
 const { format, addDays } = require("date-fns");
+const DURATION_DAYS = {
+  "1_week": 7,
+  "2_week": 14,
+  "3_week": 21,
+  "1_month": 30,
+  "2_month": 60,
+  "3_month": 90,
+};
 
 // Base Configuration Controllers
 const getConfiguration = async (req, res) => {
   try {
-    const config = await Config.findOne();
+    const config = await Config.findOne({ branch: req.branch._id });
     if (!config) {
       return res.status(404).json({ message: "Configuration not found" });
     }
@@ -21,9 +29,10 @@ const updateBasicConfig = async (req, res) => {
     const { skipMealDays, planStartDelay } = req.body;
 
     let config = await Config.findOneAndUpdate(
-      {},
+      { branch: req.branch._id },
       {
         $set: {
+          branch: req.branch._id, // Ensure branch is set
           skipMealDays,
           planStartDelay,
         },
@@ -36,16 +45,15 @@ const updateBasicConfig = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
-
-// Location Settings Controllers
 const updateLocationSettings = async (req, res) => {
   try {
     const { country, currency, coordinates } = req.body;
 
     let config = await Config.findOneAndUpdate(
-      {},
+      { branch: req.branch._id },
       {
         $set: {
+          branch: req.branch._id,
           country,
           currency,
           coordinates,
@@ -68,7 +76,7 @@ const updateWeeklyHolidays = async (req, res) => {
 
   try {
     console.log("Starting weekly holidays update:", req.body);
-    const holidays = req.body; // Expecting array of strings ["Friday", "Sunday"]
+    const holidays = req.body;
     const validDays = [
       "Sunday",
       "Monday",
@@ -79,22 +87,26 @@ const updateWeeklyHolidays = async (req, res) => {
       "Saturday",
     ];
 
-    // 1. Validate days
     const isValid = holidays.every((day) => validDays.includes(day));
     if (!isValid) {
       return res.status(400).json({ message: "Invalid day provided" });
     }
 
-    // 2. Get old config to compare changes
-    const oldConfig = await Config.findOne();
+    // Get old config to compare changes
+    const oldConfig = await Config.findOne({ branch: req.branch._id });
     const newHolidays = holidays.filter(
-      (day) => !oldConfig.weeklyHolidays.includes(day)
+      (day) => !oldConfig?.weeklyHolidays?.includes(day)
     );
 
-    // 3. Update config
+    // Update config
     const config = await Config.findOneAndUpdate(
-      {},
-      { $set: { weeklyHolidays: holidays } },
+      { branch: req.branch._id },
+      {
+        $set: {
+          branch: req.branch._id,
+          weeklyHolidays: holidays,
+        },
+      },
       { new: true, upsert: true }
     );
     console.log("Config updated with new holidays");
@@ -229,7 +241,7 @@ const updateWeeklyHolidays = async (req, res) => {
 // National Holidays Controllers
 const getNationalHolidays = async (req, res) => {
   try {
-    const config = await Config.findOne();
+    const config = await Config.findOne({ branch: req.branch._id });
     if (!config) {
       return res.status(404).json({ message: "Configuration not found" });
     }
@@ -247,9 +259,9 @@ const addNationalHoliday = async (req, res) => {
     console.log("Starting addNationalHoliday process:", req.body);
     const { date, name } = req.body;
 
-    // 1. Add holiday to config
+    // Add holiday to config
     const config = await Config.findOneAndUpdate(
-      {},
+      { branch: req.branch._id },
       {
         $push: {
           nationalHolidays: { date, name },
@@ -257,7 +269,6 @@ const addNationalHoliday = async (req, res) => {
       },
       { new: true, upsert: true }
     );
-    console.log("National holiday added to config:", { date, name });
 
     // 2. Find active subscriptions that might be affected
     const holidayDate = new Date(date);
@@ -409,14 +420,16 @@ const addNationalHoliday = async (req, res) => {
     session.endSession();
   }
 };
-
 const updateNationalHoliday = async (req, res) => {
   try {
     const { holidayId } = req.params;
     const { date, name } = req.body;
 
     const config = await Config.findOneAndUpdate(
-      { "nationalHolidays._id": holidayId },
+      {
+        branch: req.branch._id,
+        "nationalHolidays._id": holidayId,
+      },
       {
         $set: {
           "nationalHolidays.$.date": date,
@@ -435,13 +448,12 @@ const updateNationalHoliday = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
-
 const deleteNationalHoliday = async (req, res) => {
   try {
     const { holidayId } = req.params;
 
     const config = await Config.findOneAndUpdate(
-      {},
+      { branch: req.branch._id },
       {
         $pull: {
           nationalHolidays: { _id: holidayId },
@@ -463,7 +475,7 @@ const deleteNationalHoliday = async (req, res) => {
 // Emergency Closures Controllers
 const getEmergencyClosures = async (req, res) => {
   try {
-    const config = await Config.findOne();
+    const config = await Config.findOne({ branch: req.branch._id });
     if (!config) {
       return res.status(404).json({ message: "Configuration not found" });
     }
@@ -492,7 +504,7 @@ const addEmergencyClosure = async (req, res) => {
 
     // 1. Add to config
     const config = await Config.findOneAndUpdate(
-      {},
+      { branch: req.branch._id },
       {
         $push: {
           emergencyClosures: {
@@ -674,7 +686,10 @@ const updateEmergencyClosure = async (req, res) => {
     const { date, description, compensationDays } = req.body;
 
     const config = await Config.findOneAndUpdate(
-      { "emergencyClosures._id": closureId },
+      {
+        branch: req.branch._id,
+        "emergencyClosures._id": closureId,
+      },
       {
         $set: {
           "emergencyClosures.$.date": date,
@@ -700,7 +715,7 @@ const deleteEmergencyClosure = async (req, res) => {
     const { closureId } = req.params;
 
     const config = await Config.findOneAndUpdate(
-      {},
+      { branch: req.branch._id },
       {
         $pull: {
           emergencyClosures: { _id: closureId },
@@ -718,12 +733,12 @@ const deleteEmergencyClosure = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+
 // Delivery Time Slots Controllers
 const updateDeliveryTimeSlots = async (req, res) => {
   try {
-    const { timeSlots } = req.body; // Array of { fromTime, toTime, isActive }
+    const { timeSlots } = req.body;
 
-    // Basic validation of time format
     const isValidTimeFormat = timeSlots.every((slot) => {
       const timeRegex = /^(0?[1-9]|1[0-2]):[0-5][0-9] (AM|PM)$/i;
       return timeRegex.test(slot.fromTime) && timeRegex.test(slot.toTime);
@@ -736,7 +751,7 @@ const updateDeliveryTimeSlots = async (req, res) => {
     }
 
     const config = await Config.findOneAndUpdate(
-      {},
+      { branch: req.branch._id },
       { $set: { deliveryTimeSlots: timeSlots } },
       { new: true, upsert: true }
     );
@@ -749,7 +764,7 @@ const updateDeliveryTimeSlots = async (req, res) => {
 
 const getDeliveryTimeSlots = async (req, res) => {
   try {
-    const config = await Config.findOne();
+    const config = await Config.findOne({ branch: req.branch._id });
     if (!config) {
       return res.status(404).json({ message: "Configuration not found" });
     }
@@ -758,20 +773,11 @@ const getDeliveryTimeSlots = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-// Duration days mapping
-const DURATION_DAYS = {
-  "1_week": 7,
-  "2_week": 14,
-  "3_week": 21,
-  "1_month": 30,
-  "2_month": 60,
-  "3_month": 90,
-};
 
 // Get plan durations
 const getPlanDurations = async (req, res) => {
   try {
-    const config = await Config.findOne();
+    const config = await Config.findOne({ branch: req.branch._id });
     if (!config) {
       return res.status(404).json({ message: "Configuration not found" });
     }
@@ -781,11 +787,10 @@ const getPlanDurations = async (req, res) => {
   }
 };
 
-// Add plan duration
-// Modify addPlanDuration
 const addPlanDuration = async (req, res) => {
   try {
-    const { durationType, minDays, skipDays } = req.body; // Add skipDays to destructuring
+    const { durationType, minDays, skipDays } = req.body;
+    console.log("Received plan duration data:", req.body);
 
     // Check max days for the duration type
     const maxDays = DURATION_DAYS[durationType];
@@ -804,6 +809,7 @@ const addPlanDuration = async (req, res) => {
 
     // Check if already exists
     const existing = await Config.findOne({
+      branch: req.branch._id,
       "planDurations.durationType": durationType,
     });
 
@@ -814,7 +820,7 @@ const addPlanDuration = async (req, res) => {
     }
 
     const config = await Config.findOneAndUpdate(
-      {},
+      { branch: req.branch._id },
       {
         $push: {
           planDurations: { durationType, minDays, skipDays, isActive: true },
@@ -825,18 +831,21 @@ const addPlanDuration = async (req, res) => {
 
     res.json(config.planDurations);
   } catch (error) {
+    console.error("Error in addPlanDuration:", error);
     res.status(400).json({ message: error.message });
   }
 };
 
-// Modify updatePlanDuration
 const updatePlanDuration = async (req, res) => {
   try {
     const { planId } = req.params;
-    const { minDays, skipDays, isActive } = req.body; // Add skipDays to destructuring
+    const { minDays, skipDays, isActive } = req.body;
 
     // Get the plan to check duration type
-    const config = await Config.findOne({ "planDurations._id": planId });
+    const config = await Config.findOne({
+      branch: req.branch._id,
+      "planDurations._id": planId,
+    });
     if (!config) {
       return res.status(404).json({ message: "Plan duration not found" });
     }
@@ -857,7 +866,10 @@ const updatePlanDuration = async (req, res) => {
     }
 
     const updatedConfig = await Config.findOneAndUpdate(
-      { "planDurations._id": planId },
+      {
+        branch: req.branch._id,
+        "planDurations._id": planId,
+      },
       {
         $set: {
           "planDurations.$.minDays": minDays,
@@ -873,12 +885,12 @@ const updatePlanDuration = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
-// Delete plan duration
+
 const deletePlanDuration = async (req, res) => {
   try {
     const { planId } = req.params;
     const config = await Config.findOneAndUpdate(
-      {},
+      { branch: req.branch._id },
       { $pull: { planDurations: { _id: planId } } },
       { new: true }
     );
@@ -888,7 +900,6 @@ const deletePlanDuration = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
-
 module.exports = {
   // Base Configuration
   getConfiguration,

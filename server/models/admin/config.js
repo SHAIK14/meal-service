@@ -2,6 +2,11 @@ const mongoose = require("mongoose");
 
 const configSchema = new mongoose.Schema(
   {
+    branch: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Branch",
+      required: true,
+    },
     // Skip Meal Settings
     skipMealDays: {
       type: Number,
@@ -103,5 +108,6 @@ const configSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+configSchema.index({ branch: 1 }, { unique: true });
 
 module.exports = mongoose.model("Config", configSchema);

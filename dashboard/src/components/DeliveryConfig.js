@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   TextField,
   FormControl,
@@ -27,7 +27,7 @@ const DURATION_DAYS = {
   "3_month": 90,
 };
 
-const DeliveryConfig = () => {
+const DeliveryConfig = ({ branchId }) => {
   // Time slots states
   const [deliveryTimeSlots, setDeliveryTimeSlots] = useState([]);
   const [newSlotFrom, setNewSlotFrom] = useState("");
@@ -41,24 +41,31 @@ const DeliveryConfig = () => {
 
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchData();
+  const resetStates = useCallback(() => {
+    setDeliveryTimeSlots([]);
+    setPlanDurations([]);
+    setNewSlotFrom("");
+    setNewSlotTo("");
+    setNewDurationType("");
+    setNewMinDays("");
+    setNewSkipDays("");
+    setLoading(true);
   }, []);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const [timeSlotsResponse, durationsResponse] = await Promise.all([
-        getDeliveryTimeSlots(),
-        getPlanDurations(),
+        getDeliveryTimeSlots(branchId),
+        getPlanDurations(branchId),
       ]);
 
       if (timeSlotsResponse.success) {
-        setDeliveryTimeSlots(timeSlotsResponse.data);
+        setDeliveryTimeSlots(timeSlotsResponse.data || []);
       }
 
       if (durationsResponse.success) {
-        setPlanDurations(durationsResponse.data);
+        setPlanDurations(durationsResponse.data || []);
       }
     } catch (error) {
       console.error("Error loading delivery configuration:", error);
@@ -66,7 +73,14 @@ const DeliveryConfig = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [branchId]);
+
+  useEffect(() => {
+    if (branchId) {
+      resetStates();
+      fetchData();
+    }
+  }, [branchId, fetchData, resetStates]);
 
   // Time slot handlers
   const validateTimeRange = (fromTime, toTime) => {
@@ -101,7 +115,7 @@ const DeliveryConfig = () => {
 
     try {
       const updatedSlots = [...deliveryTimeSlots, newSlot];
-      const response = await updateDeliveryTimeSlots({
+      const response = await updateDeliveryTimeSlots(branchId, {
         timeSlots: updatedSlots,
       });
 
@@ -119,7 +133,7 @@ const DeliveryConfig = () => {
   const handleDeleteTimeSlot = async (index) => {
     try {
       const updatedSlots = deliveryTimeSlots.filter((_, i) => i !== index);
-      const response = await updateDeliveryTimeSlots({
+      const response = await updateDeliveryTimeSlots(branchId, {
         timeSlots: updatedSlots,
       });
 
@@ -145,41 +159,50 @@ const DeliveryConfig = () => {
       return;
     }
 
-    if (parseInt(newMinDays) > maxDays) {
+    // Convert to numbers and validate
+    const minDaysNum = parseInt(newMinDays);
+    const skipDaysNum = parseInt(newSkipDays);
+
+    if (minDaysNum > maxDays) {
       toast.error(
         `Minimum days cannot exceed ${maxDays} for this duration type`
       );
       return;
     }
 
-    if (parseInt(newSkipDays) > maxDays) {
+    if (skipDaysNum > maxDays) {
       toast.error(`Skip days cannot exceed ${maxDays} for this duration type`);
       return;
     }
 
     try {
-      const response = await addPlanDuration({
+      const durationData = {
         durationType: newDurationType,
-        minDays: parseInt(newMinDays),
-        skipDays: parseInt(newSkipDays),
-      });
+        minDays: minDaysNum,
+        skipDays: skipDaysNum,
+        isActive: true,
+      };
+      console.log("Sending plan duration data:", durationData);
+      const response = await addPlanDuration(branchId, durationData);
 
       if (response.success) {
-        setPlanDurations([...planDurations, response.data]);
+        setPlanDurations((prev) => [...prev, response.data]);
         setNewDurationType("");
         setNewMinDays("");
         setNewSkipDays("");
         toast.success("Plan duration added successfully");
+      } else {
+        toast.error(response.error || "Failed to add plan duration");
       }
     } catch (error) {
+      console.error("Error adding plan duration:", error);
       toast.error("Failed to add plan duration");
     }
   };
 
   const handleUpdatePlanDuration = async (planId, updates) => {
-    // Changed parameter name
     try {
-      const response = await updatePlanDuration(planId, updates);
+      const response = await updatePlanDuration(branchId, planId, updates);
       if (response.success) {
         setPlanDurations(
           planDurations.map((plan) =>
@@ -195,7 +218,7 @@ const DeliveryConfig = () => {
 
   const handleDeletePlanDuration = async (planId) => {
     try {
-      const response = await deletePlanDuration(planId);
+      const response = await deletePlanDuration(branchId, planId);
       if (response.success) {
         setPlanDurations(planDurations.filter((plan) => plan._id !== planId));
         toast.success("Plan duration deleted successfully");
@@ -208,6 +231,12 @@ const DeliveryConfig = () => {
   if (loading) {
     return (
       <div className="config_loading">Loading delivery configuration...</div>
+    );
+  }
+
+  if (!branchId) {
+    return (
+      <div className="config_no-selection">Please select a branch first.</div>
     );
   }
 
@@ -336,8 +365,6 @@ const DeliveryConfig = () => {
       </div>
 
       <div className="config_divider" />
-
-      {/* Number of Skips */}
     </div>
   );
 };

@@ -20,6 +20,7 @@ import {
   addEmergencyClosure,
   deleteEmergencyClosure,
 } from "../utils/api";
+import { getAllBranches } from "../utils/api2";
 import "../styles/Configuration.css";
 
 const ITEM_HEIGHT = 48;
@@ -55,7 +56,10 @@ const gccCountries = [
 const Configuration = () => {
   const [activeTab, setActiveTab] = useState(1);
   const [loading, setLoading] = useState(true);
-
+  // Add new branch-related states
+  const [selectedBranch, setSelectedBranch] = useState(null);
+  const [branches, setBranches] = useState([]);
+  const [loadingBranches, setLoadingBranches] = useState(true);
   // Basic Settings States
   const [selectedDays, setSelectedDays] = useState(0);
   const [userPlanStart, setUserPlanStart] = useState(0);
@@ -105,15 +109,18 @@ const Configuration = () => {
       }));
     }, 3000);
   };
+  // Add new useEffect for fetching branches
 
   // Fetch Initial Data
   useEffect(() => {
     const fetchAllData = async () => {
+      if (!selectedBranch) return; // Don't fetch if no branch selected
+
       setLoading(true);
       try {
         const [configResponse, emergencyResponse] = await Promise.all([
-          getConfiguration(),
-          getEmergencyClosures(),
+          getConfiguration(selectedBranch._id),
+          getEmergencyClosures(selectedBranch._id),
         ]);
 
         if (configResponse.success) {
@@ -152,8 +159,73 @@ const Configuration = () => {
     };
 
     fetchAllData();
+  }, [selectedBranch]);
+  // Modify branch fetching useEffect
+  useEffect(() => {
+    const fetchBranches = async () => {
+      setLoadingBranches(true);
+      try {
+        const response = await getAllBranches();
+        if (response.success) {
+          setBranches(response.data);
+          // Don't auto-select any branch
+          setSelectedBranch(null);
+          setLoading(false); // Don't load any config until branch is selected
+        }
+      } catch (error) {
+        console.error("Error loading branches:", error);
+        toast.error("Failed to load branches");
+      } finally {
+        setLoadingBranches(false);
+      }
+    };
+    fetchBranches();
   }, []);
 
+  // Add function to clear all states
+  const clearConfigStates = () => {
+    setSelectedDays(0);
+    setUserPlanStart(0);
+    setSelectedWeeklyHolidays([]);
+    setNationalHolidays([]);
+    setSelectedCountry("");
+    setSelectedCurrency("");
+    setLatitude("");
+    setLongitude("");
+    setEmergencyClosures([]);
+    setHolidayDate("");
+    setHolidayName("");
+    setEmergencyDate("");
+    setEmergencyDescription("");
+    // Reset loading state
+    setLoading(true);
+  };
+  // Modify branch selection handler
+  const handleBranchChange = (event) => {
+    clearConfigStates(); // Clear all states before changing branch
+    const branchId = event.target.value;
+    if (!branchId) {
+      setSelectedBranch(null);
+      return;
+    }
+    const branch = branches.find((b) => b._id === branchId);
+    setSelectedBranch(branch);
+  };
+
+  // Modify the early return conditions
+  if (loadingBranches) {
+    return <div className="config_loading">Loading branches...</div>;
+  }
+
+  if (!loadingBranches && branches.length === 0) {
+    return (
+      <div className="config_container">
+        <div className="config_no-branches">
+          <p>No branches available. Please add a branch first.</p>
+        </div>
+      </div>
+    );
+  }
   // Helper Functions
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-GB", {
@@ -168,12 +240,12 @@ const Configuration = () => {
     try {
       const [basicConfigResponse, weeklyHolidaysResponse, locationResponse] =
         await Promise.all([
-          updateBasicConfig({
+          updateBasicConfig(selectedBranch._id, {
             skipMealDays: selectedDays,
             planStartDelay: userPlanStart,
           }),
-          updateWeeklyHolidays(selectedWeeklyHolidays),
-          updateLocationSettings({
+          updateWeeklyHolidays(selectedBranch._id, selectedWeeklyHolidays),
+          updateLocationSettings(selectedBranch._id, {
             country: selectedCountry,
             currency: selectedCurrency,
             coordinates: {
@@ -221,11 +293,18 @@ const Configuration = () => {
   };
 
   // Weekly Holiday Handlers
-  const handleWeeklyHolidayChange = (event) => {
+  const handleWeeklyHolidayChange = async (event) => {
     const day = event.target.value;
     if (!selectedWeeklyHolidays.includes(day)) {
       if (selectedWeeklyHolidays.length < 7) {
-        setSelectedWeeklyHolidays([...selectedWeeklyHolidays, day]);
+        const newHolidays = [...selectedWeeklyHolidays, day];
+        setSelectedWeeklyHolidays(newHolidays);
+        try {
+          await updateWeeklyHolidays(selectedBranch._id, newHolidays);
+        } catch (error) {
+          toast.error("Failed to update weekly holidays");
+          console.error("Error:", error);
+        }
       } else {
         toast.error("Maximum 7 holidays can be selected");
       }
@@ -233,17 +312,24 @@ const Configuration = () => {
     setWeeklyHolidayInput("");
   };
 
-  const handleRemoveWeeklyHoliday = (dayToRemove) => {
-    setSelectedWeeklyHolidays((prev) =>
-      prev.filter((day) => day !== dayToRemove)
+  const handleRemoveWeeklyHoliday = async (dayToRemove) => {
+    const newHolidays = selectedWeeklyHolidays.filter(
+      (day) => day !== dayToRemove
     );
+    setSelectedWeeklyHolidays(newHolidays);
+    try {
+      await updateWeeklyHolidays(selectedBranch._id, newHolidays);
+    } catch (error) {
+      toast.error("Failed to update weekly holidays");
+      console.error("Error:", error);
+    }
   };
 
   // National Holiday Handlers
   const handleAddHoliday = async () => {
     if (holidayDate && holidayName) {
       try {
-        const response = await addNationalHoliday({
+        const response = await addNationalHoliday(selectedBranch._id, {
           date: holidayDate,
           name: holidayName,
         });
@@ -271,7 +357,10 @@ const Configuration = () => {
 
   const handleDeleteHoliday = async (holidayId) => {
     try {
-      const response = await deleteNationalHoliday(holidayId);
+      const response = await deleteNationalHoliday(
+        selectedBranch._id,
+        holidayId
+      );
       if (response.success) {
         setNationalHolidays((prev) =>
           prev.filter((holiday) => holiday._id !== holidayId)
@@ -289,7 +378,7 @@ const Configuration = () => {
   const handleEmergencyDayOff = async () => {
     if (emergencyDate && emergencyDescription) {
       try {
-        const response = await addEmergencyClosure({
+        const response = await addEmergencyClosure(selectedBranch._id, {
           date: emergencyDate,
           description: emergencyDescription,
         });
@@ -317,7 +406,10 @@ const Configuration = () => {
 
   const handleDeleteEmergencyClosure = async (closureId) => {
     try {
-      const response = await deleteEmergencyClosure(closureId);
+      const response = await deleteEmergencyClosure(
+        selectedBranch._id,
+        closureId
+      );
       if (response.success) {
         setEmergencyClosures((prev) =>
           prev.filter((closure) => closure._id !== closureId)
@@ -595,30 +687,64 @@ const Configuration = () => {
 
   return (
     <div className="config_container">
-      <div className="config_header">
-        <div className="config_tabs">
-          <button
-            className={`config_tab-btn ${activeTab === 1 ? "active" : ""}`}
-            onClick={() => setActiveTab(1)}
+      {/* Branch selector should be here, above everything */}
+      <div className="config_branch-selector">
+        <FormControl fullWidth variant="outlined">
+          <InputLabel>Select Branch</InputLabel>
+          <Select
+            value={selectedBranch?._id || ""}
+            onChange={handleBranchChange}
+            label="Select Branch"
           >
-            Basic Settings
-          </button>
-          <button
-            className={`config_tab-btn ${activeTab === 2 ? "active" : ""}`}
-            onClick={() => setActiveTab(2)}
-          >
-            Delivery & Plans
-          </button>
-        </div>
-        <button
-          className="config_update-btn"
-          onClick={handleUpdateConfiguration}
-        >
-          Update
-        </button>
+            <MenuItem value="">
+              <em>Select a branch</em>
+            </MenuItem>
+            {branches.map((branch) => (
+              <MenuItem key={branch._id} value={branch._id}>
+                {branch.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
       </div>
+      {!selectedBranch ? (
+        <div className="config_no-selection">
+          <p>Please select a branch to view its configuration.</p>
+        </div>
+      ) : (
+        <>
+          <div className="config_header">
+            <div className="config_tabs">
+              <button
+                className={`config_tab-btn ${activeTab === 1 ? "active" : ""}`}
+                onClick={() => setActiveTab(1)}
+              >
+                Basic Settings
+              </button>
+              <button
+                className={`config_tab-btn ${activeTab === 2 ? "active" : ""}`}
+                onClick={() => setActiveTab(2)}
+              >
+                Delivery & Plans
+              </button>
+            </div>
+            <button
+              className="config_update-btn"
+              onClick={handleUpdateConfiguration}
+            >
+              Update
+            </button>
+          </div>
 
-      {activeTab === 1 ? renderBasicSettings() : <DeliveryConfig />}
+          {loading ? (
+            <div className="config_loading">Loading configuration...</div>
+          ) : activeTab === 1 ? (
+            renderBasicSettings()
+          ) : (
+            <DeliveryConfig branchId={selectedBranch._id} />
+          )}
+        </>
+      )}
     </div>
   );
 };
