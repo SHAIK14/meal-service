@@ -1,6 +1,6 @@
 const Branch = require("../../models/admin/Branch");
 
-// Create new branch
+// Create new branch (existing)
 const createBranch = async (req, res) => {
   try {
     const {
@@ -11,6 +11,7 @@ const createBranch = async (req, res) => {
       address,
       serviceRadius,
       dynamicAttributes,
+      password,
     } = req.body;
 
     const branch = new Branch({
@@ -20,6 +21,7 @@ const createBranch = async (req, res) => {
       vatNumber,
       address: {
         country: address.country,
+        currency: address.currency,
         mainAddress: address.mainAddress,
         apartment: address.apartment,
         city: address.city,
@@ -27,14 +29,20 @@ const createBranch = async (req, res) => {
         pincode: address.pincode,
       },
       serviceRadius,
+      password,
       dynamicAttributes: dynamicAttributes || [],
     });
 
     await branch.save();
+
+    // Remove password from response
+    const branchResponse = branch.toObject();
+    delete branchResponse.password;
+
     res.status(201).json({
       success: true,
       message: "Branch created successfully",
-      data: branch,
+      data: branchResponse,
     });
   } catch (error) {
     res.status(500).json({
@@ -45,10 +53,10 @@ const createBranch = async (req, res) => {
   }
 };
 
-// Get all branches
+// Get all branches (without credentials - for other services)
 const getAllBranches = async (req, res) => {
   try {
-    const branches = await Branch.find();
+    const branches = await Branch.find().select("-password");
     res.status(200).json({
       success: true,
       data: branches,
@@ -62,7 +70,7 @@ const getAllBranches = async (req, res) => {
   }
 };
 
-// Get single branch
+// Get single branch (existing)
 const getBranchById = async (req, res) => {
   try {
     const branch = await Branch.findById(req.params.branchId);
@@ -85,7 +93,7 @@ const getBranchById = async (req, res) => {
   }
 };
 
-// Update branch
+// Update branch (existing)
 const updateBranch = async (req, res) => {
   try {
     const branch = await Branch.findByIdAndUpdate(
@@ -115,7 +123,37 @@ const updateBranch = async (req, res) => {
   }
 };
 
-// Delete branch
+// Change branch password (new)
+const changeBranchPassword = async (req, res) => {
+  try {
+    const { branchId } = req.params;
+    const { newPassword } = req.body;
+
+    const branch = await Branch.findById(branchId);
+    if (!branch) {
+      return res.status(404).json({
+        success: false,
+        message: "Branch not found",
+      });
+    }
+
+    branch.password = newPassword;
+    await branch.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Password updated successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error changing password",
+      error: error.message,
+    });
+  }
+};
+
+// Delete branch (existing)
 const deleteBranch = async (req, res) => {
   try {
     const branch = await Branch.findByIdAndDelete(req.params.branchId);
@@ -141,7 +179,9 @@ const deleteBranch = async (req, res) => {
 module.exports = {
   createBranch,
   getAllBranches,
+
   getBranchById,
   updateBranch,
   deleteBranch,
+  changeBranchPassword,
 };

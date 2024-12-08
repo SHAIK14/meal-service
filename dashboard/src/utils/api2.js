@@ -145,6 +145,47 @@ export const getAllBranches = async () => {
   }
 };
 
+// Get branches with credentials (for admin use)
+export const getAllBranchesWithCredentials = async () => {
+  try {
+    const response = await api.get(
+      "/admin/branches/admin/branches-with-credentials"
+    );
+    return {
+      success: true,
+      data: response.data.data,
+    };
+  } catch (error) {
+    console.error("Error in getAllBranchesWithCredentials:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "An unexpected error occurred",
+      data: [],
+    };
+  }
+};
+
+// Change branch password
+export const changeBranchPassword = async (branchId, newPassword) => {
+  try {
+    const response = await api.put(
+      `/admin/branches/${branchId}/change-password`,
+      {
+        newPassword,
+      }
+    );
+    return {
+      success: true,
+      message: response.data.message,
+    };
+  } catch (error) {
+    console.error("Error in changeBranchPassword:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "An unexpected error occurred",
+    };
+  }
+};
 export const getBranchById = async (branchId) => {
   try {
     const response = await api.get(`/admin/branches/${branchId}`);

@@ -10,8 +10,11 @@ const AddBranch = () => {
     municipalityNumber: "",
     vatNumber: "",
     serviceRadius: "",
+    password: "",
+    confirmPassword: "",
     address: {
       country: "",
+      currency: "",
       mainAddress: "",
       apartment: "",
       city: "",
@@ -20,7 +23,6 @@ const AddBranch = () => {
     },
     dynamicAttributes: [],
   });
-
   const [newAttribute, setNewAttribute] = useState({
     name: "",
     value: "",
@@ -31,10 +33,9 @@ const AddBranch = () => {
   const [success, setSuccess] = useState(false);
 
   const navigate = useNavigate();
-
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setError(""); // Clear any previous errors
+    setError("");
 
     if (name.includes("address.")) {
       const addressField = name.split(".")[1];
@@ -52,7 +53,6 @@ const AddBranch = () => {
       }));
     }
   };
-
   const handleAddAttribute = () => {
     if (newAttribute.name && newAttribute.value) {
       setFormData((prev) => ({
@@ -64,35 +64,51 @@ const AddBranch = () => {
   };
 
   const validateForm = () => {
-    // Validate service radius is a positive number
+    // Existing validations
     const serviceRadiusNum = parseFloat(formData.serviceRadius);
     if (isNaN(serviceRadiusNum) || serviceRadiusNum <= 0) {
       setError("Please enter a valid service radius greater than 0");
       return false;
     }
 
-    // Validate required fields
     if (!formData.name.trim()) {
       setError("Branch name is required");
       return false;
     }
 
-    if (!formData.crNumber.trim()) {
-      setError("CR Number is required");
+    // Add password validation
+    if (!formData.password) {
+      setError("Password is required");
       return false;
     }
 
-    if (!formData.municipalityNumber.trim()) {
-      setError("Municipality Number is required");
+    if (formData.password.length < 6) {
+      setError("Password must be at least 6 characters long");
       return false;
     }
 
-    if (!formData.vatNumber.trim()) {
-      setError("VAT Number is required");
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match");
       return false;
     }
 
-    // Validate address fields
+    // Validate currency
+    if (!formData.address.currency) {
+      setError("Currency is required");
+      return false;
+    }
+
+    // Rest of your existing validations
+    const requiredFields = ["crNumber", "municipalityNumber", "vatNumber"];
+    for (const field of requiredFields) {
+      if (!formData[field].trim()) {
+        setError(
+          `${field.charAt(0).toUpperCase() + field.slice(1)} is required`
+        );
+        return false;
+      }
+    }
+
     const requiredAddressFields = [
       "country",
       "mainAddress",
@@ -124,8 +140,10 @@ const AddBranch = () => {
     setLoading(true);
 
     try {
+      // Remove confirmPassword before sending to API
+      const { confirmPassword, ...submitData } = formData;
       const finalData = {
-        ...formData,
+        ...submitData,
         serviceRadius: parseFloat(formData.serviceRadius),
       };
 
@@ -135,7 +153,7 @@ const AddBranch = () => {
         setSuccess(true);
         setTimeout(() => {
           navigate("/branches");
-        }, 2000); // Navigate after 2 seconds to show success message
+        }, 2000);
       } else {
         setError(response.error || "Failed to create branch");
       }
@@ -232,6 +250,19 @@ const AddBranch = () => {
                 <option value="saudi">Saudi Arabia</option>
               </select>
             </div>
+            <div className="form-group">
+              <label>Currency</label>
+              <select
+                name="address.currency"
+                value={formData.address.currency}
+                onChange={handleChange}
+                required
+              >
+                <option value="">Select Currency</option>
+                <option value="INR">Indian Rupee (INR)</option>
+                <option value="SAR">Saudi Riyal (SAR)</option>
+              </select>
+            </div>
           </div>
 
           <div className="form-row">
@@ -321,7 +352,35 @@ const AddBranch = () => {
             </div>
           </div>
         </div>
+        {/* Service Area section */}
 
+        <div className="form-section">
+          <h3 className="section-title">Login Credentials</h3>
+          <div className="form-row">
+            <div className="form-group">
+              <label>Password</label>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                minLength={6}
+              />
+            </div>
+            <div className="form-group">
+              <label>Confirm Password</label>
+              <input
+                type="password"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                required
+                minLength={6}
+              />
+            </div>
+          </div>
+        </div>
         <div className="dynamic-attributes">
           <h3>Additional Attributes</h3>
           <div className="attribute-inputs">

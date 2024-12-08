@@ -18,6 +18,7 @@ const EditBranch = () => {
     serviceRadius: "",
     address: {
       country: "",
+      currency: "",
       mainAddress: "",
       apartment: "",
       city: "",
@@ -90,9 +91,14 @@ const EditBranch = () => {
       return false;
     }
 
-    // Validate required fields
     if (!formData.name.trim()) {
       setError("Branch name is required");
+      return false;
+    }
+
+    // Validate currency
+    if (!formData.address.currency) {
+      setError("Currency is required");
       return false;
     }
 
@@ -249,6 +255,20 @@ const EditBranch = () => {
                 <option value="">Select Country</option>
                 <option value="india">India</option>
                 <option value="saudi">Saudi Arabia</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label>Currency</label>
+              <select
+                name="address.currency"
+                value={formData.address.currency}
+                onChange={handleChange}
+                className="half-width"
+                required
+              >
+                <option value="">Select Currency</option>
+                <option value="INR">Indian Rupee (INR)</option>
+                <option value="SAR">Saudi Riyal (SAR)</option>
               </select>
             </div>
           </div>

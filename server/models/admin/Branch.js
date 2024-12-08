@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
 
 const dynamicAttributeSchema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -28,6 +29,10 @@ const branchSchema = new mongoose.Schema({
       type: String,
       required: true,
     },
+    currency: {
+      type: String,
+      required: true,
+    },
     mainAddress: {
       type: String,
       required: true,
@@ -52,6 +57,10 @@ const branchSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  password: {
+    type: String,
+    required: true,
+  },
   dynamicAttributes: [dynamicAttributeSchema],
   createdAt: {
     type: Date,
@@ -62,7 +71,19 @@ const branchSchema = new mongoose.Schema({
     default: Date.now,
   },
 });
+// Add password hashing middleware
+branchSchema.pre("save", async function (next) {
+  if (this.isModified("password")) {
+    this.password = await bcrypt.hash(this.password, 10);
+  }
+  this.updatedAt = new Date();
+  next();
+});
 
+// Add method to check password
+branchSchema.methods.comparePassword = async function (candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
 branchSchema.pre("save", function (next) {
   this.updatedAt = new Date();
   next();
