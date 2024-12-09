@@ -13,6 +13,38 @@ const createBranch = async (req, res) => {
       dynamicAttributes,
       password,
     } = req.body;
+    // Validate coordinates
+    if (
+      !address.coordinates ||
+      !address.coordinates.latitude ||
+      !address.coordinates.longitude
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Branch coordinates (latitude and longitude) are required",
+      });
+    }
+
+    // Validate coordinate ranges
+    if (
+      address.coordinates.latitude < -90 ||
+      address.coordinates.latitude > 90
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Latitude must be between -90 and 90 degrees",
+      });
+    }
+
+    if (
+      address.coordinates.longitude < -180 ||
+      address.coordinates.longitude > 180
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Longitude must be between -180 and 180 degrees",
+      });
+    }
 
     const branch = new Branch({
       name,
@@ -27,6 +59,10 @@ const createBranch = async (req, res) => {
         city: address.city,
         state: address.state,
         pincode: address.pincode,
+        coordinates: {
+          latitude: address.coordinates.latitude,
+          longitude: address.coordinates.longitude,
+        },
       },
       serviceRadius,
       password,
@@ -96,6 +132,39 @@ const getBranchById = async (req, res) => {
 // Update branch (existing)
 const updateBranch = async (req, res) => {
   try {
+    const { address } = req.body;
+
+    // Validate coordinates if they are being updated
+    if (address && address.coordinates) {
+      if (!address.coordinates.latitude || !address.coordinates.longitude) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Both latitude and longitude are required when updating coordinates",
+        });
+      }
+
+      if (
+        address.coordinates.latitude < -90 ||
+        address.coordinates.latitude > 90
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Latitude must be between -90 and 90 degrees",
+        });
+      }
+
+      if (
+        address.coordinates.longitude < -180 ||
+        address.coordinates.longitude > 180
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Longitude must be between -180 and 180 degrees",
+        });
+      }
+    }
+
     const branch = await Branch.findByIdAndUpdate(
       req.params.branchId,
       req.body,

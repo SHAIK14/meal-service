@@ -16,6 +16,8 @@ const EditBranch = () => {
     municipalityNumber: "",
     vatNumber: "",
     serviceRadius: "",
+    password: "",
+    confirmPassword: "",
     address: {
       country: "",
       currency: "",
@@ -24,10 +26,13 @@ const EditBranch = () => {
       city: "",
       state: "",
       pincode: "",
+      coordinates: {
+        latitude: "",
+        longitude: "",
+      },
     },
     dynamicAttributes: [],
   });
-
   const [newAttribute, setNewAttribute] = useState({
     name: "",
     value: "",
@@ -39,7 +44,18 @@ const EditBranch = () => {
       try {
         const response = await getBranchById(branchId);
         if (response.success) {
-          setFormData(response.data);
+          // Add coordinates if they don't exist
+          const branchData = {
+            ...response.data,
+            address: {
+              ...response.data.address,
+              coordinates: response.data.address.coordinates || {
+                latitude: "",
+                longitude: "",
+              },
+            },
+          };
+          setFormData(branchData);
         } else {
           setError("Failed to fetch branch details");
         }
@@ -57,7 +73,19 @@ const EditBranch = () => {
     const { name, value } = e.target;
     setError("");
 
-    if (name.includes("address.")) {
+    if (name.includes("address.coordinates.")) {
+      const coordinateField = name.split(".")[2];
+      setFormData((prev) => ({
+        ...prev,
+        address: {
+          ...prev.address,
+          coordinates: {
+            ...prev.address.coordinates,
+            [coordinateField]: value,
+          },
+        },
+      }));
+    } else if (name.includes("address.")) {
       const addressField = name.split(".")[1];
       setFormData((prev) => ({
         ...prev,
@@ -85,6 +113,30 @@ const EditBranch = () => {
   };
 
   const validateForm = () => {
+    if (formData.address.coordinates) {
+      const { latitude, longitude } = formData.address.coordinates;
+
+      if (latitude || longitude) {
+        // If either coordinate is provided, both become required
+        if (!latitude || !longitude) {
+          setError("Both latitude and longitude are required");
+          return false;
+        }
+
+        const lat = parseFloat(latitude);
+        const lng = parseFloat(longitude);
+
+        if (isNaN(lat) || lat < -90 || lat > 90) {
+          setError("Latitude must be between -90 and 90 degrees");
+          return false;
+        }
+
+        if (isNaN(lng) || lng < -180 || lng > 180) {
+          setError("Longitude must be between -180 and 180 degrees");
+          return false;
+        }
+      }
+    }
     const serviceRadiusNum = parseFloat(formData.serviceRadius);
     if (isNaN(serviceRadiusNum) || serviceRadiusNum <= 0) {
       setError("Please enter a valid service radius greater than 0");
@@ -337,6 +389,36 @@ const EditBranch = () => {
                   formData.address.country === "india" ? "6" : "5"
                 }-digit postal code`}
                 required
+              />
+            </div>
+          </div>
+          <div className="form-row">
+            <div className="form-group">
+              <label>Latitude</label>
+              <input
+                type="number"
+                name="address.coordinates.latitude"
+                value={formData.address.coordinates.latitude}
+                onChange={handleChange}
+                step="any"
+                min="-90"
+                max="90"
+                required
+                placeholder="Enter latitude (-90 to 90)"
+              />
+            </div>
+            <div className="form-group">
+              <label>Longitude</label>
+              <input
+                type="number"
+                name="address.coordinates.longitude"
+                value={formData.address.coordinates.longitude}
+                onChange={handleChange}
+                step="any"
+                min="-180"
+                max="180"
+                required
+                placeholder="Enter longitude (-180 to 180)"
               />
             </div>
           </div>
