@@ -1,4 +1,6 @@
 const User = require("../models/User");
+const Branch = require("../models/admin/Branch");
+const { calculateDistance } = require("../utils/locationUtils");
 
 exports.updateUserInfo = async (req, res) => {
   try {
@@ -36,24 +38,69 @@ exports.updateUserInfo = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
 exports.updateUserAddress = async (req, res) => {
   try {
-    const { fullAddress, saveAs, coordinates } = req.body;
-    const user = req.user;
+    const { fullAddress, flatNumber, landmark, saveAs, coordinates, country } =
+      req.body;
 
-    if (!user.address) {
-      user.address = {};
+    // Basic validation
+    if (!fullAddress || !flatNumber || !saveAs || !coordinates || !country) {
+      return res.status(400).json({
+        message: "Missing required fields",
+      });
     }
+
+    // Find all branches in user's country
+    const branches = await Branch.find({
+      "address.country": country,
+    });
+
+    if (!branches.length) {
+      return res.status(400).json({
+        message: `Sorry, we don't operate in ${country} yet`,
+      });
+    }
+
+    // Find closest branch within service radius
+    let closestBranch = null;
+    let shortestDistance = Infinity;
+
+    for (const branch of branches) {
+      const distance = calculateDistance(
+        coordinates.coordinates[1],
+        coordinates.coordinates[0],
+        branch.address.coordinates.latitude,
+        branch.address.coordinates.longitude
+      );
+
+      if (distance <= branch.serviceRadius && distance < shortestDistance) {
+        closestBranch = branch;
+        shortestDistance = distance;
+      }
+    }
+
+    if (!closestBranch) {
+      return res.status(400).json({
+        message: "Your location is not within our service area",
+      });
+    }
+
+    // Update user
+    const user = req.user;
 
     user.address = {
       fullAddress,
+      flatNumber,
+      landmark: landmark || "",
       saveAs,
       coordinates: {
         type: "Point",
         coordinates: coordinates.coordinates,
       },
     };
+
+    user.branchId = closestBranch._id;
+    user.distanceToBranch = shortestDistance;
 
     if (user.status === "INFO_COMPLETE") {
       user.status = "ADDRESS_COMPLETE";
@@ -62,7 +109,7 @@ exports.updateUserAddress = async (req, res) => {
     await user.save();
 
     res.json({
-      message: "User address updated successfully",
+      message: "Address updated successfully",
       user: {
         phoneNumber: user.phoneNumber,
         firstName: user.firstName,
@@ -71,6 +118,11 @@ exports.updateUserAddress = async (req, res) => {
         gender: user.gender,
         address: user.address,
         status: user.status,
+        assignedBranch: {
+          id: closestBranch._id,
+          name: closestBranch.name,
+          distance: shortestDistance,
+        },
       },
       isInfoComplete: ["INFO_COMPLETE", "ADDRESS_COMPLETE"].includes(
         user.status
@@ -78,7 +130,7 @@ exports.updateUserAddress = async (req, res) => {
       isAddressComplete: user.status === "ADDRESS_COMPLETE",
     });
   } catch (error) {
-    console.error(error);
+    console.error("Error in updateUserAddress:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -100,16 +152,21 @@ exports.getUserStatus = async (req, res) => {
 };
 exports.getUserAddress = async (req, res) => {
   try {
-    console.log("getUserAddress called");
     const user = req.user;
-    console.log("User:", user);
     if (user.address) {
-      console.log("Sending address:", user.address);
+      const { fullAddress, flatNumber, landmark, saveAs, coordinates } =
+        user.address;
+
       res.json({
-        address: user.address,
+        address: {
+          fullAddress,
+          flatNumber,
+          landmark,
+          saveAs,
+          coordinates,
+        },
       });
     } else {
-      console.log("No address found for user");
       res.status(404).json({ message: "User address not found" });
     }
   } catch (error) {

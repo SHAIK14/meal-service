@@ -39,6 +39,7 @@ const createSubscriptionOrder = async (req, res) => {
     const subscriptionOrder = new SubscriptionOrder({
       orderId,
       user: req.user._id,
+      branchId: req.user.branchId,
       plan: {
         planId: plan.id,
         name: plan.name,
@@ -89,6 +90,12 @@ const createSubscriptionOrder = async (req, res) => {
       startDate: new Date(plan.startDate),
       endDate: new Date(plan.endDate),
       status: "active",
+    });
+    // Before saving subscription
+    console.log("Creating subscription with branch:", {
+      userId: req.user._id,
+      branchId: req.user.branchId,
+      planId: plan.id,
     });
 
     await subscriptionOrder.save();
