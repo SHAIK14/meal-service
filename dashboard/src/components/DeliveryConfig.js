@@ -32,6 +32,7 @@ const DeliveryConfig = ({ branchId }) => {
   const [deliveryTimeSlots, setDeliveryTimeSlots] = useState([]);
   const [newSlotFrom, setNewSlotFrom] = useState("");
   const [newSlotTo, setNewSlotTo] = useState("");
+  const [newKitchenTime, setNewKitchenTime] = useState("");
 
   // Plan duration states
   const [planDurations, setPlanDurations] = useState([]);
@@ -46,6 +47,7 @@ const DeliveryConfig = ({ branchId }) => {
     setPlanDurations([]);
     setNewSlotFrom("");
     setNewSlotTo("");
+    setNewKitchenTime("");
     setNewDurationType("");
     setNewMinDays("");
     setNewSkipDays("");
@@ -83,10 +85,20 @@ const DeliveryConfig = ({ branchId }) => {
   }, [branchId, fetchData, resetStates]);
 
   // Time slot handlers
-  const validateTimeRange = (fromTime, toTime) => {
-    const [fromHours, fromMinutes] = fromTime.split(":").map(Number);
-    const [toHours, toMinutes] = toTime.split(":").map(Number);
-    return toHours * 60 + toMinutes > fromHours * 60 + fromMinutes;
+  const validateTimeRange = (kitchenTime, fromTime, toTime) => {
+    const parseTime = (time) => {
+      const [hours, minutes] = time.split(":").map(Number);
+      return hours * 60 + minutes;
+    };
+
+    const kitchenMinutes = parseTime(kitchenTime);
+    const fromMinutes = parseTime(fromTime);
+    const toMinutes = parseTime(toTime);
+
+    return (
+      kitchenMinutes < fromMinutes && // Kitchen time must be before delivery start
+      toMinutes > fromMinutes // Delivery end must be after start
+    );
   };
 
   const formatTime = (time24) => {
@@ -98,16 +110,20 @@ const DeliveryConfig = ({ branchId }) => {
   };
 
   const handleAddTimeSlot = async () => {
-    if (!newSlotFrom || !newSlotTo) {
-      toast.error("Please fill in both time fields");
+    if (!newKitchenTime || !newSlotFrom || !newSlotTo) {
+      toast.error("Please fill in all time fields");
       return;
     }
-    if (!validateTimeRange(newSlotFrom, newSlotTo)) {
-      toast.error("End time must be after start time");
+
+    if (!validateTimeRange(newKitchenTime, newSlotFrom, newSlotTo)) {
+      toast.error(
+        "Kitchen time must be before delivery start time, and end time must be after start time"
+      );
       return;
     }
 
     const newSlot = {
+      kitchenTime: formatTime(newKitchenTime),
       fromTime: formatTime(newSlotFrom),
       toTime: formatTime(newSlotTo),
       isActive: true,
@@ -121,6 +137,7 @@ const DeliveryConfig = ({ branchId }) => {
 
       if (response.success) {
         setDeliveryTimeSlots(updatedSlots);
+        setNewKitchenTime("");
         setNewSlotFrom("");
         setNewSlotTo("");
         toast.success("Time slot added successfully");
@@ -249,7 +266,15 @@ const DeliveryConfig = ({ branchId }) => {
           <div className="config_time-slot-inputs">
             <div className="config_time-input-group">
               <TextField
-                label="From Time"
+                label="Kitchen Time"
+                type="time"
+                value={newKitchenTime}
+                onChange={(e) => setNewKitchenTime(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                className="config_time-input"
+              />
+              <TextField
+                label="Delivery From"
                 type="time"
                 value={newSlotFrom}
                 onChange={(e) => setNewSlotFrom(e.target.value)}
@@ -257,7 +282,7 @@ const DeliveryConfig = ({ branchId }) => {
                 className="config_time-input"
               />
               <TextField
-                label="To Time"
+                label="Delivery To"
                 type="time"
                 value={newSlotTo}
                 onChange={(e) => setNewSlotTo(e.target.value)}
@@ -275,7 +300,8 @@ const DeliveryConfig = ({ branchId }) => {
           {deliveryTimeSlots.map((slot, index) => (
             <div key={index} className="config_time-slot-item">
               <span className="config_time-slot-text">
-                {slot.fromTime} - {slot.toTime}
+                Kitchen: {slot.kitchenTime} | Delivery: {slot.fromTime} -{" "}
+                {slot.toTime}
               </span>
               <button
                 className="config_delete-btn"

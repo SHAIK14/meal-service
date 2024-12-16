@@ -18,14 +18,6 @@ router.put(
   configController.updateBasicConfig
 );
 
-// Location Settings Route
-router.put(
-  "/:branchId/location",
-  adminAuth,
-  validateBranch,
-  configController.updateLocationSettings
-);
-
 // Weekly Holidays Route
 router.put(
   "/:branchId/weekly-holidays",

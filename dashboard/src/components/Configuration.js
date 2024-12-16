@@ -5,14 +5,12 @@ import {
   MenuItem,
   OutlinedInput,
   Select,
-  TextField,
 } from "@mui/material";
 import DeliveryConfig from "./DeliveryConfig";
 import toast from "react-hot-toast";
 import {
   getConfiguration,
   updateBasicConfig,
-  updateLocationSettings,
   updateWeeklyHolidays,
   addNationalHoliday,
   deleteNationalHoliday,
@@ -44,15 +42,6 @@ const weekDays = [
   "Saturday",
 ];
 
-const gccCountries = [
-  { name: "Bahrain", currency: "Bahraini Dinar (BHD)" },
-  { name: "Kuwait", currency: "Kuwaiti Dinar (KWD)" },
-  { name: "Oman", currency: "Omani Rial (OMR)" },
-  { name: "Qatar", currency: "Qatari Rial (QAR)" },
-  { name: "Saudi Arabia", currency: "Saudi Riyal (SAR)" },
-  { name: "United Arab Emirates", currency: "UAE Dirham (AED)" },
-];
-
 const Configuration = () => {
   const [activeTab, setActiveTab] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -65,10 +54,6 @@ const Configuration = () => {
   const [userPlanStart, setUserPlanStart] = useState(0);
 
   // Location States
-  const [selectedCountry, setSelectedCountry] = useState("");
-  const [selectedCurrency, setSelectedCurrency] = useState("");
-  const [latitude, setLatitude] = useState("");
-  const [longitude, setLongitude] = useState("");
 
   // Holiday States
   const [selectedWeeklyHolidays, setSelectedWeeklyHolidays] = useState([]);
@@ -87,7 +72,7 @@ const Configuration = () => {
     skipMeal: false,
     planStart: false,
     weeklyHolidays: false,
-    location: false,
+
     holidays: false,
     emergency: false,
   });
@@ -134,10 +119,6 @@ const Configuration = () => {
               date: formatDate(holiday.date),
             }))
           );
-          setSelectedCountry(config?.country || "");
-          setSelectedCurrency(config?.currency || "");
-          setLatitude(config?.coordinates?.latitude || "");
-          setLongitude(config?.coordinates?.longitude || "");
         }
 
         if (emergencyResponse.success) {
@@ -188,10 +169,7 @@ const Configuration = () => {
     setUserPlanStart(0);
     setSelectedWeeklyHolidays([]);
     setNationalHolidays([]);
-    setSelectedCountry("");
-    setSelectedCurrency("");
-    setLatitude("");
-    setLongitude("");
+
     setEmergencyClosures([]);
     setHolidayDate("");
     setHolidayName("");
@@ -238,33 +216,19 @@ const Configuration = () => {
   // Event Handlers
   const handleUpdateConfiguration = async () => {
     try {
-      const [basicConfigResponse, weeklyHolidaysResponse, locationResponse] =
-        await Promise.all([
-          updateBasicConfig(selectedBranch._id, {
-            skipMealDays: selectedDays,
-            planStartDelay: userPlanStart,
-          }),
-          updateWeeklyHolidays(selectedBranch._id, selectedWeeklyHolidays),
-          updateLocationSettings(selectedBranch._id, {
-            country: selectedCountry,
-            currency: selectedCurrency,
-            coordinates: {
-              latitude: parseFloat(latitude),
-              longitude: parseFloat(longitude),
-            },
-          }),
-        ]);
+      const [basicConfigResponse, weeklyHolidaysResponse] = await Promise.all([
+        updateBasicConfig(selectedBranch._id, {
+          skipMealDays: selectedDays,
+          planStartDelay: userPlanStart,
+        }),
+        updateWeeklyHolidays(selectedBranch._id, selectedWeeklyHolidays),
+      ]);
 
-      if (
-        basicConfigResponse.success &&
-        weeklyHolidaysResponse.success &&
-        locationResponse.success
-      ) {
+      if (basicConfigResponse.success && weeklyHolidaysResponse.success) {
         toast.success("Configuration updated successfully");
         showUpdateIndicator("skipMeal");
         showUpdateIndicator("planStart");
         showUpdateIndicator("weeklyHolidays");
-        showUpdateIndicator("location");
       } else {
         toast.error("Some updates failed");
       }
@@ -284,13 +248,6 @@ const Configuration = () => {
   };
 
   // Location Handlers
-  const handleCountryChange = (e) => {
-    const country = e.target.value;
-    setSelectedCountry(country);
-    const currency =
-      gccCountries.find((item) => item.name === country)?.currency || "";
-    setSelectedCurrency(currency);
-  };
 
   // Weekly Holiday Handlers
   const handleWeeklyHolidayChange = async (event) => {
@@ -513,72 +470,6 @@ const Configuration = () => {
         <div className="config_divider" />
 
         {/* Location Section */}
-        <div className="config_location-row">
-          <div className="config_card config_country-currency">
-            {updateIndicators.location && (
-              <div className="config_update-indicator">Updated</div>
-            )}
-            <h4>Select Country and Currency</h4>
-            <div className="config_country-currency-inputs">
-              <FormControl fullWidth>
-                <InputLabel>Country</InputLabel>
-                <Select
-                  value={selectedCountry}
-                  onChange={handleCountryChange}
-                  input={<OutlinedInput label="Country" />}
-                  MenuProps={MenuProps}
-                >
-                  {gccCountries.map((country) => (
-                    <MenuItem key={country.name} value={country.name}>
-                      {country.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <FormControl fullWidth>
-                <InputLabel>Currency</InputLabel>
-                <Select
-                  value={selectedCurrency}
-                  onChange={(e) => setSelectedCurrency(e.target.value)}
-                  input={<OutlinedInput label="Currency" />}
-                  MenuProps={MenuProps}
-                  disabled={!selectedCountry}
-                >
-                  {gccCountries.map((country) => (
-                    <MenuItem key={country.currency} value={country.currency}>
-                      {country.currency}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </div>
-          </div>
-
-          <div className="config_card config_coordinates">
-            {updateIndicators.location && (
-              <div className="config_update-indicator">Updated</div>
-            )}
-            <h4>Location Coordinates</h4>
-            <div className="config_coordinates-inputs">
-              <TextField
-                label="Latitude"
-                type="number"
-                value={latitude}
-                onChange={(e) => setLatitude(e.target.value)}
-                inputProps={{ step: 0.000001 }}
-                fullWidth
-              />
-              <TextField
-                label="Longitude"
-                type="number"
-                value={longitude}
-                onChange={(e) => setLongitude(e.target.value)}
-                inputProps={{ step: 0.000001 }}
-                fullWidth
-              />
-            </div>
-          </div>
-        </div>
 
         <div className="config_divider" />
 

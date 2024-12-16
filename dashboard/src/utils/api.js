@@ -433,21 +433,6 @@ export const updateBasicConfig = async (branchId, configData) => {
 };
 
 // Location Settings
-export const updateLocationSettings = async (branchId, locationData) => {
-  try {
-    const response = await api.put(
-      `/admin/config/${branchId}/location`,
-      locationData
-    );
-    return { success: true, data: response.data };
-  } catch (error) {
-    console.error("Error in updateLocationSettings:", error);
-    return {
-      success: false,
-      error: error.response?.data?.message || "An unexpected error occurred",
-    };
-  }
-};
 
 // Weekly Holidays
 export const updateWeeklyHolidays = async (branchId, holidaysData) => {

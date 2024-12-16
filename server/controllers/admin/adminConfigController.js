@@ -45,28 +45,28 @@ const updateBasicConfig = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
-const updateLocationSettings = async (req, res) => {
-  try {
-    const { country, currency, coordinates } = req.body;
+// const updateLocationSettings = async (req, res) => {
+//   try {
+//     const { country, currency, coordinates } = req.body;
 
-    let config = await Config.findOneAndUpdate(
-      { branch: req.branch._id },
-      {
-        $set: {
-          branch: req.branch._id,
-          country,
-          currency,
-          coordinates,
-        },
-      },
-      { new: true, upsert: true }
-    );
+//     let config = await Config.findOneAndUpdate(
+//       { branch: req.branch._id },
+//       {
+//         $set: {
+//           branch: req.branch._id,
+//           country,
+//           currency,
+//           coordinates,
+//         },
+//       },
+//       { new: true, upsert: true }
+//     );
 
-    res.json(config);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
+//     res.json(config);
+//   } catch (error) {
+//     res.status(400).json({ message: error.message });
+//   }
+// };
 
 // Weekly Holidays Controllers
 // Weekly Holidays Controllers
@@ -739,14 +739,38 @@ const updateDeliveryTimeSlots = async (req, res) => {
   try {
     const { timeSlots } = req.body;
 
+    // Keep existing time format validation
     const isValidTimeFormat = timeSlots.every((slot) => {
       const timeRegex = /^(0?[1-9]|1[0-2]):[0-5][0-9] (AM|PM)$/i;
-      return timeRegex.test(slot.fromTime) && timeRegex.test(slot.toTime);
+      const isDeliveryTimeValid =
+        timeRegex.test(slot.fromTime) && timeRegex.test(slot.toTime);
+
+      // Only validate kitchenTime if it's provided
+      if (slot.kitchenTime) {
+        return isDeliveryTimeValid && timeRegex.test(slot.kitchenTime);
+      }
+      return isDeliveryTimeValid;
     });
 
     if (!isValidTimeFormat) {
       return res.status(400).json({
         message: "Invalid time format. Use 'HH:mm AM/PM' format",
+      });
+    }
+
+    // Optional validation for kitchen time if provided
+    const hasInvalidKitchenTime = timeSlots.some((slot) => {
+      if (slot.kitchenTime) {
+        const kitchen = new Date(`2000/01/01 ${slot.kitchenTime}`);
+        const delivery = new Date(`2000/01/01 ${slot.fromTime}`);
+        return kitchen >= delivery;
+      }
+      return false;
+    });
+
+    if (hasInvalidKitchenTime) {
+      return res.status(400).json({
+        message: "Kitchen preparation time must be before delivery start time",
       });
     }
 
@@ -906,7 +930,7 @@ module.exports = {
   updateBasicConfig,
 
   // Location Settings
-  updateLocationSettings,
+  // updateLocationSettings,updateDeliveryTimeSlots
 
   // Weekly Holidays
   updateWeeklyHolidays,
