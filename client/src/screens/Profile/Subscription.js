@@ -496,13 +496,9 @@ const SubscriptionPage = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>My Subscriptions</Text>
-      </View>
-
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#C5A85F" />
+          <ActivityIndicator size="large" color="#Dc2626" />
         </View>
       ) : error ? (
         <View style={styles.errorContainer}>
@@ -812,7 +808,7 @@ const SubscriptionPage = () => {
             </Text>
 
             {processingSkip ? (
-              <ActivityIndicator size="large" color="#C5A85F" />
+              <ActivityIndicator size="large" color="#Dc2626" />
             ) : (
               <View style={styles.modalButtons}>
                 <TouchableOpacity
@@ -875,7 +871,7 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     padding: 12,
-    backgroundColor: "#C5A85F",
+    backgroundColor: "#Dc2626",
     borderRadius: 8,
   },
   retryText: {
@@ -915,22 +911,25 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   selectedCard: {
-    backgroundColor: "#C5A85F",
+    backgroundColor: "#Dc2626",
   },
   selectedCardText: {
     color: "#fff",
   },
+
   planName: {
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: "600",
     color: "#333",
-    marginBottom: 8,
+    marginBottom: 4,
   },
+
   packageInfo: {
-    fontSize: 14,
+    fontSize: 12,
     color: "#666",
-    marginBottom: 12,
+    marginBottom: 14,
   },
+
   statusBadge: {
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -994,7 +993,7 @@ const styles = StyleSheet.create({
     color: "#666",
   },
   skipCalendarButton: {
-    backgroundColor: "#C5A85F",
+    backgroundColor: "#Dc2626",
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
@@ -1032,7 +1031,7 @@ const styles = StyleSheet.create({
     color: "#666",
   },
   availableDot: {
-    backgroundColor: "#C5A85F",
+    backgroundColor: "#Dc2626",
   },
   skippedDot: {
     backgroundColor: "#FF6B6B",
@@ -1070,7 +1069,7 @@ const styles = StyleSheet.create({
     borderColor: "#9E9E9E",
   },
   availableToSkip: {
-    borderColor: "#C5A85F",
+    borderColor: "#Dc2626",
     borderWidth: 2,
   },
   skipDayName: {
@@ -1141,7 +1140,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f5f5f5",
   },
   modalConfirmButton: {
-    backgroundColor: "#C5A85F",
+    backgroundColor: "#Dc2626",
   },
   modalCancelText: {
     color: "#333",
@@ -1169,7 +1168,7 @@ const styles = StyleSheet.create({
     borderColor: "#eee",
   },
   selectedDayCard: {
-    borderColor: "#C5A85F",
+    borderColor: "#Dc2626",
     borderWidth: 2,
   },
   holidayCard: {
@@ -1205,7 +1204,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#eee",
   },
   activePackageDot: {
-    backgroundColor: "#C5A85F",
+    backgroundColor: "#Dc2626",
   },
 
   // Package Selector
@@ -1220,7 +1219,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   selectedPackage: {
-    backgroundColor: "#C5A85F",
+    backgroundColor: "#Dc2626",
   },
   packageButtonText: {
     fontSize: 14,
@@ -1255,7 +1254,7 @@ const styles = StyleSheet.create({
   },
   deliveryStatus: {
     fontSize: 14,
-    color: "#C5A85F",
+    color: "#Dc2626",
     fontWeight: "500",
   },
   menuItemsScroll: {

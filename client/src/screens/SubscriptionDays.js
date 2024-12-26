@@ -330,15 +330,15 @@ const SubscriptionDays = () => {
 
   if (loading || !config) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#C5A85F" />
-      </View>
+      <SafeAreaView style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#DC2626" />
+      </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+      <SafeAreaView style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
@@ -347,9 +347,9 @@ const SubscriptionDays = () => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Subscription Details</Text>
         <View style={{ width: 40 }} />
-      </View>
+      </SafeAreaView>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={true}>
         <View style={styles.content}>
           <View style={styles.planInfo}>
             <Text style={styles.planName}>{plan.name}</Text>
@@ -366,12 +366,14 @@ const SubscriptionDays = () => {
                 style={styles.calendarButton}
                 onPress={() => setShowCalendar(!showCalendar)}
               >
-                <Ionicons name="calendar" size={24} color="#C5A85F" />
+                <Ionicons name="calendar" size={24} color="#DC2626" />
                 <Text style={styles.calendarButtonText}>
                   {format(selectedStartDate, "dd MMM yyyy")}
                 </Text>
               </TouchableOpacity>
             </View>
+
+            <View></View>
 
             {showCalendar && (
               <View style={styles.calendarContainer}>
@@ -380,7 +382,7 @@ const SubscriptionDays = () => {
                   minDate={minSelectableDate}
                   selectedStartDate={selectedStartDate}
                   customDatesStyles={customDayStylesFunction}
-                  selectedDayColor="#C5A85F"
+                  selectedDayColor="#DC2626"
                   selectedDayTextColor="#FFFFFF"
                   todayBackgroundColor="transparent"
                   restrictMonthNavigation
@@ -448,7 +450,7 @@ const SubscriptionDays = () => {
                   <Ionicons
                     name="remove"
                     size={24}
-                    color={extraDays === 0 ? "#999" : "#C5A85F"}
+                    color={extraDays === 0 ? "#999" : "#DC2626"}
                   />
                 </TouchableOpacity>
                 <View style={styles.extraDaysInfo}>
@@ -465,7 +467,7 @@ const SubscriptionDays = () => {
                   <Ionicons
                     name="add"
                     size={24}
-                    color={extraDays === getMaxExtraDays() ? "#999" : "#C5A85F"}
+                    color={extraDays === getMaxExtraDays() ? "#999" : "#DC2626"}
                   />
                 </TouchableOpacity>
               </View>
@@ -543,7 +545,8 @@ const SubscriptionDays = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+
+    backgroundColor: "white",
   },
   loadingContainer: {
     flex: 1,
@@ -587,6 +590,7 @@ const styles = StyleSheet.create({
   },
   sectionTitleRow: {
     flexDirection: "row",
+
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 12,
@@ -621,7 +625,8 @@ const styles = StyleSheet.create({
   // Subscription Days Styles
   daysScroll: {
     marginVertical: 10,
-    height: 120, // Increased to accommodate reason text
+
+    width: "100%",
   },
   daysContainer: {
     flexDirection: "row",
@@ -639,7 +644,7 @@ const styles = StyleSheet.create({
     width: DAY_ITEM_WIDTH,
     height: DAY_ITEM_WIDTH,
     borderRadius: DAY_ITEM_WIDTH / 2,
-    backgroundColor: "#C5A85F",
+    backgroundColor: "#DC2626",
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",
@@ -662,16 +667,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#eee",
   },
+
   dayNumber: {
     fontSize: 15,
     fontWeight: "600",
     color: "#fff",
   },
+
   dayMonth: {
     fontSize: 9,
     color: "#fff",
     marginTop: 1,
   },
+
   unavailableDayText: {
     color: "#999",
   },
@@ -717,6 +725,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#333",
   },
+
   maxDaysText: {
     fontSize: 11,
     color: "#666",
@@ -730,6 +739,7 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 4,
   },
+
   timeSlot: {
     flex: 1,
     minWidth: "45%",
@@ -742,8 +752,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   selectedTimeSlot: {
-    backgroundColor: "#C5A85F",
-    borderColor: "#C5A85F",
+    backgroundColor: "#DC2626",
+    borderColor: "#DC2626",
   },
   timeSlotText: {
     fontSize: 13,
@@ -780,7 +790,7 @@ const styles = StyleSheet.create({
 
   // Continue Button
   continueButton: {
-    backgroundColor: "#C5A85F",
+    backgroundColor: "#DC2626",
     padding: 14,
     borderRadius: 10,
     alignItems: "center",

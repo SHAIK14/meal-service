@@ -55,8 +55,8 @@ const OtpScreen = ({ route, navigation }) => {
       const response = await verifyOTP(phoneNumber, otpString);
       if (response.message === "OTP verified successfully" && response.token) {
         await AsyncStorage.setItem("userToken", response.token);
-        // Alert.alert("Success", "OTP verified successfully");
 
+        // Navigate based on user status
         switch (response.status) {
           case "NEW_USER":
           case "INFO_REQUIRED":
@@ -66,7 +66,7 @@ const OtpScreen = ({ route, navigation }) => {
             navigation.navigate("Address");
             break;
           case "ADDRESS_COMPLETE":
-            navigation.navigate("UserPlans");
+            navigation.navigate("Tabs");
             break;
           default:
             navigation.navigate("Information");
@@ -87,11 +87,10 @@ const OtpScreen = ({ route, navigation }) => {
 
   return (
     <ImageBackground
-      source={backgroundImage}
+      source={require("../../assets/OTP_screen-01.jpg")}
       style={styles.background}
       resizeMode="cover"
     >
-      <View style={styles.overlay} />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.container}
@@ -102,7 +101,7 @@ const OtpScreen = ({ route, navigation }) => {
             <Ionicons
               name="lock-closed"
               size={64}
-              color="#FAF9D9"
+              color="white"
               style={styles.icon}
             />
             <Text style={styles.title}>Verification Code</Text>
@@ -160,22 +159,26 @@ const styles = StyleSheet.create({
   background: {
     flex: 1,
   },
+  container: {
+    bottom: 0,
+    flex: 1,
+  },
+
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0, 0, 0, 0.6)",
   },
-  container: {
-    flex: 1,
-  },
+
   scrollViewContent: {
     flexGrow: 1,
     justifyContent: "flex-end",
   },
   formContainer: {
-    backgroundColor: "#fff",
+    backgroundColor: "#dc2626",
     padding: width * 0.06,
-    borderTopLeftRadius: 25,
-    borderTopRightRadius: 25,
+    borderTopLeftRadius: 50,
+    height: 400,
+    borderTopRightRadius: 50,
     alignItems: "center",
   },
   icon: {
@@ -186,11 +189,11 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textAlign: "center",
     marginBottom: height * 0.01,
-    color: "#333",
+    color: "white",
   },
   subtitle: {
     fontSize: width * 0.04,
-    color: "#666",
+    color: "white",
     textAlign: "center",
     marginBottom: height * 0.03,
   },
@@ -203,7 +206,7 @@ const styles = StyleSheet.create({
   codeInput: {
     width: width * 0.12,
     height: width * 0.12,
-    borderColor: "#FAF9D9",
+    borderColor: "white",
     borderWidth: 2,
     borderRadius: 12,
     textAlign: "center",
@@ -213,23 +216,20 @@ const styles = StyleSheet.create({
     backgroundColor: "#F0F0F0",
   },
   verifyButton: {
-    backgroundColor: "#FAF9D9",
-    paddingVertical: height * 0.02,
-    paddingHorizontal: width * 0.1,
+    backgroundColor: "white",
+    paddingVertical: 12,
+    paddingHorizontal: 30,
     borderRadius: 25,
+    flexDirection: "row",
+    width: "100%",
+    justifyContent: "center",
     alignItems: "center",
-    marginTop: height * 0.02,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
   },
   disabledButton: {
     opacity: 0.7,
   },
   buttonText: {
-    color: "#333",
+    color: "#dc2626",
     fontSize: width * 0.045,
     fontWeight: "bold",
   },
@@ -237,12 +237,12 @@ const styles = StyleSheet.create({
     marginTop: height * 0.03,
   },
   resendText: {
-    color: "#FAF9D9",
+    color: "white",
     fontSize: width * 0.04,
     fontWeight: "bold",
   },
   disabledText: {
-    color: "#999",
+    color: "#ff6f6f",
   },
   errorText: {
     color: "#FF6B6B",

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   ImageBackground,
   Dimensions,
   KeyboardAvoidingView,
+  Easing,
+  Animated,
   Platform,
   ScrollView,
   Modal,
@@ -17,9 +19,10 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { requestOTP } from "../utils/api";
 import backgroundImage from "../../assets/background.png";
+import Lottie from "lottie-react-native";
+import LottieView from "lottie-react-native";
 
 const { width, height } = Dimensions.get("window");
-const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
 
 const countryCodes = [
   { code: "+966", country: "Saudi Arabia", maxLength: 9, flag: "🇸🇦" },
@@ -42,6 +45,59 @@ const LoginScreen = ({ navigation }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentText, setCurrentText] = useState('Flavourful');
+  const [isAnimating, setIsAnimating] = useState(false); // To track animation state
+  const typingAnimation = useRef(new Animated.Value(0)).current;
+  const cuttingAnimation = useRef(new Animated.Value(1)).current;
+  const [nextText, setNextText] = useState('Delicious'); // Initially set a synonym
+  const fadeAnim = useState(new Animated.Value(1))[0]; // Start with full opacity (1)
+  const scaleAnim = new Animated.Value(0.5); 
+  const [displayedText, setDisplayedText] = useState('');
+  const flipAnim = new Animated.Value(0); // Flip animation value
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+
+  const typingAnim = new Animated.Value(0); // Typing effect (progress of text)
+  const synonyms = ['Flavourful', 'Delicious', 'Tasty', 'Scrumptious', 'Yummy'];
+  let textIndex = 0; // Starting index
+
+  useEffect(() => {
+    const changeText = () => {
+      // Fade out the current text
+      Animated.timing(fadeAnim, {
+        toValue: 0, // Fade out to 0 opacity
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => {
+        // Change to the next word
+        textIndex = (textIndex + 1) % synonyms.length; // Cycle through synonyms
+        setCurrentText(synonyms[textIndex]);
+
+        // Fade in the new text
+        Animated.timing(fadeAnim, {
+          toValue: 1, // Fade in to full opacity
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
+      });
+    };
+
+    const interval = setInterval(changeText, 1000); // Change text every 3 seconds
+    return () => clearInterval(interval); // Clean up interval on unmount
+  }, [fadeAnim]);
+
+
+
+  const [translateY] = useState(new Animated.Value(600)); // Start off-screen position
+  useEffect(() => {
+    // Trigger the slide-up animation when the component is mounted
+    Animated.spring(translateY, {
+      toValue: 0, // Final position (fully visible)
+      friction: 8, // Adjust the smoothness of the animation
+      tension: 40, // Adjust how fast the animation happens
+      useNativeDriver: true, // Use the native driver for better performance
+    }).start();
+  }, []);
 
   const handleSendOtp = async () => {
     setError("");
@@ -78,6 +134,8 @@ const LoginScreen = ({ navigation }) => {
     setIsDropdownOpen(false);
   };
 
+  const isPhoneNumberFilled = phoneNumber.length > 0;
+
   // Filter the countries based on the search query
   const filteredCountries = countryCodes.filter(
     (country) =>
@@ -86,20 +144,42 @@ const LoginScreen = ({ navigation }) => {
   );
 
   return (
-    <ImageBackground
-      source={backgroundImage}
-      style={styles.background}
-      resizeMode="cover"
+    <KeyboardAvoidingView style={styles.container}>
+      
+   
+    
+    {/* Main Form */}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.container}
     >
-      <View style={styles.overlay} />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.container}
-      >
-        <ScrollView contentContainerStyle={styles.scrollViewContent}>
-          <View style={styles.formContainer}>
-            <Text style={styles.title}>Log in to Zafran Valley</Text>
-            <View style={styles.phoneContainer}>
+      <ScrollView contentContainerStyle={styles.scrollViewContent}>
+      <View style={styles.taglineContainer}>
+      <Text style={styles.taglineFresh}>Fresh</Text>
+
+      {/* Fading Text */}
+      <View style={styles.taglineFlavourful}>
+        <Animated.Text
+          style={{
+            fontSize: 48,
+            fontWeight: 'bold',
+            color: '#DC2626',
+            fontStyle:"italic",
+            opacity: fadeAnim, 
+            marginVertical:5,
+          }}
+        >
+          {currentText}
+        </Animated.Text>
+      </View>
+
+      <Text style={styles.taglineTailored}>Tailored</Text>
+    </View>
+        <Animated.View style={[styles.formContainer]}>
+          <Text style={styles.title}>Log in to Zafran Valley</Text>
+          <View style={styles.phoneContainer}>
+        
+            <View style={styles.inputContainer}>
               <TouchableOpacity
                 style={styles.dropdownButton}
                 onPress={toggleDropdown}
@@ -109,199 +189,228 @@ const LoginScreen = ({ navigation }) => {
                 </Text>
                 <Ionicons name="chevron-down" size={24} color="black" />
               </TouchableOpacity>
+
               <TextInput
                 style={styles.phoneInput}
                 placeholder="Enter your phone number"
                 keyboardType="phone-pad"
                 value={phoneNumber}
                 onChangeText={setPhoneNumber}
-                maxLength={selectedCountry.maxLength}
+                maxLength={15} // Adjust maxLength based on the country code
               />
             </View>
+          </View>
+          <View style={styles.verifyButtonContainer}>
             <TouchableOpacity
-              style={[styles.verifyButton, isLoading && styles.disabledButton]}
+              style={[
+                styles.verifyButton,
+                !isPhoneNumberFilled && styles.disabledButton,
+              ]}
               onPress={handleSendOtp}
-              disabled={isLoading}
+              disabled={!isPhoneNumberFilled || isLoading}
             >
               {isLoading ? (
                 <ActivityIndicator color="black" />
               ) : (
-                <Text style={styles.buttonText}>VERIFY</Text>
+                <Ionicons name="arrow-forward" size={24} color="#dc2626" />
               )}
             </TouchableOpacity>
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        </Animated.View>
+      </ScrollView>
+    </KeyboardAvoidingView>
 
-      {/* Modal for selecting country */}
-      {/* Modal for selecting country */}
-      <Modal visible={isDropdownOpen} transparent={true} animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            {/* "X" Close Icon */}
-            <TouchableOpacity style={styles.closeIcon} onPress={toggleDropdown}>
-              <Text style={styles.closeIconText}>✕</Text>
-            </TouchableOpacity>
+    {/* Modal for country selection */}
+    <Modal visible={isDropdownOpen} transparent={true} animationType="slide">
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <TouchableOpacity style={styles.closeIcon} onPress={toggleDropdown}>
+            <Text style={styles.closeIconText}>✕</Text>
+          </TouchableOpacity>
 
-            <Text style={styles.modalTitle}>Select Country</Text>
+          <Text style={styles.modalTitle}>Select Country</Text>
 
-            {/* Search bar */}
-            <TextInput
-              style={styles.searchBar}
-              placeholder="Search by country name or code"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-
-            <ScrollView style={styles.countryListScroll}>
-              {filteredCountries.map((country) => (
-                <TouchableOpacity
-                  key={country.code}
-                  style={styles.countryOption}
-                  onPress={() => selectCountry(country)}
-                >
-                  <Text style={styles.countryOptionText}>
-                    {country.flag} {country.country} ({country.code})
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
+          <TextInput
+            style={styles.searchBar}
+            placeholder="Search by country name or code"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          
+          <ScrollView style={styles.countryListScroll}>
+            {filteredCountries.map((country) => (
+              <TouchableOpacity
+                key={country.code}
+                style={styles.countryOption}
+                onPress={() => selectCountry(country)}
+              >
+                <Text style={styles.countryOptionText}>
+                  {country.flag} {country.country} ({country.code})
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         </View>
-      </Modal>
-    </ImageBackground>
+      </View>
+    </Modal>
+  </KeyboardAvoidingView>
+  
   );
 };
 
 const styles = StyleSheet.create({
-  background: {
-    flex: 1,
-    width: "100%",
-    height: "100%",
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
+
   container: {
     flex: 1,
-  },
-  scrollViewContent: {
-    flexGrow: 1,
+    backgroundColor: "white",
     justifyContent: "flex-end",
   },
+
+  taglineContainer: {
+    flex: 1,
+    height:450,
+    justifyContent: "center",
+    paddingHorizontal:40,
+    paddingTop: "20%",
+  },
+
+  taglineFresh: {
+    fontSize: 48,
+    fontWeight: 'bold',
+  },
+
+  taglineTailored: {
+    fontSize: 48,
+    fontWeight: 'bold',
+  },
+
   formContainer: {
-    backgroundColor: "#fff",
-    padding: width * 0.05,
-    borderTopLeftRadius: 25,
-    borderTopRightRadius: 25,
+    flex: 1,
+    paddingTop:40,
+    backgroundColor:"#dc2626",
+    alignItems: "center",
+    height:420,
+    borderTopRightRadius:50,
+    borderTopLeftRadius:50,
+    bottom: 0,
     width: "100%",
-    maxHeight: height * 1,
+    paddingHorizontal: 20,
   },
+
   title: {
-    fontSize: width * 0.06,
+    fontSize: 24,
     fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: height * 0.03,
+    marginBottom: 20,
+    color:"white",
   },
+
   phoneContainer: {
+    width: "100%",
+    marginTop:20,
+    marginBottom: 20,
+    
+  },
+
+  label: {
+    fontSize: 24,
+    marginBottom: 10,
+    paddingHorizontal:10,
+    color:"white",
+  },
+
+  inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "#d1d1d1",
+    borderWidth: 2,
+    borderRadius: 40,
+    backgroundColor:'white',
+    borderColor: "white",
+    paddingHorizontal: 15,
     paddingVertical: 10,
   },
+
   dropdownButton: {
     flexDirection: "row",
     alignItems: "center",
     paddingRight: 10,
-    borderRightWidth: 1,
-    borderRightColor: "#d1d1d1",
-    marginRight: 10,
   },
 
   dropdownButtonText: {
     fontSize: 16,
-    color: "#333",
-    paddingHorizontal: 5,
+    marginRight: 10,
   },
+
   phoneInput: {
     flex: 1,
     fontSize: 16,
-    color: "#333",
-    paddingVertical: 8,
   },
-  verifyButton: {
-    backgroundColor: "#FAF9D9",
-    paddingVertical: height * 0.015,
-    paddingHorizontal: width * 0.05,
-    borderRadius: 5,
+
+  verifyButtonContainer:{
+    width: "100%",
+  },
+
+  verifyButton:{
+    backgroundColor: "white",
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 25,
+    flexDirection: "row",
+    justifyContent: "center",
     alignItems: "center",
-    marginTop: height * 0.03,
   },
+
   disabledButton: {
-    opacity: 0.7,
+    backgroundColor: "#ccc",
   },
-  buttonText: {
-    color: "black",
-    fontSize: width * 0.04,
-    fontWeight: "bold",
-  },
+
   errorText: {
     color: "red",
-    marginTop: height * 0.02,
-    textAlign: "center",
-    fontSize: width * 0.035,
+    marginTop: 10,
   },
+
   modalOverlay: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0,0,0,0.5)",
   },
 
-  searchBar: {
-    borderColor: "#d1d1d1",
-    borderBottomWidth: 2,
-    padding: 10,
-    marginBottom: 10,
-    borderRadius: 5,
-    fontSize: 16,
-    color: "#333",
-  },
   modalContent: {
-    width: "80%",
-    maxHeight: "40%",
-    backgroundColor: "white",
+    backgroundColor: "#fff",
     padding: 20,
-    borderRadius: 32,
-    position: "relative",
+    borderRadius: 10,
+    width: "80%",
+    maxHeight: "80%",
+  },
+
+  closeIcon: {
+    alignSelf: "flex-end",
+  },
+
+  closeIconText: {
+    fontSize: 24,
+    fontWeight: "bold",
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "bold",
-    marginBottom: 15,
-    textAlign: "center",
+    marginBottom: 20,
+  },
+  searchBar: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 20,
+  },
+  countryListScroll: {
+    maxHeight: 300,
   },
   countryOption: {
     paddingVertical: 10,
-    marginVertical: 6,
-    padding: 10,
-    borderRadius: 5,
   },
   countryOptionText: {
     fontSize: 16,
-    color: "#333",
-  },
-  closeIcon: {
-    position: "absolute",
-    top: 15,
-    right: 20,
-  },
-  closeIconText: {
-    fontSize: 20,
-    color: "#333",
   },
 });
 
