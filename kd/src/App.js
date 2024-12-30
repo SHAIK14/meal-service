@@ -1,27 +1,70 @@
-import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Dashboard from "./pages/Dashboard"; // Import Dashboard
-import CurrentOrder from "./pages/CurrentOrder"; // Import CurrentOrder
-import Alacarte from "./pages/Alacarte"; // Import Alacarte
-import TopNav from "./components/TopNav"; // Import TopNav
-import Kot from "./pages/kot"; // Import Kot (PascalCase for component names)
+import React, { useState, useEffect } from "react";
+import {
+  BrowserRouter as Router,
+  Route,
+  Routes,
+  Navigate,
+} from "react-router-dom";
+import { LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import Dashboard from "./pages/Dashboard";
+import CurrentOrder from "./components/CurrentOrder";
+import Alacarte from "./pages/Alacarte";
+import TopNav from "./components/TopNav";
+import Kot from "./pages/kot";
+import Login from "./components/Auth/Login";
+import "./App.css";
 
-import "./App.css"; // Ensure CSS is properly configured
+const AuthenticatedLayout = ({ children }) => (
+  <div>
+    <TopNav />
+    <div className="content-container">{children}</div>
+  </div>
+);
 
-function App() {
+const App = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("kitchenToken");
+    if (token) {
+      setIsLoggedIn(true);
+    }
+  }, []);
+
   return (
-    <Router>
-      <TopNav /> {/* Display TopNav on all pages */}
-      <div className="content-container">
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
+      <Router>
         <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/orders" element={<CurrentOrder />} />
-          <Route path="/Alacarte" element={<Alacarte />} />
-          <Route path="/Kot" element={<Kot />} /> {/* Route to Kot */}
+          <Route
+            path="/login"
+            element={<Login setIsLoggedIn={setIsLoggedIn} />}
+          />
+          <Route
+            path="/*"
+            element={
+              isLoggedIn ? (
+                <AuthenticatedLayout>
+                  <Routes>
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/orders" element={<CurrentOrder />} />
+                    <Route path="/alacarte" element={<Alacarte />} />
+                    <Route path="/kot" element={<Kot />} />
+                    <Route
+                      path="/"
+                      element={<Navigate to="/dashboard" replace />}
+                    />
+                  </Routes>
+                </AuthenticatedLayout>
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
         </Routes>
-      </div>
-    </Router>
+      </Router>
+    </LocalizationProvider>
   );
-}
+};
 
 export default App;
