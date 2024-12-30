@@ -589,8 +589,8 @@ const AddressScreen = () => {
                         option === "Home"
                           ? "home"
                           : option === "Office"
-                            ? "business"
-                            : "location"
+                          ? "business"
+                          : "location"
                       }
                       size={24}
                       color={selectedSaveAs === option ? "#ffffff" : "#000000"}
@@ -694,7 +694,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#dc2626",
     paddingTop: Platform.OS === "android" ? 25 : 0, // Add padding for Android status bar
   },
   modalHeader: {
@@ -790,6 +790,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 15,
   },
+
   saveAsContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -805,10 +806,12 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: 5,
   },
+
   selectedSaveAsButton: {
     backgroundColor: "#007AFF",
     borderColor: "#007AFF",
   },
+
   saveAsButtonText: {
     textAlign: "center",
     marginTop: 5,
@@ -816,6 +819,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "500",
   },
+
   selectedSaveAsButtonText: {
     color: "#fff",
   },
@@ -825,6 +829,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
+
   // Add these to your StyleSheet
   serviceMessageContainer: {
     margin: 15,
@@ -834,20 +839,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ddd",
   },
+
   serviceMessageText: {
     fontSize: 14,
     color: "#007AFF",
     textAlign: "center",
   },
+
   serviceMessageError: {
     color: "#FF3B30",
   },
+
   distanceText: {
     fontSize: 12,
     color: "#666",
     textAlign: "center",
     marginTop: 4,
   },
+
   saveButton: {
     backgroundColor: "#007AFF",
     padding: 15,

@@ -96,7 +96,7 @@ const EditProfile = () => {
     <View style={styles.container}>
       {/* User Info */}
       <View style={styles.detailsContainer}>
-        <Text style={styles.UserDetailsTitle}>User Details</Text>
+        {/* <Text style={styles.UserDetailsTitle}>User Details</Text> */}
 
         {/* Name Field */}
         <View style={styles.userInfo}>
@@ -188,7 +188,7 @@ const EditProfile = () => {
       </View>
 
       {/* OTP Modal */}
-      <Modal visible={isModalVisible} transparent={true}>
+      <Modal visible={isModalVisible} transparent={false}>
         <View style={styles.modalContainer}>
           <Text style={styles.modalTitle}>Enter Verification Code</Text>
           <View style={styles.otpContainer}>
@@ -218,17 +218,20 @@ const EditProfile = () => {
       </Modal>
 
       {/* Saved Addresses */}
-      <View style={styles.savedAddressesHeader}>
-        <Text style={styles.savedAddressesTitle}>Saved Addresses:</Text>
+      <View style={styles.savedAddressContainer}>
+        <View style={styles.savedAddressesHeader}>
+          <Text style={styles.savedAddressesTitle}>Saved Addresses:</Text>
 
-        <FlatList
-          data={addresses}
-          renderItem={renderAddressItem}
-          keyExtractor={(item, index) => index.toString()}
-        />
+          <FlatList
+            style={styles.addresslist}
+            data={addresses}
+            renderItem={renderAddressItem}
+            keyExtractor={(item, index) => index.toString()}
+          />
+        </View>
       </View>
       <TouchableOpacity onPress={handleAddAddress} style={styles.plusIcon}>
-        <AntDesign name="pluscircleo" size={40} color="gray" />
+        <AntDesign name="pluscircleo" size={35} color="gray" />
       </TouchableOpacity>
 
       {/* Save Changes Button */}
@@ -252,19 +255,29 @@ const styles = StyleSheet.create({
   detailsContainer: {
     margin: 20,
     backgroundColor: "white",
-    padding: 20,
+    padding: 25,
     borderRadius: 20,
+    shadowColor: "#000", // iOS shadow color
+    shadowOffset: { width: 0, height: 2 }, // iOS shadow offset
+    shadowOpacity: 0.2, // iOS shadow opacity
+    shadowRadius: 5, // iOS shadow blur radius
+    elevation: 20, // Android shadow elevation
   },
+
   userInfo: {
     flexDirection: "row",
+
     alignItems: "center",
     backgroundColor: "white",
-    paddingVertical: 10,
+
+    paddingVertical: 20,
   },
+
   UserDetailsTitle: {
     marginBottom: 10,
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 24,
+    fontWeight: "600",
+    color: "#Dc2626",
   },
   label: {
     fontWeight: "bold",
@@ -272,6 +285,8 @@ const styles = StyleSheet.create({
   },
   value: {
     flex: 1,
+    fontWeight: 700,
+    fontSize: 16,
   },
   input: {
     height: 40,
@@ -322,17 +337,23 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "bold",
   },
+  savedAddressContainer: {},
   savedAddressesHeader: {
     marginVertical: 20,
   },
   savedAddressesTitle: {
     fontSize: 18,
+    paddingHorizontal: 25,
     fontWeight: "bold",
     marginBottom: 10,
   },
+  addresslist: {
+    padding: 25,
+  },
   addressContainer: {
     backgroundColor: "white",
-    padding: 15,
+    padding: 20,
+
     borderRadius: 10,
     marginBottom: 10,
     flexDirection: "row",
@@ -355,9 +376,9 @@ const styles = StyleSheet.create({
     padding: 15,
   },
   saveButton: {
-    backgroundColor: "#007BFF",
+    backgroundColor: "#Dc2626",
     padding: 15,
-    borderRadius: 5,
+    borderRadius: 25,
     margin: 20,
     alignItems: "center",
   },

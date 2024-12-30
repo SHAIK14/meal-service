@@ -11,6 +11,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { format, addDays } from "date-fns";
 import { getConfig } from "../utils/api";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const UserPlanDuration = () => {
   const navigation = useNavigation();
@@ -21,7 +22,6 @@ const UserPlanDuration = () => {
   const [error, setError] = useState(null);
   const [planDurations, setPlanDurations] = useState([]);
 
-  // Debug received data
   useEffect(() => {
     console.log("Received Plan Data:", {
       id: plan.id,
@@ -89,7 +89,7 @@ const UserPlanDuration = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#C5A85F" />
+        <ActivityIndicator size="large" color="#DC2626" />
       </View>
     );
   }
@@ -113,7 +113,8 @@ const UserPlanDuration = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
+      {/* Header Section */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
@@ -125,152 +126,177 @@ const UserPlanDuration = () => {
         <View style={styles.placeholder} />
       </View>
 
+      {/* Plan Details */}
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.planName}>{plan.name}</Text>
-        <Text style={styles.selectedPackages}>
-          Selected: {plan.selectedPackages.join(", ")}
-        </Text>
+        <View style={styles.titleContainer}>
+          <Text style={styles.planName}>{plan.name}</Text>
+          <Text style={styles.selectedPackages}>
+            Selected: {plan.selectedPackages.join(", ")}
+          </Text>
+        </View>
 
-        {planDurations.map((duration) => {
+        {/* Duration Cards */}
+        {planDurations.map((duration, index) => {
           const totalPrice = calculateTotalPrice(duration.minDays);
+
+          // Define colors for each card
+          const cardColors = ["#599527", "#005081", "#DC2626"]; // Add more colors if needed
+          const cardColor = cardColors[index % cardColors.length]; // Cycle through colors
           return (
             <TouchableOpacity
               key={duration.durationType}
-              style={styles.durationCard}
+              style={[styles.durationCard, { backgroundColor: cardColor }]}
               onPress={() => handleDurationSelect(duration)}
             >
-              <View style={styles.durationInfo}>
-                <Text style={styles.durationType}>
-                  {duration.durationType.replace(/_/g, " ")}
-                </Text>
-                <Text style={styles.minDays}>{duration.minDays} days</Text>
-                <Text style={styles.perDayPrice}>
-                  {(totalPrice / duration.minDays).toFixed(2)} {plan.currency}
-                  /day
-                </Text>
+              {/* Price Section */}
+              <View style={styles.priceSection}>
+                <Text style={styles.bigPrice}>{totalPrice.toFixed(2)}</Text>
+                <Text style={styles.smallCurrency}>{plan.currency}</Text>
               </View>
 
-              <View style={styles.priceContainer}>
-                <Text style={styles.price}>
-                  {totalPrice.toFixed(2)} {plan.currency}
-                </Text>
-                <Text style={styles.priceLabel}>Total Price</Text>
+              {/* Bottom Section */}
+              <View style={styles.bottomSection}>
+                {/* Left: Duration and Per Day Price */}
+                <View style={styles.leftBottom}>
+                  <Text style={styles.durationType}>
+                    {duration.durationType.replace(/_/g, " ")}
+                  </Text>
+                  <Text style={styles.perDayPrice}>
+                    {(totalPrice / duration.minDays).toFixed(2)} {plan.currency}{" "}
+                    / Day
+                  </Text>
+                </View>
+
+                {/* Right: Days */}
+                <View style={styles.rightBottom}>
+                  <Text style={styles.minDays}>{duration.minDays} Days</Text>
+                </View>
               </View>
             </TouchableOpacity>
           );
         })}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "white",
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  errorText: {
-    color: "red",
-    textAlign: "center",
-    marginBottom: 20,
-  },
-  retryButton: {
-    backgroundColor: "#C5A85F",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 6,
-  },
-  retryButtonText: {
-    color: "#fff",
-    fontWeight: "600",
-  },
+
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    marginTop: 20,
+    marginBottom: 30,
+    paddingHorizontal: 20,
   },
   backButton: {
-    padding: 8,
+    padding: 10,
+    backgroundColor: "#fff",
+    borderRadius: 50,
+    elevation: 3,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: "600",
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#333",
+    textAlign: "center",
+    flex: 1,
   },
   placeholder: {
     width: 40,
   },
-  scrollContent: {
-    padding: 16,
+  titleContainer: {
+    paddingHorizontal: 20,
   },
   planName: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 8,
+    fontSize: 26,
+    fontWeight: "600",
+    color: "#333",
     textAlign: "center",
   },
+
   selectedPackages: {
-    fontSize: 16,
-    color: "#666",
-    marginBottom: 24,
+    fontSize: 14,
     textAlign: "center",
+    color: "#777",
+    marginBottom: 24,
+  },
+
+  scrollContent: {
+    flex: 1,
+    paddingHorizontal: 30,
+    padding: 10,
   },
   durationCard: {
-    backgroundColor: "#f8f8f8",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+    backgroundColor: "#fff",
+
+    borderRadius: 25,
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+    marginVertical: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 8,
+  },
+  priceSection: {
+    alignItems: "center",
+
+    marginBottom: 12,
+  },
+  bigPrice: {
+    fontSize: 32,
+    color: "white",
+    fontWeight: "bold",
+  },
+  smallCurrency: {
+    fontSize: 16,
+    color: "white",
+  },
+  bottomSection: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  durationInfo: {
+  leftBottom: {
     flex: 1,
   },
   durationType: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 4,
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "white",
+  },
+  perDayPrice: {
+    fontSize: 14,
+    color: "white",
+  },
+  rightBottom: {
+    alignItems: "flex-end",
+    backgroundColor: "white",
+    padding: 8,
+    width: 80,
+    display: "flex",
+    alignItems: "center",
+    borderRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 8,
   },
   minDays: {
     fontSize: 14,
-    color: "#666",
-    marginBottom: 4,
-  },
-  perDayPrice: {
-    fontSize: 12,
-    color: "#666",
-    fontStyle: "italic",
-  },
-  priceContainer: {
-    alignItems: "flex-end",
-  },
-  price: {
-    fontSize: 18,
     fontWeight: "bold",
-    color: "#C5A85F",
-  },
-  priceLabel: {
-    fontSize: 12,
-    color: "#666",
-    marginTop: 2,
+    color: "black",
   },
 });
 

@@ -10,6 +10,8 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
+  SafeAreaView,
+  KeyboardAvoidingView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { format } from "date-fns";
@@ -270,292 +272,299 @@ const Payment = ({ route, navigation }) => {
     }
   };
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Payment</Text>
-        <View style={{ width: 24 }} />
-      </View>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "white" }}>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Payment</Text>
+          <View style={{ width: 24 }} />
+        </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Delivery Address Section */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Delivery Address</Text>
-          {userAddress ? (
-            <View style={styles.addressCard}>
-              <Text style={styles.addressType}>{userAddress.saveAs}</Text>
-              <Text style={styles.addressText}>{userAddress.fullAddress}</Text>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {/* Delivery Address Section */}
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionTitle}>Delivery Address</Text>
+            {userAddress ? (
+              <View style={styles.addressCard}>
+                <Text style={styles.addressType}>{userAddress.saveAs}</Text>
+                <Text style={styles.addressText}>
+                  {userAddress.fullAddress}
+                </Text>
+                <TouchableOpacity
+                  style={styles.changeButton}
+                  onPress={() => navigation.navigate("UserAddress")}
+                >
+                  <Text style={styles.changeButtonText}>Change</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
               <TouchableOpacity
-                style={styles.changeButton}
+                style={styles.addAddressButton}
                 onPress={() => navigation.navigate("UserAddress")}
               >
-                <Text style={styles.changeButtonText}>Change</Text>
+                <Text style={styles.addAddressText}>Add Delivery Address</Text>
               </TouchableOpacity>
-            </View>
-          ) : (
-            <TouchableOpacity
-              style={styles.addAddressButton}
-              onPress={() => navigation.navigate("UserAddress")}
-            >
-              <Text style={styles.addAddressText}>Add Delivery Address</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Promo Code Section */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Promo Code</Text>
-          {selectedVoucher ? (
-            <View style={styles.selectedVoucherCard}>
-              <View>
-                <Text style={styles.voucherCode}>
-                  {selectedVoucher.promoCode}
-                </Text>
-                <Text style={styles.voucherDescription}>
-                  {selectedVoucher.discountType === "percentage"
-                    ? `${selectedVoucher.discountValue}% off${
-                        selectedVoucher.maxThreshold
-                          ? ` (up to ${selectedVoucher.maxThreshold} SAR)`
-                          : ""
-                      }`
-                    : `${selectedVoucher.discountValue} SAR off`}
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={styles.removeVoucherButton}
-                onPress={handleRemoveVoucher}
-              >
-                <Text style={styles.removeVoucherText}>Remove</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <TouchableOpacity
-              style={styles.addPromoButton}
-              onPress={() => setShowVoucherModal(true)}
-            >
-              <Text style={styles.addPromoText}>Select Promo Code</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Order Summary Section */}
-        <View style={styles.summaryCard}>
-          <Text style={styles.cardTitle}>Order Summary</Text>
-          <View style={styles.planInfo}>
-            <Text style={styles.planName}>{subscriptionData.name}</Text>
-            <Text style={styles.planType}>
-              {subscriptionData.durationType.replace("_", " ")}
-            </Text>
-            <Text style={styles.planDuration}>
-              Selected: {subscriptionData.selectedPackages.join(" & ")}
-            </Text>
-            <Text style={styles.planDetails}>
-              Total Days: {subscriptionData.totalDays}
-            </Text>
-          </View>
-
-          <View style={styles.priceBreakdown}>
-            <View style={styles.priceRow}>
-              <Text style={styles.priceLabel}>Subtotal</Text>
-              <Text style={styles.subtotalPrice}>
-                {subscriptionData.totalPrice} SAR
-              </Text>
-            </View>
-
-            {selectedVoucher && (
-              <View style={styles.priceRow}>
-                <Text style={styles.priceLabel}>Promo Discount</Text>
-                <Text style={styles.promoPrice}>
-                  -{calculateDiscount(selectedVoucher).toFixed(2)} SAR
-                </Text>
-              </View>
             )}
-
-            <View style={[styles.priceRow, styles.finalPriceRow]}>
-              <Text style={styles.finalPriceLabel}>Total</Text>
-              <Text style={styles.finalPrice}>
-                {finalAmount.toFixed(2)} SAR
-              </Text>
-            </View>
           </View>
-        </View>
 
-        {/* Payment Method Section */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Payment Method</Text>
-
-          <TouchableOpacity
-            style={[
-              styles.paymentOption,
-              paymentMethod === "Visa/Mastercard" && styles.selectedPayment,
-            ]}
-            onPress={() => setPaymentMethod("Visa/Mastercard")}
-          >
-            <Ionicons
-              name={
-                paymentMethod === "Visa/Mastercard"
-                  ? "radio-button-on"
-                  : "radio-button-off"
-              }
-              size={24}
-              color="#C5A85F"
-            />
-            <Text style={styles.paymentOptionText}>Credit Card</Text>
-          </TouchableOpacity>
-
-          {paymentMethod === "Visa/Mastercard" && (
-            <View style={styles.cardInputs}>
-              <TextInput
-                style={styles.input}
-                placeholder="Cardholder Name"
-                value={cardHolderName}
-                onChangeText={setCardHolderName}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Card Number"
-                value={cardNumber}
-                onChangeText={handleCardNumberChange}
-                keyboardType="numeric"
-                maxLength={19}
-              />
-              <View style={styles.cardDetailsRow}>
-                <TextInput
-                  style={[styles.input, styles.halfInput]}
-                  placeholder="MM/YY"
-                  value={expiryDate}
-                  onChangeText={handleExpiryChange}
-                  keyboardType="numeric"
-                  maxLength={5}
-                />
-                <TextInput
-                  style={[styles.input, styles.halfInput]}
-                  placeholder="CVV"
-                  value={cvv}
-                  onChangeText={setCvv}
-                  keyboardType="numeric"
-                  maxLength={3}
-                  secureTextEntry
-                />
+          {/* Promo Code Section */}
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionTitle}>Promo Code</Text>
+            {selectedVoucher ? (
+              <View style={styles.selectedVoucherCard}>
+                <View>
+                  <Text style={styles.voucherCode}>
+                    {selectedVoucher.promoCode}
+                  </Text>
+                  <Text style={styles.voucherDescription}>
+                    {selectedVoucher.discountType === "percentage"
+                      ? `${selectedVoucher.discountValue}% off${
+                          selectedVoucher.maxThreshold
+                            ? ` (up to ${selectedVoucher.maxThreshold} SAR)`
+                            : ""
+                        }`
+                      : `${selectedVoucher.discountValue} SAR off`}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.removeVoucherButton}
+                  onPress={handleRemoveVoucher}
+                >
+                  <Text style={styles.removeVoucherText}>Remove</Text>
+                </TouchableOpacity>
               </View>
-            </View>
-          )}
-
-          <TouchableOpacity
-            style={[
-              styles.paymentOption,
-              paymentMethod === "STC Pay" && styles.selectedPayment,
-            ]}
-            onPress={() => setPaymentMethod("STC Pay")}
-          >
-            <Ionicons
-              name={
-                paymentMethod === "STC Pay"
-                  ? "radio-button-on"
-                  : "radio-button-off"
-              }
-              size={24}
-              color="#C5A85F"
-            />
-            <Text style={styles.paymentOptionText}>STC Pay</Text>
-          </TouchableOpacity>
-
-          {paymentMethod === "STC Pay" && (
-            <TextInput
-              style={styles.input}
-              placeholder="Phone Number"
-              value={stcPhoneNumber}
-              onChangeText={setStcPhoneNumber}
-              keyboardType="phone-pad"
-              maxLength={10}
-            />
-          )}
-        </View>
-
-        {/* Terms Agreement */}
-        <View style={styles.termsContainer}>
-          <Switch
-            value={isChecked}
-            onValueChange={setIsChecked}
-            trackColor={{ false: "#D1D1D1", true: "#C5A85F" }}
-            thumbColor={isChecked ? "#FFFFFF" : "#F4F3F4"}
-          />
-          <Text style={styles.termsText}>
-            I agree to the Terms & Conditions and Privacy Policy
-          </Text>
-        </View>
-      </ScrollView>
-
-      {/* Checkout Button */}
-      <View style={styles.checkoutContainer}>
-        <TouchableOpacity
-          style={[
-            styles.checkoutButton,
-            (loading || !isFormValid || !userAddress) && styles.disabledButton,
-          ]}
-          onPress={handleCheckout}
-          disabled={loading || !isFormValid || !userAddress}
-        >
-          {loading ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <Text style={styles.checkoutButtonText}>
-              Pay {finalAmount.toFixed(2)} SAR
-            </Text>
-          )}
-        </TouchableOpacity>
-      </View>
-
-      {/* Voucher Modal */}
-      <Modal
-        visible={showVoucherModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowVoucherModal(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Available Vouchers</Text>
-              <TouchableOpacity onPress={() => setShowVoucherModal(false)}>
-                <Ionicons name="close" size={24} color="#333" />
-              </TouchableOpacity>
-            </View>
-
-            {isLoadingVouchers ? (
-              <ActivityIndicator size="large" color="#C5A85F" />
-            ) : voucherError ? (
-              <Text style={styles.errorText}>{voucherError}</Text>
-            ) : availableVouchers.length === 0 ? (
-              <Text style={styles.noVouchersText}>No vouchers available</Text>
             ) : (
-              <ScrollView>
-                {availableVouchers.map((voucher, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={styles.voucherItem}
-                    onPress={() => handleSelectVoucher(voucher)}
-                  >
-                    <Text style={styles.voucherCode}>{voucher.promoCode}</Text>
-                    <Text style={styles.voucherDescription}>
-                      {voucher.discountType === "percentage"
-                        ? `${voucher.discountValue}% off${
-                            voucher.maxThreshold
-                              ? ` (up to ${voucher.maxThreshold} SAR)`
-                              : ""
-                          }`
-                        : `${voucher.discountValue} SAR off`}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
+              <TouchableOpacity
+                style={styles.addPromoButton}
+                onPress={() => setShowVoucherModal(true)}
+              >
+                <Text style={styles.addPromoText}>Select Promo Code</Text>
+              </TouchableOpacity>
             )}
           </View>
+
+          {/* Order Summary Section */}
+          <View style={styles.summaryCard}>
+            <Text style={styles.cardTitle}>Order Summary</Text>
+            <View style={styles.planInfo}>
+              <Text style={styles.planName}>{subscriptionData.name}</Text>
+              <Text style={styles.planType}>
+                {subscriptionData.durationType.replace("_", " ")}
+              </Text>
+              <Text style={styles.planDuration}>
+                Selected: {subscriptionData.selectedPackages.join(" & ")}
+              </Text>
+              <Text style={styles.planDetails}>
+                Total Days: {subscriptionData.totalDays}
+              </Text>
+            </View>
+
+            <View style={styles.priceBreakdown}>
+              <View style={styles.priceRow}>
+                <Text style={styles.priceLabel}>Subtotal</Text>
+                <Text style={styles.subtotalPrice}>
+                  {subscriptionData.totalPrice} SAR
+                </Text>
+              </View>
+
+              {selectedVoucher && (
+                <View style={styles.priceRow}>
+                  <Text style={styles.priceLabel}>Promo Discount</Text>
+                  <Text style={styles.promoPrice}>
+                    -{calculateDiscount(selectedVoucher).toFixed(2)} SAR
+                  </Text>
+                </View>
+              )}
+
+              <View style={[styles.priceRow, styles.finalPriceRow]}>
+                <Text style={styles.finalPriceLabel}>Total</Text>
+                <Text style={styles.finalPrice}>
+                  {finalAmount.toFixed(2)} SAR
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Payment Method Section */}
+          <KeyboardAvoidingView style={styles.sectionContainer}>
+            <Text style={styles.sectionTitle}>Payment Method</Text>
+
+            <TouchableOpacity
+              style={[
+                styles.paymentOption,
+                paymentMethod === "Visa/Mastercard" && styles.selectedPayment,
+              ]}
+              onPress={() => setPaymentMethod("Visa/Mastercard")}
+            >
+              <Ionicons
+                name={
+                  paymentMethod === "Visa/Mastercard"
+                    ? "radio-button-on"
+                    : "radio-button-off"
+                }
+                size={24}
+                color="#DC2626"
+              />
+              <Text style={styles.paymentOptionText}>Credit Card</Text>
+            </TouchableOpacity>
+
+            {paymentMethod === "Visa/Mastercard" && (
+              <View style={styles.cardInputs}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Cardholder Name"
+                  value={cardHolderName}
+                  onChangeText={setCardHolderName}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Card Number"
+                  value={cardNumber}
+                  onChangeText={handleCardNumberChange}
+                  keyboardType="numeric"
+                  maxLength={19}
+                />
+                <View style={styles.cardDetailsRow}>
+                  <TextInput
+                    style={[styles.input, styles.halfInput]}
+                    placeholder="MM/YY"
+                    value={expiryDate}
+                    onChangeText={handleExpiryChange}
+                    keyboardType="numeric"
+                    maxLength={5}
+                  />
+                  <TextInput
+                    style={[styles.input, styles.halfInput]}
+                    placeholder="CVV"
+                    value={cvv}
+                    onChangeText={setCvv}
+                    keyboardType="numeric"
+                    maxLength={3}
+                    secureTextEntry
+                  />
+                </View>
+              </View>
+            )}
+
+            <TouchableOpacity
+              style={[
+                styles.paymentOption,
+                paymentMethod === "STC Pay" && styles.selectedPayment,
+              ]}
+              onPress={() => setPaymentMethod("STC Pay")}
+            >
+              <Ionicons
+                name={
+                  paymentMethod === "STC Pay"
+                    ? "radio-button-on"
+                    : "radio-button-off"
+                }
+                size={24}
+                color="#DC2626"
+              />
+              <Text style={styles.paymentOptionText}>STC Pay</Text>
+            </TouchableOpacity>
+
+            {paymentMethod === "STC Pay" && (
+              <TextInput
+                style={styles.input}
+                placeholder="Phone Number"
+                value={stcPhoneNumber}
+                onChangeText={setStcPhoneNumber}
+                keyboardType="phone-pad"
+                maxLength={10}
+              />
+            )}
+          </KeyboardAvoidingView>
+
+          {/* Terms Agreement */}
+          <View style={styles.termsContainer}>
+            <Switch
+              value={isChecked}
+              onValueChange={setIsChecked}
+              trackColor={{ false: "#D1D1D1", true: "#DC2626" }}
+              thumbColor={isChecked ? "#FFFFFF" : "#F4F3F4"}
+            />
+            <Text style={styles.termsText}>
+              I agree to the Terms & Conditions and Privacy Policy
+            </Text>
+          </View>
+        </ScrollView>
+
+        {/* Checkout Button */}
+        <View style={styles.checkoutContainer}>
+          <TouchableOpacity
+            style={[
+              styles.checkoutButton,
+              (loading || !isFormValid || !userAddress) &&
+                styles.disabledButton,
+            ]}
+            onPress={handleCheckout}
+            disabled={loading || !isFormValid || !userAddress}
+          >
+            {loading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.checkoutButtonText}>
+                Pay {finalAmount.toFixed(2)} SAR
+              </Text>
+            )}
+          </TouchableOpacity>
         </View>
-      </Modal>
-    </View>
+
+        {/* Voucher Modal */}
+        <Modal
+          visible={showVoucherModal}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setShowVoucherModal(false)}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Available Vouchers</Text>
+                <TouchableOpacity onPress={() => setShowVoucherModal(false)}>
+                  <Ionicons name="close" size={24} color="#333" />
+                </TouchableOpacity>
+              </View>
+
+              {isLoadingVouchers ? (
+                <ActivityIndicator size="large" color="#DC2626" />
+              ) : voucherError ? (
+                <Text style={styles.errorText}>{voucherError}</Text>
+              ) : availableVouchers.length === 0 ? (
+                <Text style={styles.noVouchersText}>No vouchers available</Text>
+              ) : (
+                <ScrollView>
+                  {availableVouchers.map((voucher, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.voucherItem}
+                      onPress={() => handleSelectVoucher(voucher)}
+                    >
+                      <Text style={styles.voucherCode}>
+                        {voucher.promoCode}
+                      </Text>
+                      <Text style={styles.voucherDescription}>
+                        {voucher.discountType === "percentage"
+                          ? `${voucher.discountValue}% off${
+                              voucher.maxThreshold
+                                ? ` (up to ${voucher.maxThreshold} SAR)`
+                                : ""
+                            }`
+                          : `${voucher.discountValue} SAR off`}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              )}
+            </View>
+          </View>
+        </Modal>
+      </View>
+    </SafeAreaView>
   );
 };
 const styles = StyleSheet.create({
@@ -580,7 +589,7 @@ const styles = StyleSheet.create({
 
   // Common Section Styles
   sectionContainer: {
-    padding: 16,
+    padding: 24,
     borderTopWidth: 1,
     borderTopColor: "#EEEEEE",
   },
@@ -614,11 +623,13 @@ const styles = StyleSheet.create({
     top: 12,
     right: 12,
   },
+
   changeButtonText: {
     fontSize: 14,
-    color: "#C5A85F",
+    color: "#DC2626",
     fontWeight: "600",
   },
+
   addAddressButton: {
     backgroundColor: "#F8F8F8",
     borderRadius: 8,
@@ -627,7 +638,7 @@ const styles = StyleSheet.create({
   },
   addAddressText: {
     fontSize: 14,
-    color: "#C5A85F",
+    color: "#DC2626",
     fontWeight: "600",
   },
 
@@ -658,7 +669,7 @@ const styles = StyleSheet.create({
   },
   addPromoText: {
     fontSize: 14,
-    color: "#C5A85F",
+    color: "#DC2626",
     fontWeight: "600",
   },
   removeVoucherButton: {
@@ -683,28 +694,29 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   cardTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "600",
     color: "#333333",
-    marginBottom: 12,
+    marginBottom: 15,
   },
   planInfo: {
     marginBottom: 16,
   },
   planName: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: "bold",
     color: "#333333",
-    marginBottom: 4,
+    marginBottom: 8,
   },
   planDuration: {
-    fontSize: 14,
+    fontSize: 16,
     color: "#666666",
-    marginBottom: 4,
+    marginVertical: 4,
   },
   planType: {
-    fontSize: 14,
+    fontSize: 22,
     color: "#666666",
+    marginBottom: 5,
   },
   priceBreakdown: {
     borderTopWidth: 1,
@@ -744,12 +756,12 @@ const styles = StyleSheet.create({
     borderTopColor: "#EEEEEE",
   },
   finalPriceLabel: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: "600",
     color: "#333333",
   },
   finalPrice: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: "bold",
     color: "#333333",
   },
@@ -765,8 +777,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   selectedPayment: {
-    borderColor: "#C5A85F",
-    backgroundColor: "#FBF7EC",
+    borderColor: "#DC2626",
+    backgroundColor: "#FFD2D2",
   },
   paymentOptionText: {
     fontSize: 14,
@@ -814,7 +826,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   checkoutButton: {
-    backgroundColor: "#C5A85F",
+    backgroundColor: "#DC2626",
     borderRadius: 8,
     padding: 16,
     alignItems: "center",
