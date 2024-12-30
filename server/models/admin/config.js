@@ -23,10 +23,12 @@ const configSchema = new mongoose.Schema(
       max: 7,
     },
     // Delivery Time Slots
+    // In config schema
     deliveryTimeSlots: [
       {
-        fromTime: String, // Format: "HH:mm AM/PM"
-        toTime: String, // Format: "HH:mm AM/PM"
+        fromTime: String, // Delivery start "9:00 AM"
+        toTime: String, // Delivery end "11:00 AM"
+        kitchenTime: String, // Kitchen prep "7:00 AM"
         isActive: Boolean,
       },
     ],
@@ -85,26 +87,6 @@ const configSchema = new mongoose.Schema(
         compensationDays: { type: Number, default: 1 },
       },
     ],
-
-    // Location Settings
-    country: {
-      type: String,
-      required: true,
-    },
-    currency: {
-      type: String,
-      required: true,
-    },
-    coordinates: {
-      latitude: {
-        type: Number,
-        required: true,
-      },
-      longitude: {
-        type: Number,
-        required: true,
-      },
-    },
   },
   { timestamps: true }
 );

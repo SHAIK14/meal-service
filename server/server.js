@@ -19,12 +19,12 @@ const menuRoutes = require("./routes/menuRoutes");
 const configRoutes = require("./routes/admin/adminConfigRoutes");
 const userconfigRoutes = require("./routes/userConfigRoutes");
 const activeSubscriptionRoutes = require("./routes/activeSubscriptionRotues");
-const kitchenAuthRoutes = require("./routes/kitchen/kitchenAuthRoutes");
-const kitchenRoutes = require("./routes/kitchen/kitchenRoutes");
+
 const DriverRegisterRoutes = require("./routes/admin/DriverRegisterRoute");
 const driverAuthRoutes = require("./routes/driver/driverAuth");
 const branchRoutes = require("./routes/admin/adminBranchRoutes");
-
+const kitchenAuthRoutes = require("./routes/kitchen/authRoutes");
+const kitchenOrderRoutes = require("./routes/kitchen/orderRoutes");
 dotenv.config();
 const app = express();
 
@@ -66,8 +66,8 @@ app.use("/api/menu", menuRoutes);
 app.use("/api/admin/config", configRoutes);
 app.use("/api/config", userconfigRoutes);
 app.use("/api/subscriptions/user", activeSubscriptionRoutes);
-app.use("/api/kitchen", kitchenAuthRoutes);
-app.use("/api/kitchen", kitchenRoutes);
+app.use("/api/kitchen/auth", kitchenAuthRoutes);
+app.use("/api/kitchen/orders", kitchenOrderRoutes);
 app.use("/api/admin/drivers", DriverRegisterRoutes);
 app.use("/api/driver/auth", driverAuthRoutes);
 app.use("/api/admin/branches", branchRoutes);
