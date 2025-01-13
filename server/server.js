@@ -25,6 +25,7 @@ const driverAuthRoutes = require("./routes/driver/driverAuth");
 const branchRoutes = require("./routes/admin/adminBranchRoutes");
 const kitchenAuthRoutes = require("./routes/kitchen/authRoutes");
 const kitchenOrderRoutes = require("./routes/kitchen/orderRoutes");
+const diningRoutes = require("./routes/admin/diningRoutes");
 dotenv.config();
 const app = express();
 
@@ -71,6 +72,7 @@ app.use("/api/kitchen/orders", kitchenOrderRoutes);
 app.use("/api/admin/drivers", DriverRegisterRoutes);
 app.use("/api/driver/auth", driverAuthRoutes);
 app.use("/api/admin/branches", branchRoutes);
+app.use("/api/admin/dining", diningRoutes);
 const PORT = process.env.PORT || 5000;
 const HOST = "0.0.0.0";
 

@@ -233,3 +233,37 @@ export const deleteBranch = async (branchId) => {
     };
   }
 };
+// Add these to your existing API file
+export const getDiningConfig = async (branchId) => {
+  return handleResponse(api.get(`/admin/dining/branch/${branchId}`));
+};
+
+export const createUpdateDiningConfig = async (branchId, configData) => {
+  return handleResponse(
+    api.post(`/admin/dining/branch/${branchId}`, configData)
+  );
+};
+
+export const addTable = async (branchId, tableData) => {
+  return handleResponse(
+    api.post(`/admin/dining/branch/${branchId}/tables`, tableData)
+  );
+};
+
+export const toggleTableStatus = async (branchId, tableId, isEnabled) => {
+  return handleResponse(
+    api.patch(`/admin/dining/branch/${branchId}/tables/${tableId}`, {
+      isEnabled,
+    })
+  );
+};
+
+export const deleteTable = async (branchId, tableId) => {
+  return handleResponse(
+    api.delete(`/admin/dining/branch/${branchId}/tables/${tableId}`)
+  );
+};
+// Add at the end of your api.js
+export const getAllDiningConfigs = async (branchId) => {
+  return handleResponse(api.get(`/admin/dining/config/${branchId}`));
+};

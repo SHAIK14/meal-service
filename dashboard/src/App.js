@@ -32,6 +32,7 @@ import Configuration from "./components/Configuration";
 import Branch from "./components/Branch";
 import AddBranch from "./components/AddBranch";
 import EditBranch from "./components/BranchEdit";
+import DiningConfig from "./components/DiningConfig";
 
 const AuthenticatedLayout = ({ children }) => (
   <div
@@ -125,6 +126,7 @@ const App = () => {
                   <Route path="/" element={<Navigate to="/plans" replace />} />
                   <Route path="/invoice" element={<InvoiceTemplate />} />
                   <Route path="/configuration" element={<Configuration />} />
+                  <Route path="/dining-config" element={<DiningConfig />} />
                 </Routes>
               </AuthenticatedLayout>
             ) : (
