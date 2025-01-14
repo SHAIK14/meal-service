@@ -39,6 +39,7 @@ const SubscriptionDays = () => {
   const [totalPrice, setTotalPrice] = useState(plan.totalPrice);
   const [showCalendar, setShowCalendar] = useState(false);
   const [minSelectableDate, setMinSelectableDate] = useState(null);
+  const [actualStartDate, setActualStartDate] = useState(null);
 
   useEffect(() => {
     fetchConfig();
@@ -130,31 +131,56 @@ const SubscriptionDays = () => {
     const days = [];
     let currentDate = startDate;
     let availableDaysCount = 0;
+    let firstAvailableDate = null;
     const minRequired = durationData.minDays || 5;
     const totalDaysNeeded = minRequired + extraDaysCount;
 
+    console.log(
+      "Starting date calculation from:",
+      format(currentDate, "yyyy-MM-dd")
+    );
+
     while (availableDaysCount < totalDaysNeeded) {
+      const isAvailable = isDateAvailable(currentDate, configData);
+
       const dayInfo = {
         date: currentDate,
         displayDate: format(currentDate, "d"),
         displayMonth: format(currentDate, "MMM"),
         dayName: format(currentDate, "EEEE"),
-        isAvailable: isDateAvailable(currentDate, configData),
+        isAvailable: isAvailable,
         unavailableReason: null,
       };
 
-      if (!dayInfo.isAvailable) {
+      if (!isAvailable) {
         dayInfo.unavailableReason = getUnavailabilityReason(
           currentDate,
           configData
         );
       } else {
+        if (firstAvailableDate === null) {
+          console.log(
+            "Found first available date:",
+            format(currentDate, "yyyy-MM-dd")
+          );
+          firstAvailableDate = currentDate;
+          setActualStartDate(currentDate);
+        }
         availableDaysCount++;
       }
 
       days.push(dayInfo);
       currentDate = addDays(currentDate, 1);
     }
+
+    console.log(
+      "Generated days:",
+      days.map((d) => ({
+        date: format(d.date, "yyyy-MM-dd"),
+        isAvailable: d.isAvailable,
+        reason: d.unavailableReason,
+      }))
+    );
 
     setSubscriptionDays(days);
     updateTotalPrice(totalDaysNeeded);
@@ -205,16 +231,62 @@ const SubscriptionDays = () => {
     return {};
   };
   const handleContinue = () => {
-    if (!selectedTimeSlot || !selectedStartDate) return;
+    if (!selectedTimeSlot || !selectedStartDate || !actualStartDate) return;
+    console.log(
+      "Debug - Actual Start Date:",
+      format(actualStartDate, "yyyy-MM-dd")
+    );
+    console.log(
+      "Debug - All subscription days before filter:",
+      subscriptionDays.map((d) => ({
+        date: format(d.date, "yyyy-MM-dd"),
+        isAvailable: d.isAvailable,
+        reason: d.unavailableReason,
+      }))
+    );
 
-    // Get end date by counting total days including holidays/weekends
-    const endDate = addDays(selectedStartDate, subscriptionDays.length - 1);
+    // Filter subscription days starting from actual start date
+    const validSubscriptionDays = subscriptionDays
+      .filter((day) => {
+        const dayDate = startOfDay(day.date);
+        // Change from !isBefore to isAfter or equal
+        const shouldInclude =
+          isAfter(dayDate, actualStartDate) ||
+          format(dayDate, "yyyy-MM-dd") ===
+            format(actualStartDate, "yyyy-MM-dd");
+        console.log(
+          "Debug - Checking date:",
+          format(dayDate, "yyyy-MM-dd"),
+          "Include?:",
+          shouldInclude,
+          "Comparing with actualStart:",
+          format(actualStartDate, "yyyy-MM-dd")
+        );
+        return shouldInclude;
+      })
+      .map((day) => ({
+        date: format(day.date, "yyyy-MM-dd"),
+        isAvailable: day.isAvailable,
+        unavailableReason: day.unavailableReason,
+        isSkipped: false,
+        skippedAt: null,
+        isExtensionDay: false,
+        originalSkippedDate: null,
+      }));
+    console.log(
+      "Debug - Valid subscription days after filter:",
+      validSubscriptionDays.map((d) => ({
+        date: format(d.date, "yyyy-MM-dd"),
+        isAvailable: d.isAvailable,
+        reason: d.unavailableReason,
+      }))
+    );
 
-    // Get available and skipped days info
-    const availableDays = subscriptionDays.filter((day) => day.isAvailable);
-    const skippedDays = subscriptionDays.filter((day) => !day.isAvailable);
+    // Get end date from filtered subscription days
+    const endDate =
+      validSubscriptionDays[validSubscriptionDays.length - 1].date;
 
-    // Calculate daily rate (total per day for all selected packages)
+    // Calculate daily rate (keeping existing logic)
     const dailyRate = plan.selectedPackages.reduce((total, pkg) => {
       return total + (plan.packagePricing[pkg] || 0);
     }, 0);
@@ -230,16 +302,18 @@ const SubscriptionDays = () => {
         durationType: plan.durationType,
         minDays: plan.minDays,
 
-        // Dates and delivery
-        startDate: format(selectedStartDate, "yyyy-MM-dd"),
+        // Dates and delivery - Now using actualStartDate
+        startDate: format(actualStartDate, "yyyy-MM-dd"),
         endDate: format(endDate, "yyyy-MM-dd"),
         deliveryTime: selectedTimeSlot,
 
         // Days calculation
         totalDays: durationData.minDays + extraDays,
-        availableDaysCount: availableDays.length,
-        subscriptionDays: subscriptionDays,
-        skippedDays: skippedDays,
+        availableDaysCount: validSubscriptionDays.filter(
+          (day) => day.isAvailable
+        ).length,
+        subscriptionDays: validSubscriptionDays,
+        skippedDays: validSubscriptionDays.filter((day) => !day.isAvailable),
 
         // Price details
         dailyRate: dailyRate,
@@ -430,6 +504,12 @@ const SubscriptionDays = () => {
           {/* Summary */}
           <View style={styles.summary}>
             <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Start Date:</Text>
+              <Text style={styles.summaryValue}>
+                {format(actualStartDate, "dd MMM yyyy")}
+              </Text>
+            </View>
+            <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Total Days:</Text>
               <Text style={styles.summaryValue}>
                 {durationData.minDays + extraDays} days
@@ -541,18 +621,19 @@ const styles = StyleSheet.create({
   // Subscription Days Styles
   daysScroll: {
     marginVertical: 10,
-    height: 85, // Fixed height for better alignment
+    height: 120, // Increased to accommodate reason text
   },
   daysContainer: {
     flexDirection: "row",
     paddingVertical: 4,
     paddingHorizontal: 4,
-    alignItems: "center",
   },
   dayColumn: {
-    alignItems: "center",
-    marginHorizontal: 5, // Reduced spacing between days
     width: DAY_ITEM_WIDTH,
+    marginHorizontal: 5,
+    alignItems: "center",
+    justifyContent: "flex-start",
+    height: 100, // Fixed height for consistency
   },
   dayCircle: {
     width: DAY_ITEM_WIDTH,
@@ -567,6 +648,14 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
     marginBottom: 4,
+  },
+  reasonText: {
+    fontSize: 8,
+    color: "#ff4444",
+    textAlign: "center",
+    marginTop: 2,
+    width: DAY_ITEM_WIDTH + 8,
+    height: 20,
   },
   unavailableDayCircle: {
     backgroundColor: "#f5f5f5",

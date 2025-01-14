@@ -12,6 +12,8 @@ import {
   FaCreditCard,
   FaTicketAlt,
   FaBook,
+  FaBuilding,
+  FaUtensils,
 } from "react-icons/fa";
 import "../styles/Sidebar.css";
 
@@ -38,6 +40,14 @@ const Sidebar = () => {
         <FaBars />
       </div>
       <ul>
+        <li>
+          <NavLink
+            to="/branches"
+            className={({ isActive }) => (isActive ? "active" : "")}
+          >
+            <FaBuilding className="icon" /> <span>Branches</span>
+          </NavLink>
+        </li>
         <li>
           <NavLink
             to="/plans"
@@ -80,10 +90,18 @@ const Sidebar = () => {
         </li>
         <li>
           <NavLink
-            to="/delivery"
+            to="/driver/register"
             className={({ isActive }) => (isActive ? "active" : "")}
           >
-            <FaTruck className="icon" /> <span>Delivery</span>
+            <FaTruck className="icon" /> <span>DeliveryRegister</span>
+          </NavLink>
+        </li>
+        <li>
+          <NavLink
+            to="/driver/management"
+            className={({ isActive }) => (isActive ? "active" : "")}
+          >
+            <FaTruck className="icon" /> <span>DeliveryManagement</span>
           </NavLink>
         </li>
         <li>
@@ -110,6 +128,15 @@ const Sidebar = () => {
             <FaBook className="icon" /> <span>Config</span>
           </NavLink>
         </li>
+        <li>
+          <NavLink
+            to="/dining-config"
+            className={({ isActive }) => (isActive ? "active" : "")}
+          >
+            <FaUtensils className="icon" /> <span>Dining Config</span>
+          </NavLink>
+        </li>
+
         <li>
           <NavLink to="/logout" className="logout-button">
             <FaSignOutAlt className="icon" /> <span>Logout</span>

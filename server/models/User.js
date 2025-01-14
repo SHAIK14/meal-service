@@ -26,6 +26,8 @@ const userSchema = new mongoose.Schema(
     gender: String,
     address: {
       fullAddress: String,
+      flatNumber: String,
+      landmark: String,
       saveAs: {
         type: String,
         enum: ["Home", "Office", "Other"],
@@ -35,11 +37,14 @@ const userSchema = new mongoose.Schema(
           type: String,
           enum: ["Point"],
         },
-        coordinates: {
-          type: [Number],
-        },
+        coordinates: [Number],
       },
     },
+    branchId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Branch",
+    },
+    distanceToBranch: Number,
     // New subscription-related fields
     subscriptions: {
       active: [

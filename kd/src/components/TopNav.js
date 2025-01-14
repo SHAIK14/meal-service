@@ -1,24 +1,40 @@
-// src/components/TopNav.js
-import React from "react";
-import { NavLink, Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { NavLink } from "react-router-dom";
+import { getBranchDetails } from "../utils/api";
 import "../styles/TopNav.css";
 
 function TopNav() {
+  const [branchName, setBranchName] = useState("");
   const orderCount = 70;
+
+  useEffect(() => {
+    const fetchBranchDetails = async () => {
+      try {
+        const result = await getBranchDetails();
+        if (result.success) {
+          setBranchName(result.data.data.name);
+        }
+      } catch (error) {
+        console.error("Error fetching branch details:", error);
+      }
+    };
+
+    fetchBranchDetails();
+  }, []);
 
   return (
     <div className="nav-container">
-      <Link to="/" className="nav-heading">
-        <strong>Kitchen Dashboard</strong>
-      </Link>
-      <NavLink className="nav-item" to="/orders" activeClassName="active">
+      {branchName && <div className="branch-logo">{branchName}</div>}
+      <NavLink className="nav-item" to="/">
+        Kitchen Dashboard
+      </NavLink>
+      <NavLink className="nav-item" to="/orders">
         Orders
-        {/* Notification badge */}
         {orderCount > 0 && (
           <span className="notification-badge">{orderCount}</span>
         )}
       </NavLink>
-      <NavLink className="nav-item" to="/Alacarte" activeClassName="active">
+      <NavLink className="nav-item" to="/Alacarte">
         A La Carte
       </NavLink>
     </div>

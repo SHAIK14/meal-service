@@ -2,67 +2,119 @@ const express = require("express");
 const router = express.Router();
 const configController = require("../../controllers/admin/adminConfigController");
 const adminAuth = require("../../middleware/admin/adminAuth");
+const validateBranch = require("../../middleware/admin/validateBranch");
 
 // Base Configuration Routes
-router.get("/", adminAuth, configController.getConfiguration);
-router.put("/basic", adminAuth, configController.updateBasicConfig);
-
-// Location Settings Route
-router.put("/location", adminAuth, configController.updateLocationSettings);
+router.get(
+  "/:branchId",
+  adminAuth,
+  validateBranch,
+  configController.getConfiguration
+);
+router.put(
+  "/:branchId/basic",
+  adminAuth,
+  validateBranch,
+  configController.updateBasicConfig
+);
 
 // Weekly Holidays Route
 router.put(
-  "/weekly-holidays",
+  "/:branchId/weekly-holidays",
   adminAuth,
+  validateBranch,
   configController.updateWeeklyHolidays
 );
 
 // National Holidays Routes
-router.get("/holidays", adminAuth, configController.getNationalHolidays);
-router.post("/holiday", adminAuth, configController.addNationalHoliday);
-router.put(
-  "/holiday/:holidayId",
+router.get(
+  "/:branchId/holidays",
   adminAuth,
+  validateBranch,
+  configController.getNationalHolidays
+);
+router.post(
+  "/:branchId/holiday",
+  adminAuth,
+  validateBranch,
+  configController.addNationalHoliday
+);
+router.put(
+  "/:branchId/holiday/:holidayId",
+  adminAuth,
+  validateBranch,
   configController.updateNationalHoliday
 );
 router.delete(
-  "/holiday/:holidayId",
+  "/:branchId/holiday/:holidayId",
   adminAuth,
+  validateBranch,
   configController.deleteNationalHoliday
 );
 
 // Emergency Closure Routes
-router.get("/emergencies", adminAuth, configController.getEmergencyClosures);
-router.post("/emergency", adminAuth, configController.addEmergencyClosure);
-router.put(
-  "/emergency/:closureId",
+router.get(
+  "/:branchId/emergencies",
   adminAuth,
+  validateBranch,
+  configController.getEmergencyClosures
+);
+router.post(
+  "/:branchId/emergency",
+  adminAuth,
+  validateBranch,
+  configController.addEmergencyClosure
+);
+router.put(
+  "/:branchId/emergency/:closureId",
+  adminAuth,
+  validateBranch,
   configController.updateEmergencyClosure
 );
 router.delete(
-  "/emergency/:closureId",
+  "/:branchId/emergency/:closureId",
   adminAuth,
+  validateBranch,
   configController.deleteEmergencyClosure
 );
+
 // Delivery Time Slots Routes
-router.get("/delivery-slots", adminAuth, configController.getDeliveryTimeSlots);
-router.put(
-  "/delivery-slots",
+router.get(
+  "/:branchId/delivery-slots",
   adminAuth,
+  validateBranch,
+  configController.getDeliveryTimeSlots
+);
+router.put(
+  "/:branchId/delivery-slots",
+  adminAuth,
+  validateBranch,
   configController.updateDeliveryTimeSlots
 );
 
 // Plan Duration Routes
-router.get("/plan-durations", adminAuth, configController.getPlanDurations);
-router.post("/plan-duration", adminAuth, configController.addPlanDuration);
-router.put(
-  "/plan-duration/:planId",
+router.get(
+  "/:branchId/plan-durations",
   adminAuth,
+  validateBranch,
+  configController.getPlanDurations
+);
+router.post(
+  "/:branchId/plan-duration",
+  adminAuth,
+  validateBranch,
+  configController.addPlanDuration
+);
+router.put(
+  "/:branchId/plan-duration/:planId",
+  adminAuth,
+  validateBranch,
   configController.updatePlanDuration
 );
 router.delete(
-  "/plan-duration/:planId",
+  "/:branchId/plan-duration/:planId",
   adminAuth,
+  validateBranch,
   configController.deletePlanDuration
 );
 

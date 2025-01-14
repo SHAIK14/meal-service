@@ -2,6 +2,11 @@ const mongoose = require("mongoose");
 
 const configSchema = new mongoose.Schema(
   {
+    branch: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Branch",
+      required: true,
+    },
     // Skip Meal Settings
     skipMealDays: {
       type: Number,
@@ -18,10 +23,12 @@ const configSchema = new mongoose.Schema(
       max: 7,
     },
     // Delivery Time Slots
+    // In config schema
     deliveryTimeSlots: [
       {
-        fromTime: String, // Format: "HH:mm AM/PM"
-        toTime: String, // Format: "HH:mm AM/PM"
+        fromTime: String, // Delivery start "9:00 AM"
+        toTime: String, // Delivery end "11:00 AM"
+        kitchenTime: String, // Kitchen prep "7:00 AM"
         isActive: Boolean,
       },
     ],
@@ -80,28 +87,9 @@ const configSchema = new mongoose.Schema(
         compensationDays: { type: Number, default: 1 },
       },
     ],
-
-    // Location Settings
-    country: {
-      type: String,
-      required: true,
-    },
-    currency: {
-      type: String,
-      required: true,
-    },
-    coordinates: {
-      latitude: {
-        type: Number,
-        required: true,
-      },
-      longitude: {
-        type: Number,
-        required: true,
-      },
-    },
   },
   { timestamps: true }
 );
+configSchema.index({ branch: 1 }, { unique: true });
 
 module.exports = mongoose.model("Config", configSchema);

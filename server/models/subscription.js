@@ -12,6 +12,11 @@ const SubscriptionOrderSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    branchId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Branch",
+      required: true,
+    },
     plan: {
       planId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -19,6 +24,7 @@ const SubscriptionOrderSchema = new mongoose.Schema(
         required: true,
       },
       name: String,
+
       durationType: {
         type: String,
         enum: ["1_week", "2_week", "1_month"],
@@ -182,6 +188,10 @@ const SubscriptionOrderSchema = new mongoose.Schema(
           default: Date.now,
         },
         reason: String,
+        isSystemGenerated: {
+          type: Boolean,
+          default: false,
+        },
       },
     ],
   },

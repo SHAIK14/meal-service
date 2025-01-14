@@ -8,8 +8,8 @@ import "../styles/Dashboard.css";
 
 function Dashboard() {
   const navigate = useNavigate();
-  const [totalOrders, setTotalOrders] = useState(250);
-  const [deliveredOrders, setDeliveredOrders] = useState(180);
+  const [totalOrders] = useState(250);
+  const [deliveredOrders] = useState(180);
   const [timeRange, setTimeRange] = useState("Last Month");
 
   // Function to generate data based on selected time range

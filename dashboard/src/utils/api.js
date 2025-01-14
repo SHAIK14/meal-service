@@ -402,11 +402,10 @@ export const getUserAnalytics = async () => {
 };
 //config
 // Add these functions after your existing exports
-
 // Base Configuration
-export const getConfiguration = async () => {
+export const getConfiguration = async (branchId) => {
   try {
-    const response = await api.get("/admin/config");
+    const response = await api.get(`/admin/config/${branchId}`);
     return { success: true, data: response.data };
   } catch (error) {
     console.error("Error in getConfiguration:", error);
@@ -417,9 +416,12 @@ export const getConfiguration = async () => {
   }
 };
 
-export const updateBasicConfig = async (configData) => {
+export const updateBasicConfig = async (branchId, configData) => {
   try {
-    const response = await api.put("/admin/config/basic", configData);
+    const response = await api.put(
+      `/admin/config/${branchId}/basic`,
+      configData
+    );
     return { success: true, data: response.data };
   } catch (error) {
     console.error("Error in updateBasicConfig:", error);
@@ -431,24 +433,12 @@ export const updateBasicConfig = async (configData) => {
 };
 
 // Location Settings
-export const updateLocationSettings = async (locationData) => {
-  try {
-    const response = await api.put("/admin/config/location", locationData);
-    return { success: true, data: response.data };
-  } catch (error) {
-    console.error("Error in updateLocationSettings:", error);
-    return {
-      success: false,
-      error: error.response?.data?.message || "An unexpected error occurred",
-    };
-  }
-};
 
 // Weekly Holidays
-export const updateWeeklyHolidays = async (holidaysData) => {
+export const updateWeeklyHolidays = async (branchId, holidaysData) => {
   try {
     const response = await api.put(
-      "/admin/config/weekly-holidays",
+      `/admin/config/${branchId}/weekly-holidays`,
       holidaysData
     );
     return { success: true, data: response.data };
@@ -462,9 +452,9 @@ export const updateWeeklyHolidays = async (holidaysData) => {
 };
 
 // National Holidays
-export const getNationalHolidays = async () => {
+export const getNationalHolidays = async (branchId) => {
   try {
-    const response = await api.get("/admin/config/holidays");
+    const response = await api.get(`/admin/config/${branchId}/holidays`);
     return { success: true, data: response.data };
   } catch (error) {
     console.error("Error in getNationalHolidays:", error);
@@ -475,9 +465,12 @@ export const getNationalHolidays = async () => {
   }
 };
 
-export const addNationalHoliday = async (holidayData) => {
+export const addNationalHoliday = async (branchId, holidayData) => {
   try {
-    const response = await api.post("/admin/config/holiday", holidayData);
+    const response = await api.post(
+      `/admin/config/${branchId}/holiday`,
+      holidayData
+    );
     return { success: true, data: response.data };
   } catch (error) {
     console.error("Error in addNationalHoliday:", error);
@@ -488,10 +481,14 @@ export const addNationalHoliday = async (holidayData) => {
   }
 };
 
-export const updateNationalHoliday = async (holidayId, holidayData) => {
+export const updateNationalHoliday = async (
+  branchId,
+  holidayId,
+  holidayData
+) => {
   try {
     const response = await api.put(
-      `/admin/config/holiday/${holidayId}`,
+      `/admin/config/${branchId}/holiday/${holidayId}`,
       holidayData
     );
     return { success: true, data: response.data };
@@ -504,9 +501,11 @@ export const updateNationalHoliday = async (holidayId, holidayData) => {
   }
 };
 
-export const deleteNationalHoliday = async (holidayId) => {
+export const deleteNationalHoliday = async (branchId, holidayId) => {
   try {
-    const response = await api.delete(`/admin/config/holiday/${holidayId}`);
+    const response = await api.delete(
+      `/admin/config/${branchId}/holiday/${holidayId}`
+    );
     return { success: true, data: response.data };
   } catch (error) {
     console.error("Error in deleteNationalHoliday:", error);
@@ -518,9 +517,9 @@ export const deleteNationalHoliday = async (holidayId) => {
 };
 
 // Emergency Closures
-export const getEmergencyClosures = async () => {
+export const getEmergencyClosures = async (branchId) => {
   try {
-    const response = await api.get("/admin/config/emergencies");
+    const response = await api.get(`/admin/config/${branchId}/emergencies`);
     return { success: true, data: response.data };
   } catch (error) {
     console.error("Error in getEmergencyClosures:", error);
@@ -531,9 +530,12 @@ export const getEmergencyClosures = async () => {
   }
 };
 
-export const addEmergencyClosure = async (closureData) => {
+export const addEmergencyClosure = async (branchId, closureData) => {
   try {
-    const response = await api.post("/admin/config/emergency", closureData);
+    const response = await api.post(
+      `/admin/config/${branchId}/emergency`,
+      closureData
+    );
     return { success: true, data: response.data };
   } catch (error) {
     console.error("Error in addEmergencyClosure:", error);
@@ -544,10 +546,14 @@ export const addEmergencyClosure = async (closureData) => {
   }
 };
 
-export const updateEmergencyClosure = async (closureId, closureData) => {
+export const updateEmergencyClosure = async (
+  branchId,
+  closureId,
+  closureData
+) => {
   try {
     const response = await api.put(
-      `/admin/config/emergency/${closureId}`,
+      `/admin/config/${branchId}/emergency/${closureId}`,
       closureData
     );
     return { success: true, data: response.data };
@@ -560,9 +566,11 @@ export const updateEmergencyClosure = async (closureId, closureData) => {
   }
 };
 
-export const deleteEmergencyClosure = async (closureId) => {
+export const deleteEmergencyClosure = async (branchId, closureId) => {
   try {
-    const response = await api.delete(`/admin/config/emergency/${closureId}`);
+    const response = await api.delete(
+      `/admin/config/${branchId}/emergency/${closureId}`
+    );
     return { success: true, data: response.data };
   } catch (error) {
     console.error("Error in deleteEmergencyClosure:", error);
@@ -572,12 +580,11 @@ export const deleteEmergencyClosure = async (closureId) => {
     };
   }
 };
-// Add these functions to your existing api.js file
 
 // Delivery Time Slots
-export const getDeliveryTimeSlots = async () => {
+export const getDeliveryTimeSlots = async (branchId) => {
   try {
-    const response = await api.get("/admin/config/delivery-slots");
+    const response = await api.get(`/admin/config/${branchId}/delivery-slots`);
     return { success: true, data: response.data };
   } catch (error) {
     console.error("Error in getDeliveryTimeSlots:", error);
@@ -588,9 +595,12 @@ export const getDeliveryTimeSlots = async () => {
   }
 };
 
-export const updateDeliveryTimeSlots = async (timeSlotsData) => {
+export const updateDeliveryTimeSlots = async (branchId, timeSlotsData) => {
   try {
-    const response = await api.put("/admin/config/delivery-slots", timeSlotsData);
+    const response = await api.put(
+      `/admin/config/${branchId}/delivery-slots`,
+      timeSlotsData
+    );
     return { success: true, data: response.data };
   } catch (error) {
     console.error("Error in updateDeliveryTimeSlots:", error);
@@ -602,9 +612,9 @@ export const updateDeliveryTimeSlots = async (timeSlotsData) => {
 };
 
 // Plan Durations
-export const getPlanDurations = async () => {
+export const getPlanDurations = async (branchId) => {
   try {
-    const response = await api.get("/admin/config/plan-durations");
+    const response = await api.get(`/admin/config/${branchId}/plan-durations`);
     return { success: true, data: response.data };
   } catch (error) {
     console.error("Error in getPlanDurations:", error);
@@ -615,9 +625,12 @@ export const getPlanDurations = async () => {
   }
 };
 
-export const addPlanDuration = async (durationData) => {
+export const addPlanDuration = async (branchId, durationData) => {
   try {
-    const response = await api.post("/admin/config/plan-duration", durationData);
+    const response = await api.post(
+      `/admin/config/${branchId}/plan-duration`,
+      durationData
+    );
     return { success: true, data: response.data };
   } catch (error) {
     console.error("Error in addPlanDuration:", error);
@@ -628,9 +641,12 @@ export const addPlanDuration = async (durationData) => {
   }
 };
 
-export const updatePlanDuration = async (planId, durationData) => {
+export const updatePlanDuration = async (branchId, planId, durationData) => {
   try {
-    const response = await api.put(`/admin/config/plan-duration/${planId}`, durationData);
+    const response = await api.put(
+      `/admin/config/${branchId}/plan-duration/${planId}`,
+      durationData
+    );
     return { success: true, data: response.data };
   } catch (error) {
     console.error("Error in updatePlanDuration:", error);
@@ -641,9 +657,11 @@ export const updatePlanDuration = async (planId, durationData) => {
   }
 };
 
-export const deletePlanDuration = async (planId) => {
+export const deletePlanDuration = async (branchId, planId) => {
   try {
-    const response = await api.delete(`/admin/config/plan-duration/${planId}`);
+    const response = await api.delete(
+      `/admin/config/${branchId}/plan-duration/${planId}`
+    );
     return { success: true, data: response.data };
   } catch (error) {
     console.error("Error in deletePlanDuration:", error);

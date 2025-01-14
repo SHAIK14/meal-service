@@ -139,6 +139,28 @@ export const getUserAddress = async () => {
     throw error;
   }
 };
+export const getBranchServiceInfo = async () => {
+  const token = await AsyncStorage.getItem("userToken");
+  try {
+    const response = await fetch(`${API_URL}/users/branch-service-info`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        errorData.message || "Failed to fetch branch service info"
+      );
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error in getBranchServiceInfo:", error);
+    throw error;
+  }
+};
 
 //  plan-related API calls
 export const getAllPlans = async (filters = {}) => {

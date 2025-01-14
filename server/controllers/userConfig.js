@@ -2,28 +2,53 @@ const Config = require("../models/admin/config");
 
 const getConfig = async (req, res) => {
   try {
-    const config = await Config.findOne().sort({ createdAt: -1 });
+    // Log user details
+    console.log("User making request:", {
+      userId: req.user._id,
+      branchId: req.user.branchId,
+    });
+
+    const branchId = req.user.branchId;
+
+    if (!branchId) {
+      console.log("No branch ID found for user");
+      return res.status(400).json({
+        success: false,
+        message: "User's branch not found",
+      });
+    }
+
+    // Log the query we're about to make
+    console.log("Searching for config with branch:", branchId);
+
+    const config = await Config.findOne({ branch: branchId });
+
+    // Log what we found
+    console.log("Found config:", {
+      configId: config?._id,
+      configBranch: config?.branch,
+      foundDurations: config?.planDurations?.length || 0,
+    });
 
     if (!config) {
       return res.status(404).json({
         success: false,
-        message: "Configuration not found",
+        message: "Configuration not found for this branch",
       });
     }
 
-    // Filter active plan durations
+    // Log filtered data
     const activePlanDurations = config.planDurations.filter(
       (duration) => duration.isActive
     );
+    console.log("Active durations:", activePlanDurations);
 
-    // Modified response to include all needed fields
     const configResponse = {
       planDurations: activePlanDurations,
       skipMealDays: config.skipMealDays,
       planStartDelay: config.planStartDelay,
       currency: config.currency,
       weeklyHolidays: config.weeklyHolidays,
-      // Added new fields
       deliveryTimeSlots: config.deliveryTimeSlots.filter(
         (slot) => slot.isActive
       ),

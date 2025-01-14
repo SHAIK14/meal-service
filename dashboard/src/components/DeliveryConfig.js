@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   TextField,
   FormControl,
@@ -27,11 +27,12 @@ const DURATION_DAYS = {
   "3_month": 90,
 };
 
-const DeliveryConfig = () => {
+const DeliveryConfig = ({ branchId }) => {
   // Time slots states
   const [deliveryTimeSlots, setDeliveryTimeSlots] = useState([]);
   const [newSlotFrom, setNewSlotFrom] = useState("");
   const [newSlotTo, setNewSlotTo] = useState("");
+  const [newKitchenTime, setNewKitchenTime] = useState("");
 
   // Plan duration states
   const [planDurations, setPlanDurations] = useState([]);
@@ -41,24 +42,32 @@ const DeliveryConfig = () => {
 
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchData();
+  const resetStates = useCallback(() => {
+    setDeliveryTimeSlots([]);
+    setPlanDurations([]);
+    setNewSlotFrom("");
+    setNewSlotTo("");
+    setNewKitchenTime("");
+    setNewDurationType("");
+    setNewMinDays("");
+    setNewSkipDays("");
+    setLoading(true);
   }, []);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const [timeSlotsResponse, durationsResponse] = await Promise.all([
-        getDeliveryTimeSlots(),
-        getPlanDurations(),
+        getDeliveryTimeSlots(branchId),
+        getPlanDurations(branchId),
       ]);
 
       if (timeSlotsResponse.success) {
-        setDeliveryTimeSlots(timeSlotsResponse.data);
+        setDeliveryTimeSlots(timeSlotsResponse.data || []);
       }
 
       if (durationsResponse.success) {
-        setPlanDurations(durationsResponse.data);
+        setPlanDurations(durationsResponse.data || []);
       }
     } catch (error) {
       console.error("Error loading delivery configuration:", error);
@@ -66,13 +75,30 @@ const DeliveryConfig = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [branchId]);
+
+  useEffect(() => {
+    if (branchId) {
+      resetStates();
+      fetchData();
+    }
+  }, [branchId, fetchData, resetStates]);
 
   // Time slot handlers
-  const validateTimeRange = (fromTime, toTime) => {
-    const [fromHours, fromMinutes] = fromTime.split(":").map(Number);
-    const [toHours, toMinutes] = toTime.split(":").map(Number);
-    return toHours * 60 + toMinutes > fromHours * 60 + fromMinutes;
+  const validateTimeRange = (kitchenTime, fromTime, toTime) => {
+    const parseTime = (time) => {
+      const [hours, minutes] = time.split(":").map(Number);
+      return hours * 60 + minutes;
+    };
+
+    const kitchenMinutes = parseTime(kitchenTime);
+    const fromMinutes = parseTime(fromTime);
+    const toMinutes = parseTime(toTime);
+
+    return (
+      kitchenMinutes < fromMinutes && // Kitchen time must be before delivery start
+      toMinutes > fromMinutes // Delivery end must be after start
+    );
   };
 
   const formatTime = (time24) => {
@@ -84,16 +110,20 @@ const DeliveryConfig = () => {
   };
 
   const handleAddTimeSlot = async () => {
-    if (!newSlotFrom || !newSlotTo) {
-      toast.error("Please fill in both time fields");
+    if (!newKitchenTime || !newSlotFrom || !newSlotTo) {
+      toast.error("Please fill in all time fields");
       return;
     }
-    if (!validateTimeRange(newSlotFrom, newSlotTo)) {
-      toast.error("End time must be after start time");
+
+    if (!validateTimeRange(newKitchenTime, newSlotFrom, newSlotTo)) {
+      toast.error(
+        "Kitchen time must be before delivery start time, and end time must be after start time"
+      );
       return;
     }
 
     const newSlot = {
+      kitchenTime: formatTime(newKitchenTime),
       fromTime: formatTime(newSlotFrom),
       toTime: formatTime(newSlotTo),
       isActive: true,
@@ -101,12 +131,13 @@ const DeliveryConfig = () => {
 
     try {
       const updatedSlots = [...deliveryTimeSlots, newSlot];
-      const response = await updateDeliveryTimeSlots({
+      const response = await updateDeliveryTimeSlots(branchId, {
         timeSlots: updatedSlots,
       });
 
       if (response.success) {
         setDeliveryTimeSlots(updatedSlots);
+        setNewKitchenTime("");
         setNewSlotFrom("");
         setNewSlotTo("");
         toast.success("Time slot added successfully");
@@ -119,7 +150,7 @@ const DeliveryConfig = () => {
   const handleDeleteTimeSlot = async (index) => {
     try {
       const updatedSlots = deliveryTimeSlots.filter((_, i) => i !== index);
-      const response = await updateDeliveryTimeSlots({
+      const response = await updateDeliveryTimeSlots(branchId, {
         timeSlots: updatedSlots,
       });
 
@@ -145,41 +176,50 @@ const DeliveryConfig = () => {
       return;
     }
 
-    if (parseInt(newMinDays) > maxDays) {
+    // Convert to numbers and validate
+    const minDaysNum = parseInt(newMinDays);
+    const skipDaysNum = parseInt(newSkipDays);
+
+    if (minDaysNum > maxDays) {
       toast.error(
         `Minimum days cannot exceed ${maxDays} for this duration type`
       );
       return;
     }
 
-    if (parseInt(newSkipDays) > maxDays) {
+    if (skipDaysNum > maxDays) {
       toast.error(`Skip days cannot exceed ${maxDays} for this duration type`);
       return;
     }
 
     try {
-      const response = await addPlanDuration({
+      const durationData = {
         durationType: newDurationType,
-        minDays: parseInt(newMinDays),
-        skipDays: parseInt(newSkipDays),
-      });
+        minDays: minDaysNum,
+        skipDays: skipDaysNum,
+        isActive: true,
+      };
+      console.log("Sending plan duration data:", durationData);
+      const response = await addPlanDuration(branchId, durationData);
 
       if (response.success) {
-        setPlanDurations([...planDurations, response.data]);
+        setPlanDurations((prev) => [...prev, response.data]);
         setNewDurationType("");
         setNewMinDays("");
         setNewSkipDays("");
         toast.success("Plan duration added successfully");
+      } else {
+        toast.error(response.error || "Failed to add plan duration");
       }
     } catch (error) {
+      console.error("Error adding plan duration:", error);
       toast.error("Failed to add plan duration");
     }
   };
 
   const handleUpdatePlanDuration = async (planId, updates) => {
-    // Changed parameter name
     try {
-      const response = await updatePlanDuration(planId, updates);
+      const response = await updatePlanDuration(branchId, planId, updates);
       if (response.success) {
         setPlanDurations(
           planDurations.map((plan) =>
@@ -195,7 +235,7 @@ const DeliveryConfig = () => {
 
   const handleDeletePlanDuration = async (planId) => {
     try {
-      const response = await deletePlanDuration(planId);
+      const response = await deletePlanDuration(branchId, planId);
       if (response.success) {
         setPlanDurations(planDurations.filter((plan) => plan._id !== planId));
         toast.success("Plan duration deleted successfully");
@@ -211,6 +251,12 @@ const DeliveryConfig = () => {
     );
   }
 
+  if (!branchId) {
+    return (
+      <div className="config_no-selection">Please select a branch first.</div>
+    );
+  }
+
   return (
     <div className="config_content">
       {/* Delivery Time Slots */}
@@ -220,7 +266,15 @@ const DeliveryConfig = () => {
           <div className="config_time-slot-inputs">
             <div className="config_time-input-group">
               <TextField
-                label="From Time"
+                label="Kitchen Time"
+                type="time"
+                value={newKitchenTime}
+                onChange={(e) => setNewKitchenTime(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                className="config_time-input"
+              />
+              <TextField
+                label="Delivery From"
                 type="time"
                 value={newSlotFrom}
                 onChange={(e) => setNewSlotFrom(e.target.value)}
@@ -228,7 +282,7 @@ const DeliveryConfig = () => {
                 className="config_time-input"
               />
               <TextField
-                label="To Time"
+                label="Delivery To"
                 type="time"
                 value={newSlotTo}
                 onChange={(e) => setNewSlotTo(e.target.value)}
@@ -246,7 +300,8 @@ const DeliveryConfig = () => {
           {deliveryTimeSlots.map((slot, index) => (
             <div key={index} className="config_time-slot-item">
               <span className="config_time-slot-text">
-                {slot.fromTime} - {slot.toTime}
+                Kitchen: {slot.kitchenTime} | Delivery: {slot.fromTime} -{" "}
+                {slot.toTime}
               </span>
               <button
                 className="config_delete-btn"
@@ -336,8 +391,6 @@ const DeliveryConfig = () => {
       </div>
 
       <div className="config_divider" />
-
-      {/* Number of Skips */}
     </div>
   );
 };
