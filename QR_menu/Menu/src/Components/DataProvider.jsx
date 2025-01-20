@@ -1,12 +1,10 @@
-// src/components/DataProvider.js
 const itemsData = {
   Salads: [
     {
-      id: 1, // Added id
+      id: 1,
       name: "Caesar Salad",
       description: "Crisp romaine with Caesar dressing",
       img: "https://itsavegworldafterall.com/wp-content/uploads/2023/04/Avocado-Caesar-Salad-FI.jpg",
-
       rating: 4.5,
       nutritionFacts: {
         calories: 200,
@@ -17,7 +15,7 @@ const itemsData = {
       price: 16,
     },
     {
-      id: 2, // Added id
+      id: 2,
       name: "Greek Salad",
       description: "Tomato, cucumber, and olives",
       img: "https://www.inspiredtaste.net/wp-content/uploads/2020/02/Best-Greek-Salad-Recipe-1200.jpg",
@@ -38,7 +36,6 @@ const itemsData = {
       name: "Spring Rolls",
       description: "Vegetable rolls with dipping sauce",
       img: "https://saltedmint.com/wp-content/uploads/2024/01/Vegetable-Spring-Rolls-4.jpg",
-
       rating: 4.8,
       nutritionFacts: {
         calories: 200,
@@ -66,7 +63,7 @@ const itemsData = {
   ],
   Rice: [
     {
-      id: 5, // Added id
+      id: 5,
       name: "Fried Rice",
       description: "Rice with veggies and soy sauce",
       img: "https://www.madewithlau.com/_next/image?url=https%3A%2F%2Fcdn.sanity.io%2Fimages%2F2r0kdewr%2Fproduction%2F82f8a09e19a456b94077b31d23861a5b03905307-1000x667.jpg&w=3840&q=75",
@@ -81,7 +78,7 @@ const itemsData = {
       price: 32,
     },
     {
-      id: 6, // Added id
+      id: 6,
       name: "Biryani",
       description: "Spicy rice with meat and spices",
       img: "https://www.cubesnjuliennes.com/wp-content/uploads/2020/07/Chicken-Biryani-Recipe.jpg",
@@ -98,7 +95,7 @@ const itemsData = {
   ],
   Chinese: [
     {
-      id: 7, // Added id
+      id: 7,
       name: "Hot & Sour Soup",
       description: "Chicken in a tangy sauce",
       img: "https://www.chilitochoc.com/wp-content/uploads/2021/01/chinese-hot-and-sour-soup-sq.jpg",
@@ -113,7 +110,7 @@ const itemsData = {
       price: 18,
     },
     {
-      id: 8, // Added id
+      id: 8,
       name: "Chicken noodles",
       description: "Shrimp with peanuts and spices",
       img: "https://www.loveandoliveoil.com/wp-content/uploads/2015/03/soy-sauce-noodlesH2.jpg",
@@ -130,7 +127,7 @@ const itemsData = {
   ],
   Sweets: [
     {
-      id: 9, // Added id
+      id: 9,
       name: "Chocolate Browni Sizzler",
       description: "Rich and moist chocolate Browni",
       img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRQxs7TuQe7-CR6fFniM-_W6daH-dHOcRR72Q&s",
@@ -194,5 +191,4 @@ const itemsData = {
   ],
 };
 
-// Export the data as an object
 export default itemsData;

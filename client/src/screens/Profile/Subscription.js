@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  SafeAreaView,
   Dimensions,
   Image,
   Modal,
@@ -20,6 +19,7 @@ import {
   getSkipAvailability,
   skipSubscriptionDay,
 } from "../../utils/api";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
 
@@ -463,34 +463,36 @@ const SubscriptionPage = () => {
   // Render helper for menu items
   const renderMenuItems = ({ items }) => {
     return (
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.menuItemsScroll}
-      >
-        {items.map((item) => (
-          <View key={item._id} style={styles.menuItemCard}>
-            <Image
-              source={{ uri: item.image }}
-              style={styles.menuItemImage}
-              // defaultSource={require("../../assets/placeholder-food.png")}
-            />
-            <View style={styles.menuItemDetails}>
-              <Text style={styles.menuItemName} numberOfLines={1}>
-                {item.nameEnglish}
-              </Text>
-              <Text style={styles.menuItemDesc} numberOfLines={2}>
-                {item.descriptionEnglish}
-              </Text>
-              {item.calories && (
-                <Text style={styles.caloriesText}>
-                  {item.calories} calories
+      <SafeAreaView>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.menuItemsScroll}
+        >
+          {items.map((item) => (
+            <View key={item._id} style={styles.menuItemCard}>
+              <Image
+                source={{ uri: item.image }}
+                style={styles.menuItemImage}
+                // defaultSource={require("../../assets/placeholder-food.png")}
+              />
+              <View style={styles.menuItemDetails}>
+                <Text style={styles.menuItemName} numberOfLines={1}>
+                  {item.nameEnglish}
                 </Text>
-              )}
+                <Text style={styles.menuItemDesc} numberOfLines={2}>
+                  {item.descriptionEnglish}
+                </Text>
+                {item.calories && (
+                  <Text style={styles.caloriesText}>
+                    {item.calories} calories
+                  </Text>
+                )}
+              </View>
             </View>
-          </View>
-        ))}
-      </ScrollView>
+          ))}
+        </ScrollView>
+      </SafeAreaView>
     );
   };
 
@@ -535,28 +537,33 @@ const SubscriptionPage = () => {
                     ]}
                     onPress={() => handleSubscriptionSelect(subscription)}
                   >
-                    <Text
-                      style={[
-                        styles.planName,
-                        selectedSubscription?.orderId ===
-                          subscription.orderId && styles.selectedCardText,
-                      ]}
-                    >
-                      {subscription.plan.name.english}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.packageInfo,
-                        selectedSubscription?.orderId ===
-                          subscription.orderId && styles.selectedCardText,
-                      ]}
-                    >
-                      {subscription.plan.selectedPackages.join(" & ")}
-                    </Text>
-                    <View
-                      style={[styles.statusBadge, styles[`status${status}`]]}
-                    >
-                      <Text style={styles.statusText}>{message}</Text>
+                    <View style={styles.leftSection}>
+                      <Text
+                        style={[
+                          styles.planName,
+                          selectedSubscription?.orderId ===
+                            subscription.orderId && styles.selectedCardText,
+                        ]}
+                      >
+                        {subscription.plan.name.english}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.packageInfo,
+                          selectedSubscription?.orderId ===
+                            subscription.orderId && styles.selectedCardText,
+                        ]}
+                      >
+                        {subscription.plan.selectedPackages.join(" & ")}
+                      </Text>
+                    </View>
+
+                    <View style={styles.rightSection}>
+                      <View
+                        style={[styles.statusBadge, styles[`status${status}`]]}
+                      >
+                        <Text style={styles.statusText}>{message}</Text>
+                      </View>
                     </View>
                   </TouchableOpacity>
                 );
@@ -722,7 +729,7 @@ const SubscriptionPage = () => {
                 {/* Package Selector */}
                 <ScrollView
                   horizontal
-                  showsHorizontalScrollIndicator={false}
+                  showsHorizontalScrollIndicator={true}
                   style={styles.packageSelector}
                 >
                   {selectedSubscription.plan.selectedPackages.map((pkg) => (
@@ -892,23 +899,23 @@ const styles = StyleSheet.create({
   },
 
   // Subscription Cards
-  subscriptionsContainer: {
-    padding: 16,
-  },
+  subscriptionsContainer: { padding: 25 },
   subscriptionCard: {
-    backgroundColor: "#f8f8f8",
-    borderRadius: 12,
-    padding: 16,
-    marginRight: 12,
-    width: width * 0.8,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    flexDirection: "row",
+    paddingVertical: 10,
+    paddingHorizontal: 25,
+    backgroundColor: "#f3f3f3",
+    borderRadius: 50,
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginRight: 5,
+  },
+  leftSection: {
+    flex: 1,
+    marginRight: 20,
+  },
+  rightSection: {
+    alignItems: "flex-end",
   },
   selectedCard: {
     backgroundColor: "#Dc2626",
@@ -916,38 +923,44 @@ const styles = StyleSheet.create({
   selectedCardText: {
     color: "#fff",
   },
-
   planName: {
-    fontSize: 24,
-    fontWeight: "600",
+    fontSize: 16,
+    fontWeight: "bold",
     color: "#333",
-    marginBottom: 4,
   },
-
   packageInfo: {
+    fontSize: 14,
+    color: "#777",
+  },
+  statusBadge: {
+    backgroundColor: "#ccc", // Default badge color
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12, // Rounded corners
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  statusText: {
+    color: "white",
     fontSize: 12,
-    color: "#666",
-    marginBottom: 14,
   },
 
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    alignSelf: "flex-start",
-  },
   statusactive: {
     backgroundColor: "#4CAF50",
   },
+
   statusupcoming: {
     backgroundColor: "#2196F3",
   },
+
   statusending: {
     backgroundColor: "#FF9800",
   },
+
   statuscompleted: {
     backgroundColor: "#9E9E9E",
   },
+
   statusText: {
     color: "#fff",
     fontSize: 12,
@@ -958,56 +971,67 @@ const styles = StyleSheet.create({
   contentContainer: {
     padding: 16,
   },
+
   section: {
     marginBottom: 24,
   },
+
   sectionTitle: {
     fontSize: 20,
     fontWeight: "600",
     color: "#333",
     marginBottom: 12,
   },
+
   // Add these to your existing styles object
   skipSection: {
-    padding: 16,
-    backgroundColor: "#fff",
-    marginBottom: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    justifyContent: "center",
+    backgroundColor: "#f3f3f3",
   },
+
   skipHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 16,
+    borderRadius: 50,
   },
   skipHeaderLeft: {
     flex: 1,
   },
+
   skipTitle: {
     fontSize: 20,
     fontWeight: "600",
     color: "#333",
-    marginBottom: 4,
   },
+
   skipSubtitle: {
     fontSize: 14,
     color: "#666",
   },
+
   skipCalendarButton: {
     backgroundColor: "#Dc2626",
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
   },
+
   skipCalendarButtonText: {
     color: "#fff",
     fontWeight: "500",
     fontSize: 14,
   },
+
   skipCalendarContainer: {
     backgroundColor: "#f8f8f8",
     borderRadius: 12,
     padding: 16,
   },
+
   skipLegend: {
     flexDirection: "row",
     justifyContent: "space-around",
@@ -1016,36 +1040,45 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
   },
+
   legendItem: {
     flexDirection: "row",
     alignItems: "center",
   },
+
   legendDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
     marginRight: 6,
   },
+
   legendText: {
     fontSize: 12,
     color: "#666",
   },
+
   availableDot: {
     backgroundColor: "#Dc2626",
   },
+
   skippedDot: {
     backgroundColor: "#FF6B6B",
   },
+
   extensionDot: {
     backgroundColor: "#4CAF50",
   },
+
   holidayDot: {
     backgroundColor: "#9E9E9E",
   },
+
   skipDaysScroll: {
     marginHorizontal: -16,
     paddingHorizontal: 16,
   },
+
   skipDayCard: {
     width: width * 0.18,
     padding: 12,
@@ -1056,22 +1089,27 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#eee",
   },
+
   skippedDay: {
     backgroundColor: "#FFEFEF",
     borderColor: "#FF6B6B",
   },
+
   extensionDay: {
     backgroundColor: "#E8F5E9",
     borderColor: "#4CAF50",
   },
+
   holidayDay: {
     backgroundColor: "#F5F5F5",
     borderColor: "#9E9E9E",
   },
+
   availableToSkip: {
     borderColor: "#Dc2626",
     borderWidth: 2,
   },
+
   skipDayName: {
     fontSize: 12,
     color: "#666",
@@ -1097,6 +1135,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#E8F5E9",
     borderColor: "#4CAF50",
   },
+
   extensionText: {
     fontSize: 10,
     color: "#4CAF50",
@@ -1233,18 +1272,15 @@ const styles = StyleSheet.create({
 
   // Menu Container and Items
   menuContainer: {
-    backgroundColor: "#fff",
     borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
     borderColor: "#eee",
   },
   deliveryInfo: {
     flexDirection: "row",
+    marginTop: 10,
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
-    paddingBottom: 16,
+    padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
   },
@@ -1257,24 +1293,21 @@ const styles = StyleSheet.create({
     color: "#Dc2626",
     fontWeight: "500",
   },
+
   menuItemsScroll: {
     marginHorizontal: -16,
     paddingHorizontal: 16,
+    paddingVertical: 10,
+    marginRight: 10,
   },
+
   menuItemCard: {
     width: width * 0.6,
+    borderWidth: 1,
     marginRight: 16,
     borderRadius: 12,
-    backgroundColor: "#fff",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
     overflow: "hidden",
+    borderColor: "#eee",
   },
   menuItemImage: {
     width: "100%",
@@ -1282,7 +1315,7 @@ const styles = StyleSheet.create({
     resizeMode: "cover",
   },
   menuItemDetails: {
-    padding: 12,
+    padding: 15,
   },
   menuItemName: {
     fontSize: 16,
@@ -1297,7 +1330,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   caloriesText: {
-    fontSize: 12,
+    fontSize: 14,
     color: "#888",
     fontWeight: "500",
   },

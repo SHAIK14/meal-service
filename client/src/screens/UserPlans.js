@@ -296,7 +296,7 @@ const UserPlan = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <ScrollView
         contentContainerStyle={styles.planWrapper}
         refreshControl={
@@ -551,7 +551,7 @@ const UserPlan = () => {
           </Animated.View>
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 };
 

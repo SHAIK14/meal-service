@@ -27,6 +27,7 @@ const AddBranch = () => {
     },
     dynamicAttributes: [],
   });
+
   const [newAttribute, setNewAttribute] = useState({
     name: "",
     value: "",
@@ -69,6 +70,7 @@ const AddBranch = () => {
       }));
     }
   };
+
   const handleAddAttribute = () => {
     if (newAttribute.name && newAttribute.value) {
       setFormData((prev) => ({

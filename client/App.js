@@ -21,6 +21,7 @@ import EditProfile from "./src/screens/Profile/EditProfile";
 import ItemDetails from "./src/screens/ItemDetails";
 import SubscriptionDays from "./src/screens/SubscriptionDays";
 import MyTabs from "./src/screens/components/BottomTabNavigator"; // BottomTabNavigator
+import HistoryScreen from "./src/screens/Profile/History"; // BottomTabNavigator
 
 const Stack = createStackNavigator();
 
@@ -95,6 +96,11 @@ export default function App() {
           options={{ headerShown: false }}
           name="ContactSupport"
           component={ContactSupport}
+        />
+        <Stack.Screen
+          options={{ headerShown: false }}
+          name="History"
+          component={HistoryScreen}
         />
         <Stack.Screen
           options={{ headerShown: false }}

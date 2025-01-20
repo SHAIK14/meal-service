@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { Swipeable } from "react-native-gesture-handler";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const EditProfile = () => {
   const [name, setName] = useState("UserName");
@@ -93,7 +94,7 @@ const EditProfile = () => {
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {/* User Info */}
       <View style={styles.detailsContainer}>
         {/* <Text style={styles.UserDetailsTitle}>User Details</Text> */}
@@ -241,7 +242,7 @@ const EditProfile = () => {
       >
         <Text style={styles.saveButtonText}>Save Changes</Text>
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -257,19 +258,12 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     padding: 25,
     borderRadius: 20,
-    shadowColor: "#000", // iOS shadow color
-    shadowOffset: { width: 0, height: 2 }, // iOS shadow offset
-    shadowOpacity: 0.2, // iOS shadow opacity
-    shadowRadius: 5, // iOS shadow blur radius
-    elevation: 20, // Android shadow elevation
   },
 
   userInfo: {
     flexDirection: "row",
-
     alignItems: "center",
     backgroundColor: "white",
-
     paddingVertical: 20,
   },
 

@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  SafeAreaView,
   Dimensions,
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
@@ -21,6 +20,7 @@ import {
 } from "date-fns";
 import CalendarPicker from "react-native-calendar-picker";
 import { getConfig } from "../utils/api";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
 const DAY_ITEM_WIDTH = width * 0.12;
@@ -29,7 +29,6 @@ const SubscriptionDays = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { plan, durationData } = route.params || {};
-
   const [loading, setLoading] = useState(true);
   const [config, setConfig] = useState(null);
   const [subscriptionDays, setSubscriptionDays] = useState([]);
@@ -50,6 +49,7 @@ const SubscriptionDays = () => {
       const response = await getConfig();
       const configData = response.data;
       setConfig(configData);
+      z;
 
       const startDate = addDays(new Date(), configData.planStartDelay);
       setSelectedStartDate(startDate);
@@ -330,15 +330,15 @@ const SubscriptionDays = () => {
 
   if (loading || !config) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#DC2626" />
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <SafeAreaView style={styles.header}>
+      <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
@@ -347,7 +347,7 @@ const SubscriptionDays = () => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Subscription Details</Text>
         <View style={{ width: 40 }} />
-      </SafeAreaView>
+      </View>
 
       <ScrollView showsVerticalScrollIndicator={true}>
         <View style={styles.content}>

@@ -26,12 +26,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fff", // Change background color as needed
+    backgroundColor: "#fff",
   },
   tickContainer: {
     marginBottom: 20,
-    fontSize: 100, // Adjust size of tick mark
-    color: "#4CAF50", // Change color as needed
+    fontSize: 100,
+    color: "#4CAF50",
   },
   tick: {
     fontSize: 50,

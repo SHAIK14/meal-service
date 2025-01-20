@@ -186,6 +186,7 @@ export const changeBranchPassword = async (branchId, newPassword) => {
     };
   }
 };
+
 export const getBranchById = async (branchId) => {
   try {
     const response = await api.get(`/admin/branches/${branchId}`);
