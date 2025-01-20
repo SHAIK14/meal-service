@@ -6,6 +6,7 @@ import {
   addTable,
   deleteTable,
   toggleTableStatus,
+  getBranchById, // Add this import
 } from "../utils/api2";
 import {
   FaPlus,
@@ -15,12 +16,14 @@ import {
   FaTrash,
   FaToggleOn,
   FaToggleOff,
+  FaLink, // Add this for URL display
 } from "react-icons/fa";
 import "../styles/DiningConfig.css";
 
 const DiningConfig = () => {
   const [branches, setBranches] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState("");
+  const [selectedBranchDetails, setSelectedBranchDetails] = useState(null); // Add this state
   const [diningRadius, setDiningRadius] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
   const [tables, setTables] = useState([]);
@@ -37,8 +40,18 @@ const DiningConfig = () => {
   useEffect(() => {
     if (selectedBranch) {
       fetchDiningConfig();
+      fetchBranchDetails();
     }
   }, [selectedBranch]);
+
+  const fetchBranchDetails = async () => {
+    if (selectedBranch) {
+      const response = await getBranchById(selectedBranch);
+      if (response.success) {
+        setSelectedBranchDetails(response.data);
+      }
+    }
+  };
 
   const fetchBranches = async () => {
     const response = await getAllBranches();
@@ -53,18 +66,11 @@ const DiningConfig = () => {
     console.log("Received config:", response);
 
     if (response.success) {
-      // Fix: Destructure from response.data.data instead of response.data
       const {
         diningRadius: radius,
         baseUrl: url,
         tables: existingTables,
-      } = response.data.data; // Changed this line
-
-      console.log("Setting states with:", {
-        radius,
-        url,
-        tablesCount: existingTables?.length,
-      });
+      } = response.data.data;
 
       setDiningRadius(radius || "");
       setBaseUrl(url || "");
@@ -162,9 +168,15 @@ const DiningConfig = () => {
         </select>
       </div>
 
-      {selectedBranch && (
+      {selectedBranch && selectedBranchDetails && (
         <>
           <div className="config-section">
+            <div className="branch-info">
+              <h3>Branch Details</h3>
+              <p>Name: {selectedBranchDetails.name}</p>
+              <p>Pincode: {selectedBranchDetails.address.pincode}</p>
+            </div>
+
             <div className="config-inputs">
               <div className="input-group">
                 <label>Dining Radius (km)</label>
@@ -180,8 +192,12 @@ const DiningConfig = () => {
                   type="url"
                   value={baseUrl}
                   onChange={(e) => setBaseUrl(e.target.value)}
-                  placeholder="http://example.com"
+                  placeholder="http://example.com/menu"
                 />
+                <small className="url-preview">
+                  Final URL format: {baseUrl}/
+                  {selectedBranchDetails.address.pincode}/[table-name]
+                </small>
               </div>
               <button onClick={handleUpdateConfig} className="update-btn">
                 Update Configuration
@@ -212,6 +228,17 @@ const DiningConfig = () => {
                     <h3>{table.name}</h3>
                     <div className="table-actions">
                       <button
+                        className="url-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigator.clipboard.writeText(table.customUrl);
+                          alert("URL copied to clipboard!");
+                        }}
+                        title="Copy URL"
+                      >
+                        <FaLink />
+                      </button>
+                      <button
                         className={`toggle-btn ${
                           table.isEnabled ? "enabled" : ""
                         }`}
@@ -232,6 +259,9 @@ const DiningConfig = () => {
                         <FaTrash />
                       </button>
                     </div>
+                  </div>
+                  <div className="table-url" title={table.customUrl}>
+                    {table.customUrl}
                   </div>
                   <FaQrcode className="qr-icon" />
                   <div className="table-status">
@@ -285,6 +315,7 @@ const DiningConfig = () => {
                 </div>
                 <div className="modal-content qr-modal">
                   <img src={selectedTable.qrCode} alt="QR Code" />
+                  <p className="qr-url">{selectedTable.customUrl}</p>
                   <button
                     onClick={() => downloadQR(selectedTable)}
                     className="download-btn"

@@ -1,4 +1,5 @@
 const Dining = require("../../models/admin/DiningConfig");
+const Branch = require("../../models/admin/Branch");
 
 const QRCode = require("qrcode");
 
@@ -74,6 +75,7 @@ const createUpdateDiningConfig = async (req, res) => {
 };
 
 // Add a table
+// Add a table
 const addTable = async (req, res) => {
   try {
     const { branchId } = req.params;
@@ -85,22 +87,30 @@ const addTable = async (req, res) => {
       body: req.body,
     });
 
+    // First get the dining config
     const config = await Dining.findOne({ branchId });
-    console.log("Found config for adding table:", config);
-
     if (!config) {
-      console.log("No config found for adding table");
       return res.status(404).json({
         success: false,
         message: "Dining configuration not found",
       });
     }
 
-    const customUrl = `${config.baseUrl}/${name}`;
+    // Get branch details to get pincode
+    const branch = await Branch.findById(branchId);
+    if (!branch) {
+      return res.status(404).json({
+        success: false,
+        message: "Branch not found",
+      });
+    }
+
+    const pincode = branch.address.pincode;
+    // Modify URL to include pincode
+    const customUrl = `${config.baseUrl}/${pincode}/${name}`;
     console.log("Generated custom URL:", customUrl);
 
     const qrCode = await QRCode.toDataURL(customUrl);
-    console.log("Generated QR code");
 
     const newTable = {
       name,
@@ -111,7 +121,6 @@ const addTable = async (req, res) => {
 
     config.tables.push(newTable);
     const savedConfig = await config.save();
-    console.log("Saved config with new table:", savedConfig);
 
     res.status(201).json({
       success: true,

@@ -100,4 +100,8 @@ export const getKotByTime = async (date, fromTime, toTime) => {
     })
   );
 };
+//dining
+export const getBranchTables = async () => {
+  return handleResponse(api.get("/kitchen/dining/tables"));
+};
 export default api;
