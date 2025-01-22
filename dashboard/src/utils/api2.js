@@ -267,3 +267,31 @@ export const deleteTable = async (branchId, tableId) => {
 export const getAllDiningConfigs = async (branchId) => {
   return handleResponse(api.get(`/admin/dining/config/${branchId}`));
 };
+// Add these with your other API functions
+export const createDiningCategory = async (categoryData) => {
+  return handleResponse(api.post("/admin/dining-categories", categoryData));
+};
+
+export const getAllDiningCategories = async () => {
+  return handleResponse(api.get("/admin/dining-categories"));
+};
+
+export const addItemsToDiningCategory = async (categoryId, itemIds) => {
+  return handleResponse(
+    api.post(`/admin/dining-categories/${categoryId}/items`, { itemIds })
+  );
+};
+
+export const removeItemFromDiningCategory = async (categoryId, itemId) => {
+  return handleResponse(
+    api.delete(`/admin/dining-categories/${categoryId}/items/${itemId}`)
+  );
+};
+
+export const deleteDiningCategory = async (categoryId) => {
+  return handleResponse(api.delete(`/admin/dining-categories/${categoryId}`));
+};
+// in ../utils/api2.js
+export const getDiningCategoryById = async (categoryId) => {
+  return handleResponse(api.get(`/admin/dining-categories/${categoryId}`));
+};

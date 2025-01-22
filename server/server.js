@@ -28,6 +28,7 @@ const kitchenOrderRoutes = require("./routes/kitchen/orderRoutes");
 const diningRoutes = require("./routes/admin/diningRoutes");
 const kitchenDiningRoutes = require("./routes/kitchen/diningRoutes");
 const diningMenuRoutes = require("./routes/menu/diningMenuRoutes");
+const diningCategoryRoutes = require("./routes/admin/diningCategoryRoutes");
 dotenv.config();
 const app = express();
 
@@ -77,6 +78,7 @@ app.use("/api/admin/branches", branchRoutes);
 app.use("/api/admin/dining", diningRoutes);
 app.use("/api/kitchen/dining", kitchenDiningRoutes);
 app.use("/api/dining-menu", diningMenuRoutes);
+app.use("/api/admin/dining-categories", diningCategoryRoutes);
 const PORT = process.env.PORT || 5000;
 const HOST = "0.0.0.0";
 

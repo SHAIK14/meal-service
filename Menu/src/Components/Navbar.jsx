@@ -1,71 +1,64 @@
-import React, { useState } from "react";
-import Menu from "./Menu"; // Import the Menu component
-import itemsData from "./DataProvider"; // Import the items data
+import { useState, useEffect } from "react";
 
-const Navbar = () => {
-  // Extract categories from the itemsData object and get the first item's image
-  const navLinks = Object.keys(itemsData).map((category) => ({
-    name: category,
-    img: itemsData[category][0].img, // Get the image of the first item in the category
-  }));
+import { getDiningMenuItems } from "../utils/api";
+import { useDining } from "../contexts/DiningContext";
 
-  const [activeLink, setActiveLink] = useState(navLinks[0].name);
-  const [selectedCategory, setSelectedCategory] = useState(navLinks[0].name);
-  const [searchQuery, setSearchQuery] = useState(""); // Add state for search query
+// eslint-disable-next-line react/prop-types
+const Navbar = ({ activeCategory, onCategoryChange }) => {
+  const [categories, setCategories] = useState([]);
+  const { branchDetails } = useDining();
 
-  const handleLinkClick = (name) => {
-    setActiveLink(name);
-    setSelectedCategory(name);
-  };
+  useEffect(() => {
+    const fetchCategories = async () => {
+      if (branchDetails?.id) {
+        const response = await getDiningMenuItems(branchDetails.id);
+        if (response.success) {
+          setCategories(response.data);
+          // Set first category as active if none selected
+          if (!activeCategory && response.data.length > 0) {
+            onCategoryChange(response.data[0].name);
+          }
+        }
+      }
+    };
 
-  const handleSearch = (query) => {
-    setSearchQuery(query); // Update the search query
-  };
+    fetchCategories();
+  }, [branchDetails, activeCategory, onCategoryChange]);
 
   return (
-    <div>
-      <div>
-        <div>
-          <nav className="bg-white shadow-md p-4">
-            <ul className="flex flex-wrap justify-around md:justify-center gap-4">
-              {navLinks.map((link, index) => (
-                <li
-                  key={index}
-                  className={`flex flex-col items-center w-20 relative ${
-                    activeLink === link.name ? "" : ""
-                  }`}
-                >
-                  <a
-                    href={`#${link.name.toLowerCase()}`}
-                    className="text-center"
-                    onClick={() => handleLinkClick(link.name)}
-                  >
-                    <img
-                      src={link.img}
-                      alt={link.name}
-                      className="w-16 h-16 object-cover rounded-full border border-gray-300"
-                      onError={(e) =>
-                        (e.target.src = "https://via.placeholder.com/64")
-                      }
-                    />
-                    <span className="mt-2 text-sm font-semibold text-gray-700">
-                      {link.name}
-                    </span>
-                  </a>
-                  <div
-                    className={`absolute bottom-0 left-0 w-full h-0.5 bg-red-500 transition-all duration-300 ease-in-out ${
-                      activeLink === link.name ? "scale-x-100" : "scale-x-0"
-                    }`}
+    <nav className="sticky top-0 bg-white shadow-md z-50">
+      <div className="overflow-x-auto">
+        <ul className="flex whitespace-nowrap px-4 py-3 space-x-6">
+          {categories.map((category) => (
+            <li key={category.id} className="flex-shrink-0">
+              <button
+                onClick={() => onCategoryChange(category.name)}
+                className={`flex flex-col items-center w-20 ${
+                  activeCategory === category.name
+                    ? "text-red-500"
+                    : "text-gray-600"
+                }`}
+              >
+                <div className="w-14 h-14 rounded-full overflow-hidden mb-1">
+                  <img
+                    src={category.image}
+                    alt={category.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.src = "https://via.placeholder.com/56";
+                    }}
                   />
-                </li>
-              ))}
-            </ul>
-          </nav>
-        </div>
+                </div>
+                <span className="text-xs font-medium">{category.name}</span>
+                {activeCategory === category.name && (
+                  <div className="w-full h-0.5 bg-red-500 mt-1" />
+                )}
+              </button>
+            </li>
+          ))}
+        </ul>
       </div>
-      {/* Render Menu component with selected category and search query */}
-      <Menu selectedCategory={selectedCategory} searchQuery={searchQuery} />
-    </div>
+    </nav>
   );
 };
 

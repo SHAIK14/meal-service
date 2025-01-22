@@ -33,6 +33,8 @@ import Branch from "./components/Branch";
 import AddBranch from "./components/AddBranch";
 import EditBranch from "./components/BranchEdit";
 import DiningConfig from "./components/DiningConfig";
+import MenuItems from "./components/MenuItems";
+import MenuCategoryItems from "./components/MenuCategoryItems";
 
 const AuthenticatedLayout = ({ children }) => (
   <div
@@ -127,6 +129,11 @@ const App = () => {
                   <Route path="/invoice" element={<InvoiceTemplate />} />
                   <Route path="/configuration" element={<Configuration />} />
                   <Route path="/dining-config" element={<DiningConfig />} />
+                  <Route path="/menuItems" element={<MenuItems />} />
+                  <Route
+                    path="/menuCategoryItems/:categoryId"
+                    element={<MenuCategoryItems />}
+                  />
                 </Routes>
               </AuthenticatedLayout>
             ) : (

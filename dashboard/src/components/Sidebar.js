@@ -66,6 +66,14 @@ const Sidebar = () => {
         </li>
         <li>
           <NavLink
+            to="/menuItems"
+            className={({ isActive }) => (isActive ? "active" : "")}
+          >
+            <FaBox className="icon" /> <span>Dining Items</span>
+          </NavLink>
+        </li>
+        <li>
+          <NavLink
             to="/subscriptions"
             className={({ isActive }) => (isActive ? "active" : "")}
           >

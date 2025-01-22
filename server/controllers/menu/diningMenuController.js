@@ -1,7 +1,8 @@
 const Branch = require("../../models/admin/Branch");
 const Dining = require("../../models/admin/DiningConfig");
 const DiningOrder = require("../../models/menu/DiningOrder");
-
+const DiningCategory = require("../../models/admin/DiningCategory");
+const Item = require("../../models/admin/Item");
 // Validate QR code access
 const validateDiningAccess = async (req, res) => {
   try {
@@ -52,63 +53,6 @@ const validateDiningAccess = async (req, res) => {
 };
 
 // Get menu items for a branch (using dummy data for now)
-const getDiningMenuItems = async (req, res) => {
-  try {
-    // For now, return dummy data
-    const dummyItems = [
-      {
-        id: 1,
-        name: "Butter Chicken",
-        description: "Creamy curry with tender chicken",
-        price: 15.99,
-        category: "Main Course",
-        type: "non-veg",
-        rating: 4.5,
-      },
-      // Add more dummy items
-    ];
-
-    res.json({
-      success: true,
-      data: dummyItems,
-    });
-  } catch (error) {
-    console.error("Error in getDiningMenuItems:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error fetching menu items",
-    });
-  }
-};
-
-// Get specific item details (using dummy data for now)
-const getMenuItemDetails = async (req, res) => {
-  try {
-    const { itemId } = req.params;
-
-    // Return dummy data
-    const dummyItem = {
-      id: itemId,
-      name: "Butter Chicken",
-      description: "Creamy curry with tender chicken",
-      price: 15.99,
-      category: "Main Course",
-      type: "non-veg",
-      rating: 4.5,
-    };
-
-    res.json({
-      success: true,
-      data: dummyItem,
-    });
-  } catch (error) {
-    console.error("Error in getMenuItemDetails:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error fetching item details",
-    });
-  }
-};
 
 // Create new dining order
 const createDiningOrder = async (req, res) => {
@@ -151,6 +95,122 @@ const createDiningOrder = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error creating dining order",
+    });
+  }
+};
+
+// Get all dining categories with items for a branch
+const getDiningMenuItems = async (req, res) => {
+  try {
+    const { branchId } = req.params;
+    console.log("Fetching menu items for branchId:", branchId);
+
+    // Get all active categories with their items
+    const categories = await DiningCategory.find({ active: true }).populate({
+      path: "items",
+      match: { available: true }, // Only get available items
+    });
+
+    console.log("Categories found:", categories.length);
+
+    // Just format the basic data we need
+    const formattedCategories = categories
+      .map((category) => ({
+        id: category._id,
+        name: category.name,
+        image: category.image,
+        items: category.items.map((item) => ({
+          id: item._id,
+          nameEnglish: item.nameEnglish,
+          nameArabic: item.nameArabic,
+          image: item.image,
+          price: item.prices[0].sellingPrice, // Take the first price
+          type: item.type,
+          calories: item.calories,
+        })),
+      }))
+      .filter((category) => category.items.length > 0); // Only return categories with items
+
+    console.log(
+      "Sending categories with items:",
+      formattedCategories.map((cat) => `${cat.name}: ${cat.items.length} items`)
+    );
+
+    res.json({
+      success: true,
+      data: formattedCategories,
+    });
+  } catch (error) {
+    console.error("Error in getDiningMenuItems:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching menu items",
+      error: error.message,
+    });
+  }
+};
+// Get specific item details
+const getMenuItemDetails = async (req, res) => {
+  try {
+    const { branchId, itemId } = req.params;
+
+    // Get branch for currency
+    const branch = await Branch.findById(branchId);
+    if (!branch) {
+      return res.status(404).json({
+        success: false,
+        message: "Branch not found",
+      });
+    }
+
+    // Get item with full details
+    const item = await Item.findOne({
+      _id: itemId,
+      available: true,
+      "services.dining": true,
+    });
+
+    if (!item) {
+      return res.status(404).json({
+        success: false,
+        message: "Item not found or unavailable",
+      });
+    }
+
+    // Find correct price for branch currency
+    const price = item.prices.find(
+      (p) => p.currency === branch.address.currency
+    );
+
+    const formattedItem = {
+      id: item._id,
+      nameEnglish: item.nameEnglish,
+      nameArabic: item.nameArabic,
+      descriptionEnglish: item.descriptionEnglish,
+      descriptionArabic: item.descriptionArabic,
+      image: item.image,
+      nutritionFacts: {
+        calories: item.calories,
+        protein: item.protein,
+        carbs: item.carbs,
+        fat: item.fat,
+      },
+      type: item.type,
+      price: price?.sellingPrice || 0,
+      discountPrice: price?.discountPrice,
+      currency: branch.address.currency,
+    };
+
+    res.json({
+      success: true,
+      data: formattedItem,
+    });
+  } catch (error) {
+    console.error("Error in getMenuItemDetails:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching item details",
+      error: error.message,
     });
   }
 };

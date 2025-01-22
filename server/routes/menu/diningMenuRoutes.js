@@ -10,11 +10,11 @@ const {
 // Route to validate QR code access
 router.get("/validate/:pincode/:tableName", validateDiningAccess);
 
-// Route to get menu items for a branch (will use dummy data for now)
-router.get("/branch/:branchId/items", getDiningMenuItems);
+// Get all categories with their items for a branch
+router.get("/menu/:branchId", getDiningMenuItems);
 
-// Route to get specific item details (will use dummy data for now)
-router.get("/branch/:branchId/items/:itemId", getMenuItemDetails);
+// Get detailed item information
+router.get("/menu/:branchId/items/:itemId", getMenuItemDetails);
 
 // Route to create a dining order
 router.post("/dining-orders", createDiningOrder);
