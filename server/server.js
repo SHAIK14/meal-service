@@ -1,4 +1,5 @@
 const express = require("express");
+const http = require("http");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const connectDB = require("./config/database");
@@ -19,7 +20,6 @@ const menuRoutes = require("./routes/menuRoutes");
 const configRoutes = require("./routes/admin/adminConfigRoutes");
 const userconfigRoutes = require("./routes/userConfigRoutes");
 const activeSubscriptionRoutes = require("./routes/activeSubscriptionRotues");
-
 const DriverRegisterRoutes = require("./routes/admin/DriverRegisterRoute");
 const driverAuthRoutes = require("./routes/driver/driverAuth");
 const branchRoutes = require("./routes/admin/adminBranchRoutes");
@@ -29,8 +29,10 @@ const diningRoutes = require("./routes/admin/diningRoutes");
 const kitchenDiningRoutes = require("./routes/kitchen/diningRoutes");
 const diningMenuRoutes = require("./routes/menu/diningMenuRoutes");
 const diningCategoryRoutes = require("./routes/admin/diningCategoryRoutes");
+
 dotenv.config();
 const app = express();
+const server = http.createServer(app); // Create an HTTP server
 
 // Configure CORS
 const corsOptions = {
@@ -54,6 +56,7 @@ app.use((req, res, next) => {
   next();
 });
 
+// Your existing routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/admin", adminAuthRoutes);
@@ -79,10 +82,11 @@ app.use("/api/admin/dining", diningRoutes);
 app.use("/api/kitchen/dining", kitchenDiningRoutes);
 app.use("/api/dining-menu", diningMenuRoutes);
 app.use("/api/admin/dining-categories", diningCategoryRoutes);
+
 const PORT = process.env.PORT || 5000;
 const HOST = "0.0.0.0";
 
-const server = app.listen(PORT, HOST, () => {
+server.listen(PORT, HOST, () => {
   console.log(`Server running on http://${HOST}:${PORT}`);
   console.log(`API available at http://${HOST}:${PORT}/api`);
 });

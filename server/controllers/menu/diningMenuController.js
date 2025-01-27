@@ -3,23 +3,22 @@ const Dining = require("../../models/admin/DiningConfig");
 const DiningOrder = require("../../models/menu/DiningOrder");
 const DiningCategory = require("../../models/admin/DiningCategory");
 const Item = require("../../models/admin/Item");
+
 // Validate QR code access
 const validateDiningAccess = async (req, res) => {
   try {
     const { pincode, tableName } = req.params;
-    console.log("Validating access for:", { pincode, tableName });
 
     // Find branch by pincode
     const branch = await Branch.findOne({ "address.pincode": pincode });
     if (!branch) {
-      console.log("Branch not found for pincode:", pincode);
       return res.status(404).json({
         success: false,
         message: "Invalid QR code",
       });
     }
 
-    // Find dining config and check if table exists and is enabled
+    // Find dining config
     const diningConfig = await Dining.findOne({
       branchId: branch._id,
       "tables.name": tableName,
@@ -27,21 +26,30 @@ const validateDiningAccess = async (req, res) => {
     });
 
     if (!diningConfig) {
-      console.log("Table not found or disabled for branch:", branch._id);
       return res.status(404).json({
         success: false,
         message: "Table not found or disabled",
       });
     }
 
-    console.log("Access validated successfully for branch:", branch.name);
+    // Check for inProgress orders
+    const inProgressOrder = await DiningOrder.findOne({
+      branchId: branch._id,
+      tableName,
+      status: "inProgress",
+    });
+
+    // Modified response to include dining radius, coordinates, and inProgress order
     res.json({
       success: true,
       branch: {
         id: branch._id,
         name: branch.name,
         address: branch.address,
+        coordinates: branch.address.coordinates,
+        diningRadius: diningConfig.diningRadius,
       },
+      inProgressOrder: inProgressOrder || null,
     });
   } catch (error) {
     console.error("Error in validateDiningAccess:", error);
@@ -52,14 +60,36 @@ const validateDiningAccess = async (req, res) => {
   }
 };
 
-// Get menu items for a branch (using dummy data for now)
-
 // Create new dining order
 const createDiningOrder = async (req, res) => {
   try {
-    const { branchId, tableName, items, totalAmount } = req.body;
+    const { branchId, tableName, items, totalAmount, userLocation } = req.body;
 
-    // Validate branch and table exist
+    console.log("Creating order with data:", {
+      branchId,
+      tableName,
+      items,
+      totalAmount,
+      userLocation,
+    });
+
+    // Validate required fields
+    if (!branchId || !tableName || !items || !totalAmount || !userLocation) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields",
+      });
+    }
+
+    // Find branch and dining config
+    const branch = await Branch.findById(branchId);
+    if (!branch) {
+      return res.status(404).json({
+        success: false,
+        message: "Branch not found",
+      });
+    }
+
     const diningConfig = await Dining.findOne({
       branchId,
       "tables.name": tableName,
@@ -69,21 +99,40 @@ const createDiningOrder = async (req, res) => {
     if (!diningConfig) {
       return res.status(404).json({
         success: false,
-        message: "Invalid branch or table",
+        message: "Table not found or disabled",
       });
     }
 
-    // Create new dining order
+    // Calculate distance
+    const distance = calculateDistance(
+      userLocation.latitude,
+      userLocation.longitude,
+      branch.address.coordinates.latitude,
+      branch.address.coordinates.longitude
+    );
+
+    // Check if user is within dining radius
+    if (distance > diningConfig.diningRadius) {
+      return res.status(400).json({
+        success: false,
+        message: "You are outside the restaurant's dining radius",
+      });
+    }
+
+    // Create order
     const diningOrder = new DiningOrder({
       branchId,
       tableName,
       items,
       totalAmount,
       status: "pending",
+      userLocation,
     });
 
+    // Save order to database
     await diningOrder.save();
-    console.log("New dining order created:", diningOrder._id);
+
+    console.log("Order created successfully:", diningOrder);
 
     res.status(201).json({
       success: true,
@@ -92,9 +141,16 @@ const createDiningOrder = async (req, res) => {
     });
   } catch (error) {
     console.error("Error in createDiningOrder:", error);
+
+    // Log the full error for debugging
+    if (error.name === "ValidationError") {
+      console.error("Validation Error Details:", error.errors);
+    }
+
     res.status(500).json({
       success: false,
       message: "Error creating dining order",
+      error: error.message,
     });
   }
 };
@@ -149,6 +205,7 @@ const getDiningMenuItems = async (req, res) => {
     });
   }
 };
+
 // Get specific item details
 const getMenuItemDetails = async (req, res) => {
   try {
@@ -215,9 +272,161 @@ const getMenuItemDetails = async (req, res) => {
   }
 };
 
+// Add items to an existing order
+const addItemsToOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { items } = req.body;
+
+    // Find the order
+    const order = await DiningOrder.findById(orderId);
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    // Check if the order is in progress
+    if (order.status !== "inProgress") {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot add items to a completed or cancelled order",
+      });
+    }
+
+    // Add new items to the order
+    items.forEach((newItem) => {
+      const existingItem = order.items.find(
+        (item) => item.itemId === newItem.itemId
+      );
+      if (existingItem) {
+        // If the item already exists, update the quantity
+        existingItem.quantity += newItem.quantity;
+      } else {
+        // If the item doesn't exist, add it to the order
+        order.items.push(newItem);
+      }
+    });
+
+    // Recalculate the total amount
+    order.totalAmount = order.items.reduce(
+      (total, item) => total + item.price * item.quantity,
+      0
+    );
+
+    // Save the updated order
+    await order.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Items added to order successfully",
+      data: order,
+    });
+  } catch (error) {
+    console.error("Error in addItemsToOrder:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error adding items to order",
+      error: error.message,
+    });
+  }
+};
+
+// Get all orders for a branch
+// In diningMenuController.js, update the getBranchOrders function:
+
+const getBranchOrders = async (req, res) => {
+  try {
+    const { branchId } = req.params;
+    const { status } = req.query;
+
+    console.log("1. Received request with branchId:", branchId);
+    console.log("   Status filter:", status || "none");
+
+    // Validate branchId
+    if (!branchId) {
+      console.log("Error: Missing branchId");
+      return res.status(400).json({
+        success: false,
+        message: "Branch ID is required",
+      });
+    }
+
+    // Build query
+    const query = { branchId };
+    if (status) {
+      query.status = status;
+    }
+
+    // Find orders and populate item details
+    const orders = await DiningOrder.find(query)
+      .populate({
+        path: "items.itemId",
+        model: "Item",
+        select: "nameEnglish nameArabic image",
+      })
+      .sort({ createdAt: -1 });
+
+    // Transform orders to include item details
+    const transformedOrders = orders.map((order) => {
+      const orderObj = order.toObject();
+      orderObj.items = orderObj.items.map((item) => ({
+        _id: item._id,
+        itemId: item.itemId._id,
+        nameEnglish: item.itemId.nameEnglish,
+        nameArabic: item.itemId.nameArabic,
+        image: item.itemId.image,
+        price: item.price,
+        quantity: item.quantity,
+      }));
+      return orderObj;
+    });
+
+    // Send response
+    const response = {
+      success: true,
+      data: {
+        orders: transformedOrders,
+      },
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error("ERROR in getBranchOrders:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching orders",
+      error: error.message,
+    });
+  }
+};
+
+// Simple distance calculation function using Haversine formula
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Earth's radius in kilometers
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const d = R * c; // Distance in kilometers
+  return d;
+}
+
+function toRad(degrees) {
+  return degrees * (Math.PI / 180);
+}
+
 module.exports = {
   validateDiningAccess,
   getDiningMenuItems,
   getMenuItemDetails,
   createDiningOrder,
+  addItemsToOrder,
+  getBranchOrders, // Add the new function to exports
 };

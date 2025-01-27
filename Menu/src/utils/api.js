@@ -3,10 +3,13 @@ const BASE_URL = "http://localhost:5000/api/dining-menu";
 
 export const validateQRAccess = async (pincode, tableName) => {
   try {
+    console.log("Making validation request for:", { pincode, tableName });
     const response = await fetch(
       `${BASE_URL}/validate/${pincode}/${tableName}`
     );
-    return await response.json();
+    const data = await response.json();
+    console.log("Validation API response:", data);
+    return data;
   } catch (error) {
     console.error("Error validating access:", error);
     return { success: false, message: "Failed to validate access" };
@@ -17,7 +20,9 @@ export const validateQRAccess = async (pincode, tableName) => {
 export const getDiningMenuItems = async (branchId) => {
   try {
     const response = await fetch(`${BASE_URL}/menu/${branchId}`);
-    return await response.json();
+    const data = await response.json();
+    console.log("Menu Items API Response:", data); // Add this line
+    return data;
   } catch (error) {
     console.error("Error fetching menu items:", error);
     return { success: false, message: "Failed to fetch menu items" };
@@ -40,6 +45,7 @@ export const getMenuItemDetails = async (branchId, itemId) => {
 // Create dining order
 export const createDiningOrder = async (orderData) => {
   try {
+    console.log("Creating order with data:", orderData);
     const response = await fetch(`${BASE_URL}/dining-orders`, {
       method: "POST",
       headers: {
@@ -47,9 +53,44 @@ export const createDiningOrder = async (orderData) => {
       },
       body: JSON.stringify(orderData),
     });
-    return await response.json();
+    const data = await response.json();
+    console.log("Order creation response:", data);
+    return data;
   } catch (error) {
     console.error("Error creating order:", error);
     return { success: false, message: "Failed to create order" };
+  }
+};
+
+// Add items to an existing order
+export const addItemsToOrder = async (orderId, items) => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/dining-orders/${orderId}/add-items`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ items }),
+      }
+    );
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error adding items to order:", error);
+    return { success: false, message: "Failed to add items to order" };
+  }
+};
+// Fetch orders for a branch
+export const getBranchOrders = async (branchId) => {
+  try {
+    const response = await fetch(`${BASE_URL}/kitchen/orders/${branchId}`);
+    const data = await response.json();
+    console.log("Branch Orders API Response:", data);
+    return data;
+  } catch (error) {
+    console.error("Error fetching branch orders:", error);
+    return { success: false, message: "Failed to fetch branch orders" };
   }
 };

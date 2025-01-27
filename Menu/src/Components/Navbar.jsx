@@ -1,9 +1,7 @@
 import { useState, useEffect } from "react";
-
 import { getDiningMenuItems } from "../utils/api";
 import { useDining } from "../contexts/DiningContext";
 
-// eslint-disable-next-line react/prop-types
 const Navbar = ({ activeCategory, onCategoryChange }) => {
   const [categories, setCategories] = useState([]);
   const { branchDetails } = useDining();
@@ -14,7 +12,7 @@ const Navbar = ({ activeCategory, onCategoryChange }) => {
         const response = await getDiningMenuItems(branchDetails.id);
         if (response.success) {
           setCategories(response.data);
-          // Set first category as active if none selected
+          // Only set initial category when no category is selected and we have categories
           if (!activeCategory && response.data.length > 0) {
             onCategoryChange(response.data[0].name);
           }
@@ -23,7 +21,7 @@ const Navbar = ({ activeCategory, onCategoryChange }) => {
     };
 
     fetchCategories();
-  }, [branchDetails, activeCategory, onCategoryChange]);
+  }, [branchDetails?.id]); // We only fetch categories when branchId changes
 
   return (
     <nav className="sticky top-0 bg-white shadow-md z-50">

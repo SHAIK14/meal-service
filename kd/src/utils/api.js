@@ -104,4 +104,24 @@ export const getKotByTime = async (date, fromTime, toTime) => {
 export const getBranchTables = async () => {
   return handleResponse(api.get("/kitchen/dining/tables"));
 };
+
+export const getBranchOrders = async (branchId) => {
+  try {
+    const response = await api.get(`/dining-menu/kitchen/orders/${branchId}`);
+
+    // Ensure we're returning a consistent structure
+    return {
+      success: true,
+      data: response.data.data, // Access the data property from the response
+      message: response.data.message,
+    };
+  } catch (error) {
+    console.error("API Error:", error);
+    return {
+      success: false,
+      message: error.response?.data?.message || "Failed to fetch orders",
+      data: { orders: [] }, // Provide empty orders array as fallback
+    };
+  }
+};
 export default api;

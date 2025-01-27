@@ -15,6 +15,9 @@ const Login = ({ setIsLoggedIn }) => {
       const result = await kitchenLogin(pincode, password);
       if (result.success) {
         setIsLoggedIn(true);
+        // Store branchId in localStorage or context
+        console.log("Branch ID:", result.data.data.branch.id);
+        localStorage.setItem("branchId", result.data.data.branch.id); // Assuming the response contains branchId
         navigate("/dashboard");
       } else {
         setError(result.error || "Invalid credentials");

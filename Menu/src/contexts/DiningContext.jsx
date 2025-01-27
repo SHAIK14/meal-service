@@ -5,16 +5,47 @@ const DiningContext = createContext(undefined);
 
 export function DiningProvider({ children }) {
   const [branchDetails, setBranchDetails] = useState(null);
-  const [currentCategory, setCurrentCategory] = useState(() => {
-    const hash = window.location.hash.replace("#", "");
-    return hash || "Chinese";
-  });
+  const [currentCategory, setCurrentCategory] = useState(null);
+
+  // Function to get user's location
+  const getUserLocation = () => {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error("Geolocation is not supported"));
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+        },
+        (error) => {
+          reject(error);
+        }
+      );
+    });
+  };
+
+  // Simple update function that ensures the structure is correct
+  const updateBranchDetails = (response) => {
+    if (!response?.branch) return;
+    setBranchDetails({
+      id: response.branch.id,
+      name: response.branch.name,
+      address: response.branch.address,
+      tableName: window.location.pathname.split("/").pop(),
+    });
+  };
 
   const value = {
     branchDetails,
-    setBranchDetails,
+    setBranchDetails: updateBranchDetails,
     currentCategory,
     setCurrentCategory,
+    getUserLocation,
   };
 
   return (

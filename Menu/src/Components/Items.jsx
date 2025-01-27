@@ -8,10 +8,12 @@ const Items = ({ activeCategory, onAddToCart }) => {
   const { branchDetails } = useDining();
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchItems = async () => {
       if (branchDetails?.id && activeCategory) {
         const response = await getDiningMenuItems(branchDetails.id);
-        if (response.success) {
+        if (response.success && isMounted) {
           const category = response.data.find(
             (cat) => cat.name === activeCategory
           );
@@ -21,7 +23,10 @@ const Items = ({ activeCategory, onAddToCart }) => {
     };
 
     fetchItems();
-  }, [branchDetails, activeCategory]);
+    return () => {
+      isMounted = false;
+    };
+  }, [branchDetails?.id, activeCategory]);
 
   const handleQuantityChange = (itemId, newQuantity) => {
     setQuantities((prev) => ({

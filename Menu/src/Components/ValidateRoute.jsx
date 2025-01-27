@@ -1,53 +1,54 @@
-// src/components/ValidateRoute.jsx
-import React, { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, Navigate } from "react-router-dom";
 import { validateQRAccess } from "../utils/api";
 import { useDining } from "../contexts/DiningContext";
 
 const ValidateRoute = ({ children }) => {
+  const [isValidating, setIsValidating] = useState(true);
+  const [isValid, setIsValid] = useState(false);
   const { pincode, tableName } = useParams();
   const { setBranchDetails } = useDining();
-  const [isValid, setIsValid] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     const validateAccess = async () => {
+      if (!pincode || !tableName) return;
+
       try {
-        const result = await validateQRAccess(pincode, tableName);
-        if (result.success) {
+        const response = await validateQRAccess(pincode, tableName);
+        if (isMounted && response.success) {
+          setBranchDetails(response);
           setIsValid(true);
-          setBranchDetails(result.branch);
-        } else {
-          setError(result.message);
         }
-      } catch (err) {
-        setError("Failed to validate access");
+      } catch (error) {
+        console.error("Validation error:", error);
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setIsValidating(false);
+        }
       }
     };
 
     validateAccess();
-  }, [pincode, tableName, setBranchDetails]);
+    return () => {
+      isMounted = false;
+    };
+  }, [pincode, tableName]);
 
-  if (loading) {
+  if (isValidating) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+        <div className="text-gray-600">Validating access...</div>
       </div>
     );
   }
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="bg-red-50 p-4 rounded-lg text-red-700">{error}</div>
-      </div>
-    );
+  if (!isValid) {
+    return <Navigate to="/" replace />;
   }
 
-  return isValid ? children : <Navigate to="/" />;
+  return children;
 };
 
 export default ValidateRoute;
