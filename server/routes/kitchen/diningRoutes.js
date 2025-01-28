@@ -3,9 +3,10 @@ const router = express.Router();
 const kitchenAuth = require("../../middleware/kitchen/authMiddleware");
 const {
   getBranchTables,
+  updateTableStatus,
 } = require("../../controllers/kitchen/diningController");
 
-// Get tables for authenticated branch
 router.get("/tables", kitchenAuth, getBranchTables);
+router.put("/tables/:tableId/status", kitchenAuth, updateTableStatus);
 
 module.exports = router;

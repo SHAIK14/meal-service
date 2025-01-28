@@ -104,6 +104,25 @@ export const getKotByTime = async (date, fromTime, toTime) => {
 export const getBranchTables = async () => {
   return handleResponse(api.get("/kitchen/dining/tables"));
 };
+// Table Management
+export const updateTableStatus = async (tableId, status) => {
+  try {
+    const response = await api.put(`/kitchen/dining/tables/${tableId}/status`, {
+      status,
+    });
+    return {
+      success: true,
+      data: response.data,
+      message: response.data.message,
+    };
+  } catch (error) {
+    console.error("Error updating table status:", error);
+    return {
+      success: false,
+      message: error.response?.data?.message || "Failed to update table status",
+    };
+  }
+};
 
 export const getBranchOrders = async (branchId) => {
   try {
@@ -121,6 +140,24 @@ export const getBranchOrders = async (branchId) => {
       success: false,
       message: error.response?.data?.message || "Failed to fetch orders",
       data: { orders: [] }, // Provide empty orders array as fallback
+    };
+  }
+};
+export const updateOrderStatus = async (orderId, status) => {
+  try {
+    const response = await api.put(`/dining-menu/orders/${orderId}/status`, {
+      status,
+    });
+    return {
+      success: true,
+      data: response.data,
+      message: response.data.message,
+    };
+  } catch (error) {
+    console.error("Error updating order status:", error);
+    return {
+      success: false,
+      message: error.response?.data?.message || "Failed to update order status",
     };
   }
 };

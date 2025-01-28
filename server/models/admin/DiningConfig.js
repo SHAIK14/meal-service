@@ -19,20 +19,16 @@ const diningSchema = new mongoose.Schema(
     },
     tables: [
       {
-        name: {
+        name: { type: String, required: true },
+        isEnabled: { type: Boolean, default: true },
+        status: {
           type: String,
-          required: true,
-        },
-        isEnabled: {
-          type: Boolean,
-          default: true,
+          enum: ["available", "occupied"],
+          default: "available",
         },
         qrCode: String,
         customUrl: String,
-        createdAt: {
-          type: Date,
-          default: Date.now,
-        },
+        createdAt: { type: Date, default: Date.now },
       },
     ],
   },

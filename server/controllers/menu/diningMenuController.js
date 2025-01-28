@@ -421,12 +421,56 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 function toRad(degrees) {
   return degrees * (Math.PI / 180);
 }
+const updateOrderStatus = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { status } = req.body;
 
+    // Validate status
+    if (!["accepted", "served"].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid status",
+      });
+    }
+
+    // Update order status
+    const order = await DiningOrder.findByIdAndUpdate(
+      orderId,
+      { status },
+      { new: true }
+    ).populate({
+      path: "items.itemId",
+      select: "nameEnglish nameArabic image",
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `Order ${status} successfully`,
+      data: order,
+    });
+  } catch (error) {
+    console.error(`Error updating order status:`, error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating order status",
+      error: error.message,
+    });
+  }
+};
 module.exports = {
   validateDiningAccess,
   getDiningMenuItems,
   getMenuItemDetails,
   createDiningOrder,
   addItemsToOrder,
-  getBranchOrders, // Add the new function to exports
+  getBranchOrders,
+  updateOrderStatus,
 };

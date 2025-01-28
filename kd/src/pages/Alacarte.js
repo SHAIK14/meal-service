@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { getBranchTables, getBranchOrders } from "../utils/api";
+import {
+  getBranchTables,
+  getBranchOrders,
+  updateOrderStatus,
+} from "../utils/api";
 import "../styles/Alacarte.css";
 
 function Alacarte() {
   const [modalOpen, setModalOpen] = useState(null);
   const [notifications, setNotifications] = useState({});
-  const [orderReady, setOrderReady] = useState({});
   const [tables, setTables] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -27,9 +30,9 @@ function Alacarte() {
       console.log("Orders response:", response);
 
       if (response.success && response.data?.orders) {
-        // Group pending orders by table
+        // Group active orders (pending and accepted) by table
         const ordersByTable = response.data.orders.reduce((acc, order) => {
-          if (order.status === "pending") {
+          if (order.status === "pending" || order.status === "accepted") {
             if (!acc[order.tableName]) {
               acc[order.tableName] = [];
             }
@@ -39,12 +42,14 @@ function Alacarte() {
         }, {});
 
         setOrders(ordersByTable);
-        console.log("Pending orders by table:", ordersByTable);
+        console.log("Active orders by table:", ordersByTable);
 
-        // Update notifications for tables with pending orders
+        // Update notifications for tables with pending orders only
         const newNotifications = { ...notifications };
         Object.entries(ordersByTable).forEach(([tableName, tableOrders]) => {
-          newNotifications[tableName] = tableOrders.length > 0;
+          newNotifications[tableName] = tableOrders.some(
+            (order) => order.status === "pending"
+          );
         });
         setNotifications(newNotifications);
       }
@@ -65,14 +70,12 @@ function Alacarte() {
           console.log("Table data:", tableData);
           setTables(tableData);
 
-          // Initialize states
-          const initialStates = {};
+          // Initialize notifications
+          const initialNotifications = {};
           tableData.forEach((table) => {
-            initialStates[table.name] = false;
+            initialNotifications[table.name] = false;
           });
-
-          setNotifications(initialStates);
-          setOrderReady(initialStates);
+          setNotifications(initialNotifications);
 
           // Fetch initial orders
           await fetchOrders();
@@ -117,22 +120,57 @@ function Alacarte() {
     setModalOpen(null);
   };
 
-  const handleCheckboxChange = (tableName, orderId, itemIndex) => {
-    setOrderReady((prev) => ({
-      ...prev,
-      [tableName]: {
-        ...prev[tableName],
-        [`${orderId}-${itemIndex}`]:
-          !prev[tableName]?.[`${orderId}-${itemIndex}`],
-      },
-    }));
+  const handleAcceptOrder = async (orderId) => {
+    try {
+      const response = await updateOrderStatus(orderId, "accepted");
+      if (response.success) {
+        await fetchOrders();
+        alert("Order accepted!");
+      } else {
+        throw new Error(response.message);
+      }
+    } catch (error) {
+      console.error("Error accepting order:", error);
+      alert("Failed to accept order. Please try again.");
+    }
   };
 
-  const handleOrderReady = (orderId) => {
-    console.log("Marking order ready:", orderId);
-    // Here you would add the API call to update the order status
-    alert("Order is ready!");
-    closeModal();
+  const handleServeOrder = async (orderId) => {
+    try {
+      const response = await updateOrderStatus(orderId, "served");
+      if (response.success) {
+        await fetchOrders();
+        alert("Order served!");
+      } else {
+        throw new Error(response.message);
+      }
+    } catch (error) {
+      console.error("Error marking order as served:", error);
+      alert("Failed to update order status. Please try again.");
+    }
+  };
+
+  const renderOrderActions = (order) => {
+    if (order.status === "pending") {
+      return (
+        <button
+          className="accept-order-btn"
+          onClick={() => handleAcceptOrder(order._id)}
+        >
+          Accept Order
+        </button>
+      );
+    } else if (order.status === "accepted") {
+      return (
+        <button
+          className="serve-order-btn"
+          onClick={() => handleServeOrder(order._id)}
+        >
+          Mark as Served
+        </button>
+      );
+    }
+    return null;
   };
 
   if (loading) return <div className="loading-message">Loading tables...</div>;
@@ -163,14 +201,29 @@ function Alacarte() {
                 {table.name}
                 {notifications[table.name] && (
                   <div className="alacarte-notification-badge">
-                    {orders[table.name]?.length || 0}
+                    {orders[table.name]?.filter(
+                      (order) => order.status === "pending"
+                    ).length || 0}
                   </div>
                 )}
               </div>
               {orders[table.name]?.length > 0 && (
                 <div className="order-details">
                   <p className="order-count">
-                    {orders[table.name].length} Pending Orders
+                    {
+                      orders[table.name].filter(
+                        (order) => order.status === "pending"
+                      ).length
+                    }{" "}
+                    New Orders
+                    {orders[table.name].filter(
+                      (order) => order.status === "accepted"
+                    ).length > 0 &&
+                      ` | ${
+                        orders[table.name].filter(
+                          (order) => order.status === "accepted"
+                        ).length
+                      } In Progress`}
                   </p>
                   <div className="order-preview">
                     {orders[table.name].slice(0, 2).map((order, index) => (
@@ -199,36 +252,22 @@ function Alacarte() {
               {orders[modalOpen]?.length > 0 ? (
                 <div className="orders-list">
                   {orders[modalOpen].map((order, orderIndex) => (
-                    <div key={order._id} className="order-section">
+                    <div
+                      key={order._id}
+                      className={`order-section ${order.status}`}
+                    >
                       <div className="order-header">
                         <h5>Order #{orderIndex + 1}</h5>
                         <span className="order-time">
                           {new Date(order.createdAt).toLocaleTimeString()}
                         </span>
-                      </div>
-                      <div className="order-info">
-                        <p>
-                          <strong>Total:</strong> ${order.totalAmount}
-                        </p>
+                        <span className={`order-status ${order.status}`}>
+                          {order.status}
+                        </span>
                       </div>
                       <ul className="order-items">
                         {order.items.map((item, itemIndex) => (
                           <li key={itemIndex} className="order-item">
-                            <input
-                              type="checkbox"
-                              checked={
-                                orderReady[modalOpen]?.[
-                                  `${order._id}-${itemIndex}`
-                                ] || false
-                              }
-                              onChange={() =>
-                                handleCheckboxChange(
-                                  modalOpen,
-                                  order._id,
-                                  itemIndex
-                                )
-                              }
-                            />
                             <span className="item-name">
                               {item.nameEnglish}
                             </span>
@@ -238,17 +277,12 @@ function Alacarte() {
                           </li>
                         ))}
                       </ul>
-                      <button
-                        className="order-ready-btn"
-                        onClick={() => handleOrderReady(order._id)}
-                      >
-                        Mark Order Ready
-                      </button>
+                      {renderOrderActions(order)}
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="no-orders">No pending orders for this table</p>
+                <p className="no-orders">No active orders for this table</p>
               )}
             </div>
           </div>

@@ -6,7 +6,8 @@ const {
   getMenuItemDetails,
   createDiningOrder,
   addItemsToOrder,
-  getBranchOrders, // Import the new function
+  getBranchOrders,
+  updateOrderStatus,
 } = require("../../controllers/menu/diningMenuController");
 
 // Route to validate QR code access
@@ -26,5 +27,6 @@ router.post("/dining-orders/:orderId/add-items", addItemsToOrder);
 
 // Route to fetch orders for a branch
 router.get("/kitchen/orders/:branchId", getBranchOrders);
+router.put("/orders/:orderId/status", updateOrderStatus);
 
 module.exports = router;

@@ -35,7 +35,7 @@ const diningOrderSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["pending", "preparing", "ready", "served", "cancelled"],
+      enum: ["pending", "accepted", "served"],
       default: "pending",
     },
     notes: String,

@@ -37,6 +37,9 @@ function TopNav() {
       <NavLink className="nav-item" to="/Alacarte">
         A La Carte
       </NavLink>
+      <NavLink className="nav-item" to="/tables">
+        TableManagement
+      </NavLink>
     </div>
   );
 }
