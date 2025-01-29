@@ -2,6 +2,11 @@ const mongoose = require("mongoose");
 
 const diningOrderSchema = new mongoose.Schema(
   {
+    sessionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Session",
+      required: true,
+    },
     branchId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Branch",
@@ -14,7 +19,7 @@ const diningOrderSchema = new mongoose.Schema(
     items: [
       {
         itemId: {
-          type: String, // Changed to String since we're using dummy data
+          type: String,
           required: true,
         },
         name: String,

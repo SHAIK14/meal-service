@@ -1,14 +1,18 @@
 // src/Components/MenuLayout.jsx
 import { useState } from "react";
+import { FaShoppingCart, FaClipboardList } from "react-icons/fa";
 import Navbar from "./Navbar";
 import Items from "./Items";
 import Cart from "./Cart";
-import { FaShoppingCart } from "react-icons/fa";
+import Orders from "./Orders";
+import { useDining } from "../contexts/DiningContext";
 
 const MenuLayout = () => {
   const [activeCategory, setActiveCategory] = useState(null);
   const [cart, setCart] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [showOrders, setShowOrders] = useState(false);
+  const { sessionDetails } = useDining();
 
   const handleAddToCart = (item, quantity) => {
     setCart((prevCart) => {
@@ -25,6 +29,17 @@ const MenuLayout = () => {
 
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
+  const handleCartClose = () => {
+    setIsCartOpen(false);
+  };
+
+  const toggleView = () => {
+    setShowOrders(!showOrders);
+    if (isCartOpen) {
+      setIsCartOpen(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar
@@ -33,30 +48,70 @@ const MenuLayout = () => {
       />
 
       <main className="container mx-auto px-4 py-6 pb-24">
-        <div className="mb-4">
-          <h1 className="text-2xl font-bold text-gray-800">{activeCategory}</h1>
+        {/* View Toggle Button */}
+        <div className="mb-4 flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-gray-800">
+            {showOrders ? "Your Orders" : activeCategory}
+          </h1>
+          <button
+            onClick={toggleView}
+            className="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg shadow-sm text-gray-600 hover:bg-gray-50"
+          >
+            {showOrders ? (
+              <>
+                <span>View Menu</span>
+              </>
+            ) : (
+              <>
+                <FaClipboardList className="mr-2" />
+                <span>View Orders</span>
+              </>
+            )}
+          </button>
         </div>
 
-        <Items activeCategory={activeCategory} onAddToCart={handleAddToCart} />
+        {/* Content */}
+        <div className={showOrders ? "hidden" : "block"}>
+          <Items
+            activeCategory={activeCategory}
+            onAddToCart={handleAddToCart}
+          />
+        </div>
+        <div className={!showOrders ? "hidden" : "block"}>
+          <Orders />
+        </div>
       </main>
 
-      <button
-        onClick={() => setIsCartOpen(true)}
-        className="fixed bottom-6 right-6 bg-red-500 text-white p-4 rounded-full shadow-lg hover:bg-red-600 transition-colors z-40"
-      >
-        <div className="relative">
-          <FaShoppingCart size={24} />
-          {totalItems > 0 && (
-            <div className="absolute -top-2 -right-2 bg-white text-red-500 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
-              {totalItems}
-            </div>
-          )}
+      {/* Cart Button */}
+      {!showOrders && (
+        <button
+          onClick={() => setIsCartOpen(true)}
+          className="fixed bottom-6 right-6 bg-red-500 text-white p-4 rounded-full shadow-lg hover:bg-red-600 transition-colors z-40"
+        >
+          <div className="relative">
+            <FaShoppingCart size={24} />
+            {totalItems > 0 && (
+              <div className="absolute -top-2 -right-2 bg-white text-red-500 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
+                {totalItems}
+              </div>
+            )}
+          </div>
+        </button>
+      )}
+
+      {/* Session Total Display */}
+      {sessionDetails?.totalAmount > 0 && (
+        <div className="fixed bottom-6 left-6 bg-white px-4 py-2 rounded-lg shadow-lg z-40">
+          <span className="text-sm text-gray-600">Session Total:</span>
+          <span className="ml-2 font-bold text-red-500">
+            {sessionDetails.totalAmount.toFixed(2)} SAR
+          </span>
         </div>
-      </button>
+      )}
 
       <Cart
         isOpen={isCartOpen}
-        onClose={() => setIsCartOpen(false)}
+        onClose={handleCartClose}
         cart={cart}
         onQuantityChange={handleAddToCart}
       />

@@ -6,6 +6,8 @@ const DiningContext = createContext(undefined);
 export function DiningProvider({ children }) {
   const [branchDetails, setBranchDetails] = useState(null);
   const [currentCategory, setCurrentCategory] = useState(null);
+  const [sessionDetails, setSessionDetails] = useState(null);
+  const [orders, setOrders] = useState([]);
 
   // Function to get user's location
   const getUserLocation = () => {
@@ -29,15 +31,41 @@ export function DiningProvider({ children }) {
     });
   };
 
-  // Simple update function that ensures the structure is correct
+  // Update branch and session details
   const updateBranchDetails = (response) => {
     if (!response?.branch) return;
+
     setBranchDetails({
       id: response.branch.id,
       name: response.branch.name,
       address: response.branch.address,
+      coordinates: response.branch.coordinates,
+      diningRadius: response.branch.diningRadius,
       tableName: window.location.pathname.split("/").pop(),
     });
+
+    // Update session if exists
+    if (response.session) {
+      setSessionDetails({
+        id: response.session.id,
+        totalAmount: response.session.totalAmount,
+        paymentRequested: response.session.paymentRequested,
+      });
+      setOrders(response.session.orders || []);
+    }
+  };
+
+  // Function to update orders
+  const updateOrders = (newOrders) => {
+    setOrders(newOrders);
+  };
+
+  // Function to update session details
+  const updateSessionDetails = (details) => {
+    setSessionDetails((prevSession) => ({
+      ...prevSession,
+      ...details,
+    }));
   };
 
   const value = {
@@ -46,6 +74,10 @@ export function DiningProvider({ children }) {
     currentCategory,
     setCurrentCategory,
     getUserLocation,
+    sessionDetails,
+    updateSessionDetails,
+    orders,
+    updateOrders,
   };
 
   return (

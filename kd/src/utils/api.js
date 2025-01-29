@@ -161,4 +161,17 @@ export const updateOrderStatus = async (orderId, status) => {
     };
   }
 };
+export const getTableSession = async (tableName) => {
+  return handleResponse(api.get(`/kitchen/dining/tables/${tableName}/session`));
+};
+
+export const completeSession = async (sessionId) => {
+  return handleResponse(
+    api.post(`/kitchen/dining/sessions/${sessionId}/complete`)
+  );
+};
+
+export const generateKOT = async (sessionId) => {
+  return handleResponse(api.get(`/kitchen/dining/sessions/${sessionId}/kot`));
+};
 export default api;

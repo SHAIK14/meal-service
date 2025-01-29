@@ -1,3 +1,4 @@
+// src/components/Cart.jsx
 import React, { useState } from "react";
 import { FaTimes, FaShoppingCart } from "react-icons/fa";
 import { useDining } from "../contexts/DiningContext";
@@ -6,13 +7,18 @@ import { createDiningOrder } from "../utils/api";
 const Cart = ({ isOpen, onClose, cart, onQuantityChange }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const { branchDetails, getUserLocation } = useDining();
+  const {
+    branchDetails,
+    sessionDetails,
+    getUserLocation,
+    updateSessionDetails,
+    updateOrders,
+  } = useDining();
 
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  // Add the calculateDistance function
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371; // Earth's radius in km
+    const R = 6371;
     const dLat = ((lat2 - lat1) * Math.PI) / 180;
     const dLon = ((lon2 - lon1) * Math.PI) / 180;
     const a =
@@ -22,8 +28,9 @@ const Cart = ({ isOpen, onClose, cart, onQuantityChange }) => {
         Math.sin(dLon / 2) *
         Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c; // Distance in km
+    return R * c;
   };
+
   const handleOrder = async () => {
     try {
       setIsLoading(true);
@@ -44,12 +51,14 @@ const Cart = ({ isOpen, onClose, cart, onQuantityChange }) => {
         throw new Error("You need to be at the restaurant to place an order");
       }
 
-      // Prepare order data
+      // Prepare order data with session ID
       const orderData = {
+        sessionId: sessionDetails?.id,
         branchId: branchDetails.id,
         tableName: branchDetails.tableName,
         items: cart.map((item) => ({
           itemId: item.id,
+          name: item.nameEnglish,
           quantity: item.quantity,
           price: item.price,
         })),
@@ -61,10 +70,25 @@ const Cart = ({ isOpen, onClose, cart, onQuantityChange }) => {
       const response = await createDiningOrder(orderData);
 
       if (response.success) {
+        const newOrder = response.data.order;
+
+        // Update session details
+        updateSessionDetails({
+          id: sessionDetails?.id,
+          totalAmount: response.data.sessionTotal || 0,
+          paymentRequested: sessionDetails?.paymentRequested || false,
+        });
+
+        // Safely update orders array
+        const existingOrders = Array.isArray(sessionDetails?.orders)
+          ? sessionDetails.orders
+          : [];
+        updateOrders([newOrder, ...existingOrders]);
+
         alert("Order placed successfully!");
         onClose(); // Close the cart modal
       } else {
-        throw new Error(response.message);
+        throw new Error(response.message || "Failed to create order");
       }
     } catch (err) {
       console.error("Order Error Details:", err);
@@ -73,6 +97,7 @@ const Cart = ({ isOpen, onClose, cart, onQuantityChange }) => {
       setIsLoading(false);
     }
   };
+
   if (!isOpen) return null;
 
   return (

@@ -3,6 +3,7 @@ const Dining = require("../../models/admin/DiningConfig");
 const DiningOrder = require("../../models/menu/DiningOrder");
 const DiningCategory = require("../../models/admin/DiningCategory");
 const Item = require("../../models/admin/Item");
+const Session = require("../../models/menu/session");
 
 // Validate QR code access
 const validateDiningAccess = async (req, res) => {
@@ -32,14 +33,26 @@ const validateDiningAccess = async (req, res) => {
       });
     }
 
-    // Check for inProgress orders
-    const inProgressOrder = await DiningOrder.findOne({
+    // Find or create active session
+    let session = await Session.findOne({
       branchId: branch._id,
       tableName,
-      status: "inProgress",
+      status: "active",
     });
 
-    // Modified response to include dining radius, coordinates, and inProgress order
+    if (!session) {
+      session = new Session({
+        branchId: branch._id,
+        tableName,
+      });
+      await session.save();
+    }
+
+    // Get orders for this session
+    const sessionOrders = await DiningOrder.find({
+      sessionId: session._id,
+    }).sort({ createdAt: -1 });
+
     res.json({
       success: true,
       branch: {
@@ -49,7 +62,12 @@ const validateDiningAccess = async (req, res) => {
         coordinates: branch.address.coordinates,
         diningRadius: diningConfig.diningRadius,
       },
-      inProgressOrder: inProgressOrder || null,
+      session: {
+        id: session._id,
+        totalAmount: session.totalAmount,
+        paymentRequested: session.paymentRequested,
+        orders: sessionOrders,
+      },
     });
   } catch (error) {
     console.error("Error in validateDiningAccess:", error);
@@ -63,21 +81,34 @@ const validateDiningAccess = async (req, res) => {
 // Create new dining order
 const createDiningOrder = async (req, res) => {
   try {
-    const { branchId, tableName, items, totalAmount, userLocation } = req.body;
-
-    console.log("Creating order with data:", {
-      branchId,
-      tableName,
-      items,
-      totalAmount,
-      userLocation,
-    });
+    const { branchId, tableName, items, totalAmount, userLocation, sessionId } =
+      req.body;
 
     // Validate required fields
-    if (!branchId || !tableName || !items || !totalAmount || !userLocation) {
+    if (
+      !branchId ||
+      !tableName ||
+      !items ||
+      !totalAmount ||
+      !userLocation ||
+      !sessionId
+    ) {
       return res.status(400).json({
         success: false,
         message: "Missing required fields",
+      });
+    }
+
+    // Validate session
+    const session = await Session.findOne({
+      _id: sessionId,
+      status: "active",
+    });
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        message: "No active session found",
       });
     }
 
@@ -119,8 +150,9 @@ const createDiningOrder = async (req, res) => {
       });
     }
 
-    // Create order
+    // Create order with session reference
     const diningOrder = new DiningOrder({
+      sessionId,
       branchId,
       tableName,
       items,
@@ -129,28 +161,60 @@ const createDiningOrder = async (req, res) => {
       userLocation,
     });
 
-    // Save order to database
+    // Save order and update session
     await diningOrder.save();
-
-    console.log("Order created successfully:", diningOrder);
+    session.totalAmount += totalAmount;
+    await session.save();
 
     res.status(201).json({
       success: true,
       message: "Dining order created successfully",
-      data: diningOrder,
+      data: {
+        order: diningOrder,
+        sessionTotal: session.totalAmount,
+      },
     });
   } catch (error) {
     console.error("Error in createDiningOrder:", error);
-
-    // Log the full error for debugging
-    if (error.name === "ValidationError") {
-      console.error("Validation Error Details:", error.errors);
-    }
-
     res.status(500).json({
       success: false,
       message: "Error creating dining order",
       error: error.message,
+    });
+  }
+};
+const requestPayment = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+
+    const session = await Session.findById(sessionId);
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        message: "Session not found",
+      });
+    }
+
+    if (session.paymentRequested) {
+      return res.status(400).json({
+        success: false,
+        message: "Payment already requested",
+      });
+    }
+
+    session.paymentRequested = true;
+    await session.save();
+
+    res.json({
+      success: true,
+      message: "Payment requested successfully",
+      data: session,
+    });
+  } catch (error) {
+    console.error("Error in requestPayment:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error requesting payment",
     });
   }
 };
@@ -473,4 +537,5 @@ module.exports = {
   addItemsToOrder,
   getBranchOrders,
   updateOrderStatus,
+  requestPayment,
 };

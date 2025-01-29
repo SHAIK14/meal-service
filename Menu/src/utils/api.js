@@ -21,7 +21,7 @@ export const getDiningMenuItems = async (branchId) => {
   try {
     const response = await fetch(`${BASE_URL}/menu/${branchId}`);
     const data = await response.json();
-    console.log("Menu Items API Response:", data); // Add this line
+    console.log("Menu Items API Response:", data);
     return data;
   } catch (error) {
     console.error("Error fetching menu items:", error);
@@ -61,7 +61,34 @@ export const createDiningOrder = async (orderData) => {
     return { success: false, message: "Failed to create order" };
   }
 };
-
+export const requestPayment = async (sessionId) => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/sessions/${sessionId}/request-payment`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error requesting payment:", error);
+    return { success: false, message: "Failed to request payment" };
+  }
+};
+export const getSessionOrders = async (sessionId) => {
+  try {
+    const response = await fetch(`${BASE_URL}/sessions/${sessionId}/orders`);
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching session orders:", error);
+    return { success: false, message: "Failed to fetch orders" };
+  }
+};
 // Add items to an existing order
 export const addItemsToOrder = async (orderId, items) => {
   try {

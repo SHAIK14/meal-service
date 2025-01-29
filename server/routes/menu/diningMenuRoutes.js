@@ -8,6 +8,7 @@ const {
   addItemsToOrder,
   getBranchOrders,
   updateOrderStatus,
+  requestPayment,
 } = require("../../controllers/menu/diningMenuController");
 
 // Route to validate QR code access
@@ -28,5 +29,6 @@ router.post("/dining-orders/:orderId/add-items", addItemsToOrder);
 // Route to fetch orders for a branch
 router.get("/kitchen/orders/:branchId", getBranchOrders);
 router.put("/orders/:orderId/status", updateOrderStatus);
-
+// Payment related routes
+router.post("/sessions/:sessionId/request-payment", requestPayment);
 module.exports = router;

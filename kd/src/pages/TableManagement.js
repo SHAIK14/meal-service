@@ -1,41 +1,100 @@
+// src/components/TableManagement.jsx
 import React, { useState, useEffect } from "react";
-import { getBranchTables, updateTableStatus } from "../utils/api";
+import {
+  FaUtensils,
+  FaCreditCard,
+  FaEye,
+  FaPrint,
+  FaTimes,
+  FaCheck,
+} from "react-icons/fa";
+import {
+  getBranchTables,
+  updateTableStatus,
+  getTableSession,
+  completeSession,
+  generateKOT,
+  updateOrderStatus,
+} from "../utils/api";
 import "../styles/TableManagement.css";
 
 function TableManagement() {
   const [tables, setTables] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedTable, setSelectedTable] = useState(null);
+  const [tableSession, setTableSession] = useState(null);
+  const [showTableModal, setShowTableModal] = useState(false);
+  const [showOrdersModal, setShowOrdersModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
-  // Fetch tables
   useEffect(() => {
-    const fetchTables = async () => {
-      try {
-        const response = await getBranchTables();
-        console.log("Tables response:", response); // For debugging
-        if (response.success) {
-          // Set default status if not present
-          const tablesWithStatus = response.data.data.map((table) => ({
-            ...table,
-            status: table.status || "available", // Default to available if no status
-          }));
-          setTables(tablesWithStatus);
-        } else {
-          setError(response.message);
-        }
-      } catch (error) {
-        console.error("Error:", error);
-        setError("Error fetching tables");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchTables();
   }, []);
 
-  // Rest of your code remains the same
-  const handleTableStatusChange = async (tableId, newStatus) => {
+  const fetchTables = async () => {
+    try {
+      const response = await getBranchTables();
+      console.log("Tables response:", response);
+
+      if (response.success && Array.isArray(response.data)) {
+        // Remove duplicates based on table id
+        const uniqueTables = Array.from(
+          new Set(response.data.map((table) => table.id))
+        ).map((id) => response.data.find((table) => table.id === id));
+
+        const tablesWithStatus = uniqueTables.map((table) => ({
+          ...table,
+          status: table.status || "available",
+        }));
+        setTables(tablesWithStatus);
+      } else if (response.success && response.data.data) {
+        // Handle nested data structure
+        const uniqueTables = Array.from(
+          new Set(response.data.data.map((table) => table.id))
+        ).map((id) => response.data.data.find((table) => table.id === id));
+
+        const tablesWithStatus = uniqueTables.map((table) => ({
+          ...table,
+          status: table.status || "available",
+        }));
+        setTables(tablesWithStatus);
+      } else {
+        setError(response.message || "Invalid data format received");
+      }
+    } catch (error) {
+      console.error("Error details:", error);
+      setError("Error fetching tables");
+    } finally {
+      setLoading(false);
+    }
+  };
+  const handleTableClick = async (table) => {
+    setSelectedTable(table);
+    try {
+      const sessionResponse = await getTableSession(table.name);
+      console.log("Session response:", sessionResponse);
+
+      if (sessionResponse.success && sessionResponse.data?.data) {
+        // Properly handle nested data structure
+        setTableSession(sessionResponse.data.data);
+        if (table.status === "available") {
+          await handleTableStatusChange(table.id, "occupied", false);
+        }
+      } else {
+        setTableSession(null);
+      }
+    } catch (error) {
+      console.error("Error fetching session:", error);
+      setTableSession(null);
+    }
+    setShowTableModal(true);
+  };
+  const handleTableStatusChange = async (
+    tableId,
+    newStatus,
+    closeModal = true
+  ) => {
     try {
       const response = await updateTableStatus(tableId, newStatus);
       if (response.success) {
@@ -47,19 +106,81 @@ function TableManagement() {
             return table;
           })
         );
+        if (closeModal) {
+          setShowTableModal(false);
+        }
+        await fetchTables();
       } else {
         alert(response.message || "Failed to update table status");
       }
     } catch (error) {
+      console.error("Status update error:", error);
       alert("Error updating table status");
     }
   };
 
-  // Debug tables data
-  console.log("Current tables:", tables);
+  const handleOrderStatusChange = async (orderId, newStatus) => {
+    try {
+      const response = await updateOrderStatus(orderId, newStatus);
+      if (response.success) {
+        if (selectedTable) {
+          const sessionResponse = await getTableSession(selectedTable.name);
+          if (sessionResponse.success && sessionResponse.data) {
+            setTableSession(sessionResponse.data);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Order status update error:", error);
+      alert("Error updating order status");
+    }
+  };
 
-  if (loading) return <div className="loading-message">Loading tables...</div>;
-  if (error) return <div className="error-message">{error}</div>;
+  const handleGenerateKOT = async () => {
+    if (!tableSession?.session?._id) {
+      alert("No active session found");
+      return;
+    }
+    try {
+      const response = await generateKOT(tableSession.session._id);
+      if (response.success) {
+        console.log("KOT Data:", response.data);
+        alert("KOT generated successfully!");
+      }
+    } catch (error) {
+      console.error("KOT generation error:", error);
+      alert("Error generating KOT");
+    }
+  };
+
+  const handlePaymentConfirm = async () => {
+    if (!tableSession?.session?._id) {
+      alert("No active session found");
+      return;
+    }
+    try {
+      const response = await completeSession(tableSession.session._id);
+      if (response.success) {
+        await handleTableStatusChange(selectedTable.id, "available");
+        setShowPaymentModal(false);
+        setShowTableModal(false);
+        setTableSession(null);
+      } else {
+        alert(response.message || "Failed to complete session");
+      }
+    } catch (error) {
+      console.error("Payment completion error:", error);
+      alert("Error completing session");
+    }
+  };
+
+  if (loading) {
+    return <div className="loading-message">Loading tables...</div>;
+  }
+
+  if (error) {
+    return <div className="error-message">{error}</div>;
+  }
 
   return (
     <div className="table-management-container">
@@ -71,41 +192,195 @@ function TableManagement() {
         {tables.map((table) => (
           <div
             key={table.id}
-            className={`table-card ${(
-              table.status || "available"
-            ).toLowerCase()}`}
+            onClick={() => handleTableClick(table)}
+            className={`table-card ${table.status}`}
           >
             <div className="table-header">
-              <h2>{table.name}</h2>
-              <span
-                className={`status-badge ${(
-                  table.status || "available"
-                ).toLowerCase()}`}
-              >
-                {table.status || "Available"}
+              <h3 className="table-title">{table.name}</h3>
+              <span className={`status-badge ${table.status}`}>
+                {table.status.charAt(0).toUpperCase() + table.status.slice(1)}
               </span>
             </div>
-
-            <div className="table-actions">
-              {(table.status || "available") === "available" ? (
-                <button
-                  className="occupy-btn"
-                  onClick={() => handleTableStatusChange(table.id, "occupied")}
-                >
-                  Mark as Occupied
-                </button>
-              ) : (
-                <button
-                  className="available-btn"
-                  onClick={() => handleTableStatusChange(table.id, "available")}
-                >
-                  Mark as Available
-                </button>
-              )}
-            </div>
+            <FaUtensils className={`table-icon ${table.status}`} />
           </div>
         ))}
       </div>
+
+      {/* Table Actions Modal */}
+      {showTableModal && selectedTable && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h2>{selectedTable.name}</h2>
+              <button
+                className="close-button"
+                onClick={() => setShowTableModal(false)}
+              >
+                <FaTimes />
+              </button>
+            </div>
+
+            <div className="modal-body">
+              {/* Only show Mark as Available when there's no active session */}
+              {selectedTable.status === "occupied" &&
+                (!tableSession || !tableSession.session) && (
+                  <button
+                    className="action-button available"
+                    onClick={() =>
+                      handleTableStatusChange(selectedTable.id, "available")
+                    }
+                  >
+                    <FaCheck />
+                    Mark as Available
+                  </button>
+                )}
+              {selectedTable.status === "occupied" && (
+                <>
+                  <button
+                    className="action-button view-orders"
+                    onClick={() => {
+                      setShowOrdersModal(true);
+                      setShowTableModal(false);
+                    }}
+                  >
+                    <FaEye />
+                    View Orders
+                  </button>
+                  {tableSession?.session &&
+                    !tableSession.session.paymentRequested && (
+                      <button
+                        className="action-button payment"
+                        onClick={() => {
+                          setShowPaymentModal(true);
+                          setShowTableModal(false);
+                        }}
+                      >
+                        <FaCreditCard />
+                        Payment Done
+                      </button>
+                    )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Orders Modal */}
+      {showOrdersModal && selectedTable && tableSession?.session && (
+        <div className="modal-overlay">
+          <div className="modal-content orders-modal">
+            <div className="modal-header">
+              <div>
+                <h2>Orders for {selectedTable.name}</h2>
+                <p className="session-total">
+                  Session Total: {tableSession.session.totalAmount.toFixed(2)}{" "}
+                  SAR
+                </p>
+              </div>
+              <button
+                className="close-button"
+                onClick={() => {
+                  setShowOrdersModal(false);
+                  setShowTableModal(true);
+                }}
+              >
+                <FaTimes />
+              </button>
+            </div>
+
+            <div className="orders-list">
+              {tableSession.orders && tableSession.orders.length > 0 ? (
+                tableSession.orders.map((order) => (
+                  <div key={order._id} className="order-card">
+                    <div className="order-header">
+                      <div className="order-info">
+                        <span className="order-number">
+                          Order #{order._id.slice(-4)}
+                        </span>
+                        {order.items.map((item, idx) => (
+                          <div key={idx} className="order-item">
+                            {item.quantity} × {item.name}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="order-status">
+                        <span className={`status-badge ${order.status}`}>
+                          {order.status.charAt(0).toUpperCase() +
+                            order.status.slice(1)}
+                        </span>
+                        {order.status !== "served" && (
+                          <button
+                            className="status-button"
+                            onClick={() =>
+                              handleOrderStatusChange(
+                                order._id,
+                                order.status === "pending"
+                                  ? "accepted"
+                                  : "served"
+                              )
+                            }
+                          >
+                            Mark as{" "}
+                            {order.status === "pending" ? "Accepted" : "Served"}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="order-total">
+                      Total: {order.totalAmount.toFixed(2)} SAR
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="no-orders-message">
+                  No orders found for this session
+                </div>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              <button
+                className="kot-button"
+                onClick={handleGenerateKOT}
+                disabled={
+                  !tableSession.orders || tableSession.orders.length === 0
+                }
+              >
+                <FaPrint />
+                Generate KOT
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Confirmation Modal */}
+      {showPaymentModal && selectedTable && (
+        <div className="modal-overlay">
+          <div className="modal-content payment-modal">
+            <h2>Confirm Payment</h2>
+            <p>
+              Are you sure you want to mark payment as complete? This will end
+              the current session for {selectedTable.name}.
+            </p>
+            <div className="payment-actions">
+              <button className="confirm-button" onClick={handlePaymentConfirm}>
+                Yes, Complete
+              </button>
+              <button
+                className="cancel-button"
+                onClick={() => {
+                  setShowPaymentModal(false);
+                  setShowTableModal(true);
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

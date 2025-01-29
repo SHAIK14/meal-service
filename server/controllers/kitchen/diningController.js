@@ -1,4 +1,6 @@
 const Dining = require("../../models/admin/DiningConfig");
+const Session = require("../../models/menu/session");
+const DiningOrder = require("../../models/menu/DiningOrder");
 
 exports.getBranchTables = async (req, res) => {
   try {
@@ -100,6 +102,153 @@ exports.updateTableStatus = async (req, res) => {
       success: false,
       message: "Error updating table status",
       error: error.message,
+    });
+  }
+};
+exports.getTableSession = async (req, res) => {
+  try {
+    const { tableName } = req.params;
+    const branchId = req.branch._id;
+
+    // Find active session for table
+    const session = await Session.findOne({
+      branchId,
+      tableName,
+      status: "active",
+    });
+
+    if (!session) {
+      return res.json({
+        success: true,
+        data: null,
+      });
+    }
+
+    // Get all orders for this session
+    const orders = await DiningOrder.find({
+      sessionId: session._id,
+    }).sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      data: {
+        session,
+        orders,
+      },
+    });
+  } catch (error) {
+    console.error("Error in getTableSession:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching table session",
+    });
+  }
+};
+
+// Complete session
+exports.completeSession = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const branchId = req.branch._id;
+
+    // Find and update session
+    const session = await Session.findOne({
+      _id: sessionId,
+      branchId,
+      status: "active",
+    });
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        message: "Active session not found",
+      });
+    }
+
+    // Check if all orders are served
+    const pendingOrders = await DiningOrder.exists({
+      sessionId,
+      status: { $ne: "served" },
+    });
+
+    if (pendingOrders) {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot complete session with pending orders",
+      });
+    }
+
+    // Update session status
+    session.status = "completed";
+    await session.save();
+
+    // Update table status
+    await Dining.updateOne(
+      {
+        branchId,
+        "tables.name": session.tableName,
+      },
+      {
+        $set: { "tables.$.status": "available" },
+      }
+    );
+
+    res.json({
+      success: true,
+      message: "Session completed successfully",
+    });
+  } catch (error) {
+    console.error("Error in completeSession:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error completing session",
+    });
+  }
+};
+
+// Generate KOT for unserved orders
+exports.generateKOT = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const branchId = req.branch._id;
+
+    // Get all unserved orders
+    const orders = await DiningOrder.find({
+      sessionId,
+      status: { $ne: "served" },
+    }).populate("items.itemId", "nameEnglish nameArabic");
+
+    if (!orders.length) {
+      return res.status(400).json({
+        success: false,
+        message: "No unserved orders found",
+      });
+    }
+
+    // Format orders for KOT
+    const kotData = {
+      sessionId,
+      orders: orders.map((order) => ({
+        orderId: order._id,
+        items: order.items.map((item) => ({
+          name: item.name,
+          quantity: item.quantity,
+          notes: item.notes,
+        })),
+        status: order.status,
+        createdAt: order.createdAt,
+      })),
+    };
+
+    res.json({
+      success: true,
+      data: kotData,
+    });
+  } catch (error) {
+    console.error("Error in generateKOT:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error generating KOT",
     });
   }
 };
