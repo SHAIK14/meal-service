@@ -1,7 +1,7 @@
 const Dining = require("../../models/admin/DiningConfig");
 const Session = require("../../models/menu/session");
 const DiningOrder = require("../../models/menu/DiningOrder");
-
+const Branch = require("../../models/admin/Branch");
 exports.getBranchTables = async (req, res) => {
   try {
     const branchId = req.branch._id;
@@ -178,20 +178,9 @@ exports.completeSession = async (req, res) => {
       });
     }
 
-    // Update session status
+    // Only update session status, don't change table status
     session.status = "completed";
     await session.save();
-
-    // Update table status
-    await Dining.updateOne(
-      {
-        branchId,
-        "tables.name": session.tableName,
-      },
-      {
-        $set: { "tables.$.status": "available" },
-      }
-    );
 
     res.json({
       success: true,
@@ -207,48 +196,69 @@ exports.completeSession = async (req, res) => {
 };
 
 // Generate KOT for unserved orders
-exports.generateKOT = async (req, res) => {
+exports.generateInvoice = async (req, res) => {
   try {
     const { sessionId } = req.params;
     const branchId = req.branch._id;
 
-    // Get all unserved orders
+    // Get all served orders for this session
     const orders = await DiningOrder.find({
       sessionId,
-      status: { $ne: "served" },
-    }).populate("items.itemId", "nameEnglish nameArabic");
+      status: "served",
+    });
 
     if (!orders.length) {
       return res.status(400).json({
         success: false,
-        message: "No unserved orders found",
+        message: "No served orders found",
       });
     }
 
-    // Format orders for KOT
-    const kotData = {
-      sessionId,
+    const session = await Session.findById(sessionId);
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        message: "Session not found",
+      });
+    }
+
+    const branch = await Branch.findById(branchId);
+    if (!branch) {
+      return res.status(404).json({
+        success: false,
+        message: "Branch not found",
+      });
+    }
+
+    // Format data for invoice
+    // Format data for invoice
+    const invoiceData = {
+      invoiceNo: `INV-${Date.now()}-${sessionId.slice(-4)}`,
+      branchName: branch.name,
+      vatNumber: branch.vatNumber,
+      tableName: session.tableName,
+      date: new Date(),
       orders: orders.map((order) => ({
         orderId: order._id,
         items: order.items.map((item) => ({
           name: item.name,
           quantity: item.quantity,
-          notes: item.notes,
+          price: item.price,
+          total: item.quantity * item.price,
         })),
-        status: order.status,
-        createdAt: order.createdAt,
+        orderTotal: order.totalAmount,
       })),
+      totalAmount: session.totalAmount,
     };
-
     res.json({
       success: true,
-      data: kotData,
+      data: invoiceData,
     });
   } catch (error) {
-    console.error("Error in generateKOT:", error);
+    console.error("Error in generateInvoice:", error);
     res.status(500).json({
       success: false,
-      message: "Error generating KOT",
+      message: "Error generating invoice",
     });
   }
 };

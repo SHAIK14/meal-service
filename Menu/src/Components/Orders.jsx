@@ -87,24 +87,14 @@ const Orders = () => {
             <div className="space-y-3">
               {order.items.map((item, index) => (
                 <div
-                  key={index}
+                  key={`${order._id}-${index}`}
                   className="flex items-center justify-between py-2 border-b last:border-0"
                 >
-                  <div className="flex items-center space-x-3">
-                    <img
-                      src={item.image}
-                      alt={item.nameEnglish}
-                      className="w-12 h-12 rounded-md object-cover"
-                      onError={(e) => {
-                        e.target.src = "https://via.placeholder.com/48";
-                      }}
-                    />
-                    <div>
-                      <p className="font-medium">{item.nameEnglish}</p>
-                      <p className="text-sm text-gray-500">
-                        {item.quantity} × {item.price} SAR
-                      </p>
-                    </div>
+                  <div>
+                    <p className="font-medium">{item.name}</p>
+                    <p className="text-sm text-gray-500">
+                      {item.quantity} × {item.price} SAR
+                    </p>
                   </div>
                   <p className="font-medium">
                     {(item.quantity * item.price).toFixed(2)} SAR

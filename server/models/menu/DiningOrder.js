@@ -19,7 +19,7 @@ const diningOrderSchema = new mongoose.Schema(
     items: [
       {
         itemId: {
-          type: String,
+          type: mongoose.Schema.Types.ObjectId,
           required: true,
         },
         name: String,

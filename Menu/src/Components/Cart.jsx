@@ -51,13 +51,12 @@ const Cart = ({ isOpen, onClose, cart, onQuantityChange }) => {
         throw new Error("You need to be at the restaurant to place an order");
       }
 
-      // Prepare order data with session ID
       const orderData = {
         sessionId: sessionDetails?.id,
         branchId: branchDetails.id,
         tableName: branchDetails.tableName,
         items: cart.map((item) => ({
-          itemId: item.id,
+          itemId: item.id, // Just send the ID
           name: item.nameEnglish,
           quantity: item.quantity,
           price: item.price,
@@ -65,7 +64,6 @@ const Cart = ({ isOpen, onClose, cart, onQuantityChange }) => {
         totalAmount: total,
         userLocation: location,
       };
-
       // Send order to server
       const response = await createDiningOrder(orderData);
 

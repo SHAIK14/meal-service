@@ -171,7 +171,9 @@ export const completeSession = async (sessionId) => {
   );
 };
 
-export const generateKOT = async (sessionId) => {
-  return handleResponse(api.get(`/kitchen/dining/sessions/${sessionId}/kot`));
+export const generateInvoice = async (sessionId) => {
+  return handleResponse(
+    api.get(`/kitchen/dining/sessions/${sessionId}/invoice`)
+  );
 };
 export default api;
