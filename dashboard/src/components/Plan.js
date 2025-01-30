@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaTrash, FaEdit, FaListAlt } from "react-icons/fa";
 import { getAllPlans, deletePlan, getWeekMenu } from "../utils/api";
-import "../styles/Plans.css";
+// import "../styles/Plans.css";
 
 const Plans = () => {
   const [plans, setPlans] = useState([]);
@@ -80,13 +80,13 @@ const Plans = () => {
   };
 
   return (
-    <div className="admin-plans-wrapper">
-      <div className="admin-plans-container">
-        <h1>Meal Plans</h1>
+    <div className="bg-white p-8 h-screen">
+      <div className="">
+        <div className="flex items-center bg-gray-100 justify-between rounded-2xl p-4">
+          <h1 className=" text-3xl font-semibold m-0 p-0">Meal Plans</h1>
 
-        <div className="admin-create-plan-section">
           <button
-            className="admin-create-plan-btn"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-green-500 text-sm font-semibold text-black hover:text-white transition-all duration-300 bg-gray-200"
             onClick={() => navigate("/plans/create")}
           >
             Create New Plan
@@ -94,44 +94,55 @@ const Plans = () => {
         </div>
 
         {plans.length > 0 ? (
-          <div className="admin-plans-list">
+          <div className="grid sm:grid-cols-1 mt-4 md:grid-col-2 lg:grid-cols-3 place-content-center place-items-center w-fit gap-4">
             {plans.map((plan) => (
-              <div key={plan._id} className="admin-plan-card">
-                <div className="admin-plan-image-container">
+              <div
+                key={plan._id}
+                className="flex border items-center p-4 rounded-2xl gap-4 "
+              >
+                <div className="w-20 h-20 rounded-2xl overflow-hidden">
                   {plan.image && (
                     <img
                       src={plan.image}
                       alt={plan.nameEnglish}
-                      className="admin-plan-image"
+                      className="w-full h-full object-cover"
                     />
                   )}
                 </div>
-                <div className="admin-plan-details">
-                  <h2>{plan.nameEnglish}</h2>
+                <div className="">
+                  <h2 className="font-bold text-2xl mb-2">
+                    {plan.nameEnglish}
+                  </h2>
                   <div className="admin-service-info">
-                    <span className="admin-service-label">Service Type:</span>
-                    <span className="admin-service-value">
+                    <span className="font-semibold">Service Type: </span>
+                    <span className="text-gray-700">
                       {getServiceLabel(plan.service)}
                     </span>
                   </div>
                 </div>
-                <div className="admin-plan-actions">
+                <div className=" flex  gap-2">
                   <button
-                    className="admin-edit-btn"
+                    className="relative bg-blue-500 text-sm p-2 text-white rounded-full hover:bg-blue-600 transition-all duration-300 group"
                     onClick={() => navigate(`/plans/edit/${plan._id}`)}
                     title="Edit Plan"
                   >
                     <FaEdit />
+                    <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 text-xs text-white bg-black rounded-md py-1 px-2 opacity-0 group-hover:opacity-100 group-hover:block transition-opacity duration-300">
+                      Edit
+                    </span>
                   </button>
                   <button
-                    className="admin-delete-btn"
+                    className="relative bg-red-500 text-sm p-2 text-white rounded-full hover:bg-red-600 transition-all duration-300 group"
                     onClick={() => handleDelete(plan._id)}
                     title="Delete Plan"
                   >
                     <FaTrash />
+                    <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 text-xs text-white bg-black rounded-md py-1 px-2 opacity-0 group-hover:opacity-100 group-hover:block transition-opacity duration-300">
+                      Delete
+                    </span>
                   </button>
                   <button
-                    className={`admin-${
+                    className={` relative bg-green-500 text-sm p-2 text-white rounded-full hover:bg-green-600 transition-all duration-300 group  admin-${
                       plansWithItems[plan._id] ? "edit" : "add"
                     }-items-btn`}
                     onClick={() =>
@@ -142,6 +153,9 @@ const Plans = () => {
                     }
                   >
                     <FaListAlt />
+                    <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 text-xs text-white bg-black rounded-md py-1 px-2 opacity-0 group-hover:opacity-100 group-hover:block transition-opacity duration-300">
+                      Items
+                    </span>
                   </button>
                 </div>
               </div>

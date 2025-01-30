@@ -5,7 +5,8 @@ import { AlertTriangle } from "lucide-react";
 import { createPlan } from "../utils/api";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "../config/firebaseConfig";
-import "../styles/PlanCreate.css";
+
+// import "../styles/PlanCreate.css";
 
 const PlanCreate = () => {
   const navigate = useNavigate();
@@ -98,60 +99,103 @@ const PlanCreate = () => {
   };
 
   return (
-    <div className="admin-plan-create-wrapper">
-      <h1>Create New Plan</h1>
-      <form onSubmit={handleSavePlan} className="admin-plan-create-form">
-        <div className="admin-image-container">
-          <label htmlFor="file-upload" className="admin-custom-file-upload">
-            {selectedImage ? (
-              <img
-                src={selectedImage}
-                alt="Preview"
-                style={{ width: "100%", height: "auto" }}
+    <div className="p-8 w-full h-screen ">
+      <form onSubmit={handleSavePlan} className="bg-white p-8 min-w-[600px]  ">
+        <h1 className="font-semibold text-2xl">Create New Plan </h1>
+        <div className="flex gap-4  h-full w-full flex-1">
+          <div className=" h-full">
+            <div className="relative w-60 h-60 rounded-lg border-dashed border-medium flex items-center justify-center overflow-hidden">
+              <label
+                htmlFor="file-upload"
+                className={`w-full h-full flex items-center justify-center ${
+                  selectedImage ? "cursor-pointer" : "text-center"
+                }`}
+              >
+                {selectedImage ? (
+                  <div className="relative w-full h-full">
+                    <img
+                      src={selectedImage}
+                      className="w-full h-full object-cover"
+                      alt="Preview"
+                    />
+                    {/* Delete Icon on Hover */}
+                    <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedImage(null);
+                          setNewPlan((prevState) => ({
+                            ...prevState,
+                            image: null,
+                          }));
+                        }}
+                        className="bg-red-500 p-2 rounded-full text-white"
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  "Upload Photo 200x200"
+                )}
+              </label>
+              <input
+                id="file-upload"
+                type="file"
+                name="image"
+                accept="image/*"
+                onChange={handleImageChange}
+                required
+                style={{ display: "none" }}
               />
-            ) : (
-              "Upload Photo 200x200"
-            )}
-          </label>
-          <input
-            id="file-upload"
-            type="file"
-            name="image"
-            accept="image/*"
-            onChange={handleImageChange}
-            required
-            style={{ display: "none" }}
-          />
-          {selectedImage && (
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedImage(null);
-                setNewPlan((prev) => ({ ...prev, image: null }));
-              }}
-              className="admin-icon-button"
-            >
-              <FaTrash />
-            </button>
-          )}
-        </div>
-        <div className="admin-form-container">
-          <div className="admin-form-group-category">
-            <label className="admin-select-label">Service Type:</label>
-            <select
-              name="service"
-              value={newPlan.service}
-              onChange={handleInputChange}
-              required
-              className="admin-select"
-            >
-              <option value="">Select a service</option>
-              <option value="subscription">Subscription Service</option>
-              <option value="indoorCatering">Indoor Catering Service</option>
-              <option value="outdoorCatering">Outdoor Catering Service</option>
-              <option value="dining">Dining Service</option>
-            </select>
+            </div>
+            <div className=" mt-4">
+              <div class="relative overflow-hidden w-full">
+                <select
+                  name="service"
+                  value={newPlan.service}
+                  onChange={handleInputChange}
+                  required
+                  class=" font-semibold w-full px-4 py-2 border border-gray-300 rounded-lg bg-white cursor-pointer transition-all duration-300  mb-2 focus:outline-none"
+                >
+                  <option value="">Select a service</option>
+                  <option value="subscription">Subscription Service</option>
+                  <option value="indoorCatering">
+                    Indoor Catering Service
+                  </option>
+                  <option value="outdoorCatering">
+                    Outdoor Catering Service
+                  </option>
+                  <option value="dining">Dining Service</option>
+                </select>
+              </div>
+              <div>
+                <div className="flex flex-col gap-2">
+                  <label className="">Package Selection:</label>
+                  <div className="gap-2 flex flex-col">
+                    {["breakfast", "lunch", "dinner", "snacks"].map(
+                      (option) => (
+                        <label key={option} className="admin-checkbox-label">
+                          <input
+                            type="checkbox"
+                            name="package"
+                            value={option}
+                            checked={newPlan.package.includes(option)}
+                            onChange={handleInputChange}
+                            className="w-4 h-4 border-solid border-8"
+                          />
+                          <span>
+                            {option.charAt(0).toUpperCase() + option.slice(1)}
+                          </span>
+                        </label>
+                      )
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
+
           {showServiceWarning && (
             <div className="admin-warning-message">
               <AlertTriangle size={16} />
@@ -160,123 +204,114 @@ const PlanCreate = () => {
               </span>
             </div>
           )}
-
-          <input
-            type="text"
-            name="nameEnglish"
-            placeholder="Plan Name (English)"
-            value={newPlan.nameEnglish}
-            onChange={handleInputChange}
-            required
-            className="admin-input"
-          />
-          <input
-            type="text"
-            name="nameArabic"
-            placeholder="Plan Name (Arabic)"
-            value={newPlan.nameArabic}
-            onChange={handleInputChange}
-            required
-            className="admin-input"
-          />
-          <textarea
-            name="descriptionEnglish"
-            placeholder="Plan Description (English)"
-            value={newPlan.descriptionEnglish}
-            onChange={handleInputChange}
-            required
-            className="admin-textarea"
-          />
-          <textarea
-            name="descriptionArabic"
-            placeholder="Plan Description (Arabic)"
-            value={newPlan.descriptionArabic}
-            onChange={handleInputChange}
-            required
-            className="admin-textarea"
-          />
-          <div className="admin-checkbox-group">
-            <label className="admin-checkbox-label">
-              <input
-                type="checkbox"
-                name="isVeg"
-                checked={newPlan.isVeg}
-                onChange={handleInputChange}
-                className="admin-checkbox"
-              />
-              <span>Veg-plan</span>
-            </label>
-            <label className="admin-checkbox-label">
-              <input
-                type="checkbox"
-                name="isNonVeg"
-                checked={newPlan.isNonVeg}
-                onChange={handleInputChange}
-                className="admin-checkbox"
-              />
-              <span>Non-Veg plan</span>
-            </label>
-            <label className="admin-checkbox-label">
-              <input
-                type="checkbox"
-                name="isIndividual"
-                checked={newPlan.isIndividual}
-                onChange={handleInputChange}
-                className="admin-checkbox"
-              />
-              <span>Individual Plan</span>
-            </label>
-            <label className="admin-checkbox-label">
-              <input
-                type="checkbox"
-                name="isMultiple"
-                checked={newPlan.isMultiple}
-                onChange={handleInputChange}
-                className="admin-checkbox"
-              />
-              <span>Multiple Plan</span>
-            </label>
-          </div>
-
-          <div className="admin-checkbox-group">
-            <label>Package Selection:</label>
-            <div className="admin-package-options">
-              {["breakfast", "lunch", "dinner", "snacks"].map((option) => (
-                <label key={option} className="admin-checkbox-label">
+          <div className="names flex-1 flex flex-col  ">
+            <div className="flex flex-1 flex-col gap-4">
+              <div className="flex gap-4">
+                <input
+                  type="text"
+                  name="nameEnglish"
+                  placeholder="Plan Name (English)"
+                  value={newPlan.nameEnglish}
+                  onChange={handleInputChange}
+                  required
+                  className="admin-input"
+                />
+                <input
+                  type="text"
+                  name="nameArabic"
+                  placeholder="Plan Name (Arabic)"
+                  value={newPlan.nameArabic}
+                  onChange={handleInputChange}
+                  required
+                  className="admin-input"
+                />
+              </div>
+              <div className="flex flex-col gap-4">
+                <textarea
+                  name="descriptionEnglish"
+                  placeholder="Plan Description (English)"
+                  value={newPlan.descriptionEnglish}
+                  onChange={handleInputChange}
+                  required
+                  className="admin-textarea"
+                />
+                <textarea
+                  name="descriptionArabic"
+                  placeholder="Plan Description (Arabic)"
+                  value={newPlan.descriptionArabic}
+                  onChange={handleInputChange}
+                  required
+                  className="admin-textarea"
+                />
+              </div>
+              <div className="flex  gap-2 w-full p-2 justify-between items-left ">
+                <label className=" items-center cursor-pointer flex gap-2">
                   <input
                     type="checkbox"
-                    name="package"
-                    value={option}
-                    checked={newPlan.package.includes(option)}
+                    name="isVeg"
+                    checked={newPlan.isVeg}
                     onChange={handleInputChange}
-                    className="admin-checkbox"
+                    className="w-4 h-4 border-solid border-8"
                   />
-                  <span>
-                    {option.charAt(0).toUpperCase() + option.slice(1)}
-                  </span>
+                  <span>Veg-plan</span>
                 </label>
-              ))}
+                <label className=" items-center cursor-pointer flex gap-2">
+                  <input
+                    type="checkbox"
+                    name="isNonVeg"
+                    checked={newPlan.isNonVeg}
+                    onChange={handleInputChange}
+                    className="w-4 h-4 border-solid border-8"
+                  />
+                  <span>Non-Veg plan</span>
+                </label>
+                <label className=" items-center flex cursor-pointer gap-2">
+                  <input
+                    type="checkbox"
+                    name="isIndividual"
+                    checked={newPlan.isIndividual}
+                    onChange={handleInputChange}
+                    className="w-4 h-4 border-solid border-8"
+                  />
+                  <span>Individual Plan</span>
+                </label>
+                <label className=" items-center flex cursor-pointer gap-2">
+                  <input
+                    type="checkbox"
+                    name="isMultiple"
+                    checked={newPlan.isMultiple}
+                    onChange={handleInputChange}
+                    className="w-4 h-4 border-solid border-8"
+                  />
+                  <span>Multiple Plan</span>
+                </label>
+              </div>
             </div>
-          </div>
-          {showPackageWarning && (
-            <div className="admin-warning-message">
-              <AlertTriangle size={16} />
-              <span>
-                Warning: Package selection cannot be modified after creation.
-              </span>
+
+            {showPackageWarning && (
+              <div className="admin-warning-message">
+                <AlertTriangle size={16} />
+                <span>
+                  Warning: Package selection cannot be modified after creation.
+                </span>
+              </div>
+            )}
+            <div className="plan select "></div>
+            <div className="buttons flex gap-8  items-right justify-end">
+              <button
+                type="button"
+                className="px-8 py-2 text-white hover:bg-red-600  bg-red-500"
+                onClick={() => navigate("/plans")}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-8 py-2 text-white hover:bg-green-600  bg-green-500"
+              >
+                Save Plan
+              </button>
             </div>
-          )}
-          <div className="admin-form-btn">
-            <button
-              type="button"
-              className="admin-cancel-button"
-              onClick={() => navigate("/plans")}
-            >
-              Cancel
-            </button>
-            <button type="submit" className="admin-save-button">
-              Save Plan
-            </button>
           </div>
         </div>
       </form>

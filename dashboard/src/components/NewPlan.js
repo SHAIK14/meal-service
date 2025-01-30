@@ -46,7 +46,7 @@ const NewPlan = () => {
 
   return (
     <div style={formContainerStyle}>
-      <h1>Create New Plan</h1>
+      <h1>Create New Plan </h1>
       <form onSubmit={handleSubmit} style={{ display: "flex" }}>
         <div style={{ marginRight: "20px" }}>
           <input
@@ -181,6 +181,8 @@ const NewPlan = () => {
   );
 };
 
+/*
+
 // Styles
 const formContainerStyle = {
   backgroundColor: "white",
@@ -271,5 +273,7 @@ const nextButtonStyle = {
   border: "none",
   borderRadius: "50px",
 };
+
+*/
 
 export default NewPlan;

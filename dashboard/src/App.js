@@ -36,11 +36,12 @@ import MenuItems from "./components/MenuItems";
 import MenuCategoryItems from "./components/MenuCategoryItems";
 
 const AuthenticatedLayout = ({ children }) => (
-  <div
-    style={{ display: "flex", backgroundColor: "#F4F4F4", minHeight: "100vh" }}
-  >
+  <div className="flex bg-white h-screen">
+    {/* Sidebar */}
     <Sidebar />
-    <div style={{ flexGrow: 1, marginLeft: "100px" }}>{children}</div>
+
+    {/* Main Content */}
+    <div className="flex-grow overflow-y-auto">{children}</div>
   </div>
 );
 

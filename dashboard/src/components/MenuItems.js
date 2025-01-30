@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { FaPlus } from "react-icons/fa";
 
 const MenuItems = () => {
   const [categories, setCategories] = useState([]);
@@ -41,28 +42,27 @@ const MenuItems = () => {
     }
   };
 
-  // Update category details
-  const handleCategoryUpdate = (updatedCategory) => {
-    setCategories((prevCategories) =>
-      prevCategories.map((category) =>
-        category.id === updatedCategory.id ? updatedCategory : category
-      )
-    );
-  };
+  // // Update category details
+  // const handleCategoryUpdate = (updatedCategory) => {
+  //   setCategories((prevCategories) =>
+  //     prevCategories.map((category) =>
+  //       category.id === updatedCategory.id ? updatedCategory : category
+  //     )
+  //   );
+  // };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4">
+    <div className="min-h-screen bg-white p-4">
       {/* Header */}
-      <div className="flex justify-between items-center  bg-white shadow-md p-6 rounded-2xl">
-        <h1 className="text-2xl m-0 font-bold px-2 text-gray-800">
-          Dining Menu
-        </h1>
+      <div className="flex items-center bg-gray-100 justify-between rounded-2xl p-4">
+        <h1 className=" text-3xl font-semibold m-0 p-0">Dining Menu</h1>
 
         <button
           onClick={() => setShowPopup(true)}
-          className="bg-red-500 text-white px-4 py-2 rounded-full hover:bg-red-600"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-green-500 text-sm font-semibold text-black hover:text-white transition-all duration-300 bg-gray-200"
         >
-          + Add Category
+          Add Category
+          <FaPlus />
         </button>
       </div>
 
@@ -79,11 +79,13 @@ const MenuItems = () => {
               onClick={() => handleCategoryClick(category)}
               className="bg-white shadow-md p-4 rounded-2xl  flex items-center  cursor-pointer hover:shadow-lg"
             >
-              <img
-                src={category.image}
-                alt={category.name}
-                className="w-24 h-24 object-cover rounded-2xl"
-              />
+              <div className="w-24 h-24">
+                <img
+                  src={category.image}
+                  alt={category.name}
+                  className="w-24 h-24 object-cover rounded-2xl"
+                />
+              </div>
               <div className="flex items-center  justify-between ml-4 w-full">
                 <h2 className=" text-lg  font-semibold text-gray-800">
                   {category.name}

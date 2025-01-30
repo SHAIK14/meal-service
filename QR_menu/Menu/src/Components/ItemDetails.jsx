@@ -131,7 +131,7 @@ const ItemDetails = () => {
                 <div>
                   <p className="font-bold">Carbs</p>
                   <p className="text-xs sm:text-sm">
-                    {item.nutritionFacts.carbs}g
+                    {item.nutritionFacts.carbs}
                   </p>
                 </div>
               </div>

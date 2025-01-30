@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import "../styles/Banners.css";
 
+
 const Banners = () => {
   const [banners, setBanners] = useState(Array(5).fill(null)); // Array to hold 5 banner slots
 
