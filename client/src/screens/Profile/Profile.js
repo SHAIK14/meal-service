@@ -1,178 +1,197 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
-import Icon from "react-native-vector-icons/MaterialIcons";
-import AntDesign from "@expo/vector-icons/AntDesign";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  FlatList,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-const Profile = ({ navigation }) => {
-  const clientName = "UserName";
-  const clientPhone = "+91 98765 43210";
+const ProfileScreen = ({ userInfo, onEditProfile, navigation }) => {
+  userInfo = userInfo || {
+    name: "Mirza Ibrahim",
+    email: "Ibrahimafroz77@gmail.com",
+    phone: "+966 597336794",
+  };
+
+  const menuOptions = [
+    {
+      title: "Subscription",
+      icon: "card-outline",
+      action: () => navigation.navigate("Subscription"),
+    },
+    {
+      title: "Contact Support",
+      icon: "help-circle-outline",
+      action: () => navigation.navigate("ContactSupport"),
+    },
+    {
+      title: "Privacy and Policy",
+      icon: "document-text-outline",
+      action: () => navigation.navigate("PrivacyPolicy"),
+    },
+    {
+      title: "History",
+      icon: "time-outline",
+      action: () => navigation.navigate("History"),
+    },
+    {
+      title: "Logout",
+      icon: "exit-outline",
+      action: () => console.log("Logging out..."),
+    },
+  ];
 
   return (
-    <View style={styles.container}>
-      {/* Client Info */}
-      <TouchableOpacity
-        style={styles.userInfo}
-        onPress={() => navigation.navigate("EditProfile")}
-      >
-        <Image
-          source={{
-            uri: "https://cdn-icons-png.flaticon.com/512/5951/5951752.png",
-          }}
-          style={styles.profileImage}
-        />
-        <View>
-          <Text style={styles.clientName}>{clientName}</Text>
-          <Text style={styles.clientPhone}>{clientPhone}</Text>
+    <SafeAreaView style={styles.container}>
+      {/* Top User Information */}
+      <View style={styles.userInfoContainer}>
+        <View style={styles.userInfo}>
+          <Image
+            source={require("../../../assets/profile-user.png")}
+            style={styles.userImage}
+          />
+          <View style={styles.userDetails}>
+            <Text style={styles.userName}>{userInfo.name}</Text>
+            <Text style={styles.userEmail}>{userInfo.email}</Text>
+            <Text style={styles.userPhone}>{userInfo.phone}</Text>
+          </View>
         </View>
-        <AntDesign
-          name="edit"
-          size={24}
-          color="black"
-          style={styles.editIcon}
-        />
-      </TouchableOpacity>
 
-      {/* Action Buttons */}
-      <View style={styles.buttonsContainer}>
+        {/* Edit Profile Button */}
         <TouchableOpacity
-          style={styles.button}
-          onPress={() => navigation.navigate("Subscription")}
+          style={styles.editProfileButton}
+          onPress={() => navigation.navigate("EditProfile")}
         >
-          <FontAwesome
-            name="list-alt"
-            size={24}
-            color="black"
-            style={styles.icon}
-          />
-          <Text style={styles.buttonText}>Subscription</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => navigation.navigate("ContactSupport")}
-        >
-          <AntDesign
-            name="customerservice"
-            size={24}
-            color="black"
-            style={styles.icon}
-          />
-          <Text style={styles.buttonText}>Contact Support</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => navigation.navigate("PrivacyPolicy")}
-        >
-          <Icon name="lock" size={24} color="black" style={styles.icon} />
-          <Text style={styles.buttonText}>Privacy & Policy</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.button, styles.logoutButton]}
-          onPress={() => alert("Logged out")}
-        >
-          <AntDesign name="logout" size={24} color="red" style={styles.icon} />
-          <Text style={styles.logoutButtonText}>Logout</Text>
+          <Text style={styles.editProfileText}>Edit Profile</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.banner}>
+      {/* Menu Options */}
+      <FlatList
+        data={menuOptions}
+        keyExtractor={(item) => item.title}
+        renderItem={({ item }) => (
+          <TouchableOpacity style={styles.menuItem} onPress={item.action}>
+            <Ionicons
+              name={item.icon}
+              size={24}
+              color="#444"
+              style={styles.menuIcon}
+            />
+            <Text style={styles.menuText}>{item.title}</Text>
+          </TouchableOpacity>
+        )}
+        contentContainerStyle={styles.menuContainer}
+      />
+
+      {/* Bottom Logo */}
+      <View style={styles.logoContainer}>
         <Image
           source={require("../../../assets/logoVertical.png")}
           style={styles.logo}
-          resizeMode="contain"
         />
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
-
-export default Profile;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "white",
+    backgroundColor: "#f9f9f9",
     justifyContent: "space-between",
   },
 
+  userInfoContainer: {
+    padding: 20,
+  },
   userInfo: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#ffffff",
-    padding: 30,
-    borderRadius: 10,
-    marginBottom: 10,
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 20,
   },
-
-  profileImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    marginRight: 20,
+  userImage: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    marginRight: 15,
   },
-
-  clientName: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#333",
-  },
-
-  clientPhone: {
-    fontSize: 16,
-    color: "#666",
-  },
-
-  editIcon: {
-    marginLeft: "auto",
-    paddingLeft: 10,
-  },
-
-  buttonsContainer: {
+  userDetails: {
     flex: 1,
+    padding: 10,
+  },
+  userName: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "black",
+    marginBottom: 5,
   },
 
-  button: {
+  userEmail: {
+    fontSize: 14,
+    color: "#555",
+    marginBottom: 5,
+  },
+
+  userPhone: {
+    fontSize: 14,
+    color: "#555",
+  },
+
+  editProfileButton: {
+    width: "100%",
+    backgroundColor: "#dc2626",
+    paddingVertical: 15,
+    borderRadius: 25,
+    marginBottom: 10,
+    alignItems: "center",
+  },
+
+  editProfileText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#fff",
+  },
+
+  menuContainer: {
+    paddingHorizontal: 20,
+  },
+  menuItem: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "white",
-    marginVertical: 10,
-    padding: 15,
+    backgroundColor: "#fff",
+    padding: 20,
+    marginBottom: 15,
+    borderRadius: 30,
   },
-
-  buttonText: {
-    color: "black",
-    fontSize: 18,
+  menuIcon: {
+    marginRight: 15,
+  },
+  menuText: {
+    fontSize: 16,
+    color: "#333",
     fontWeight: "500",
-    marginLeft: 15,
   },
-
-  icon: {
-    marginLeft: 10,
-  },
-
-  logoutButton: {
-    backgroundColor: "white",
-  },
-
-  logoutButtonText: {
-    color: "red",
-    fontSize: 18,
-    fontWeight: "500",
-    marginLeft: 15,
-  },
-
-  banner: {
-    backgroundColor: "black",
+  logoContainer: {
     alignItems: "center",
-    padding: 25,
+    width: "100%",
+    backgroundColor: "black",
+    padding: 20,
     justifyContent: "center",
+    borderTopRightRadius: 25,
+    borderTopLeftRadius: 25,
   },
-
   logo: {
     width: "100%",
+    height: 80,
+    resizeMode: "contain",
   },
 });
+
+export default ProfileScreen;

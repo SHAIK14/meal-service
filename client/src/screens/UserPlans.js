@@ -5,6 +5,7 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  RefreshControl,
   Image,
   Animated,
   PanResponder,
@@ -21,9 +22,17 @@ import {
   getPlanWeeklyMenu,
   getItemsBatch,
 } from "../utils/api";
+import { SafeAreaView } from "react-native-safe-area-context";
+import AdsCarousel from "./components/AdsCarousel";
 
 const { width, height } = Dimensions.get("window");
-
+const truncateDescription = (description) => {
+  const words = description.split(" ");
+  if (words.length > 5) {
+    return words.slice(0, 5).join(" ") + "...";
+  }
+  return description;
+};
 const getWeekDates = () => {
   const today = new Date();
   return Array.from({ length: 7 }, (_, i) => {
@@ -51,6 +60,29 @@ const UserPlan = () => {
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [viewingCategory, setViewingCategory] = useState(null);
   const [selectedPackages, setSelectedPackages] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
+  // Hide navigation bar when modal opens, show when modal closes
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    // Simulate an API call or reload logic
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 2000);
+  };
+
+  useEffect(() => {
+    if (selectedPlan) {
+      navigation.setOptions({ headerShown: false });
+    } else {
+      navigation.setOptions({ headerShown: true });
+    }
+
+    return () => {
+      // Clean up the effect when component unmounts
+      navigation.setOptions({ headerShown: true });
+    };
+  }, [selectedPlan, navigation]);
 
   useEffect(() => {
     fetchPlans();
@@ -59,10 +91,13 @@ const UserPlan = () => {
   const fetchPlans = async () => {
     try {
       const data = await getAllPlans();
+      console.log("fetched Data:", data);
       if (data.data) {
         const subscriptionPlans = data.data.filter(
           (plan) => plan.service === "subscription"
         );
+        // Log filtered subscription plans to check the results
+        console.log("Filtered Subscription Plans:", subscriptionPlans);
         setPlans(subscriptionPlans);
       }
       setLoading(false);
@@ -71,6 +106,14 @@ const UserPlan = () => {
       setError(err.message);
       setLoading(false);
     }
+  };
+
+  // Function to get the starting price (lowest price from the package) and multiply by 5
+  const getStartingPriceFor5Days = (pricing) => {
+    // Find the minimum price from the available meals (breakfast, lunch, dinner)
+    const prices = Object.values(pricing); // Convert pricing object to array of prices
+    const minPrice = Math.min(...prices); // Get the minimum price
+    return minPrice * 5; // Multiply by 5 for a 5-day plan
   };
 
   const fetchWeekMenu = async (planId) => {
@@ -117,10 +160,8 @@ const UserPlan = () => {
 
     console.log("Selected Plan Raw:", selectedPlan);
 
-    // Convert Map to regular object for selected packages
     const pricingObject = {};
     selectedPackages.forEach((pkg) => {
-      // Handle both Map and regular object cases
       const price =
         selectedPlan.packagePricing instanceof Map
           ? selectedPlan.packagePricing.get(pkg)
@@ -136,7 +177,7 @@ const UserPlan = () => {
         id: selectedPlan._id,
         name: selectedPlan.nameEnglish,
         selectedPackages,
-        packagePricing: pricingObject, // Send the converted pricing object
+        packagePricing: pricingObject,
         currency: selectedPlan.currency || "SAR",
       },
     };
@@ -241,7 +282,7 @@ const UserPlan = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#C5A85F" />
+        <ActivityIndicator size="large" color="#DC2626" />
       </View>
     );
   }
@@ -255,35 +296,65 @@ const UserPlan = () => {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => navigation.navigate("AddPartner")}
-        >
-          <Text style={styles.buttonText}>Add Partner</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.profileIcon}
-          onPress={() => navigation.navigate("Profile")}
-        >
-          <Ionicons name="person-circle-outline" size={32} color="#000" />
-        </TouchableOpacity>
-      </View>
+    <SafeAreaView style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.planWrapper}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        <View style={styles.AdContainer}>
+          <AdsCarousel />
+        </View>
+        <View styles={styles.plansContainer}>
+          <View style={styles.PlanTitleContainer}>
+            <Text style={styles.PlansTitle}>Select Your Plans</Text>
+          </View>
 
-      <ScrollView contentContainerStyle={styles.planWrapper}>
-        {plans.map((plan) => (
-          <TouchableOpacity
-            key={plan._id}
-            style={styles.planCard}
-            onPress={() => handlePlanSelect(plan)}
-          >
-            <Image source={{ uri: plan.image }} style={styles.planImage} />
-            <View style={styles.planTextContainer}>
-              <Text style={styles.planName}>{plan.nameEnglish}</Text>
-            </View>
-          </TouchableOpacity>
-        ))}
+          {plans.map((plan) => (
+            <TouchableOpacity
+              key={plan._id}
+              style={styles.planCard}
+              onPress={() => handlePlanSelect(plan)}
+            >
+              {/* Image on the top */}
+              <Image source={{ uri: plan.image }} style={styles.planImage} />
+
+              {/* Plan details below the image */}
+              <View style={styles.planTextContainer}>
+                {/* Left side: Plan name and description */}
+                <View style={{ flex: 1 }}>
+                  {/* Plan name (big size) */}
+                  <Text style={styles.planName}>{plan.nameEnglish}</Text>
+
+                  {/* Short description (smaller size, truncated) */}
+                  <Text style={styles.planDescription}>
+                    {truncateDescription(plan.descriptionEnglish)}
+                  </Text>
+                </View>
+
+                {/* Right side: Price */}
+                <View style={styles.priceContainer}>
+                  {/* Starting price (big size and bold) */}
+                  <Text style={styles.startingFrom}>Starting from: </Text>
+                  <Text style={styles.price}>
+                    {getStartingPriceFor5Days(plan.packagePricing)}{" "}
+                    <Text style={styles.sar}>SAR</Text>
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.selectButtonContainerCard}>
+                <TouchableOpacity
+                  style={[styles.selectButton]}
+                  onPress={handleNavigateToUserPlanDuration}
+                  disabled={!canProceed()}
+                >
+                  <Text style={styles.selectButtonText}>Select Plan</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
       </ScrollView>
 
       {selectedPlan && (
@@ -298,6 +369,7 @@ const UserPlan = () => {
               styles.modalContainer,
               {
                 transform: [{ translateY: modalAnimation }],
+                zIndex: 10,
               },
             ]}
           >
@@ -314,6 +386,12 @@ const UserPlan = () => {
                 <View style={styles.modalTitleWrapper}>
                   <Text style={styles.modalTitle}>
                     {selectedPlan.nameEnglish}
+                  </Text>
+                </View>
+                {/* Full Description */}
+                <View style={styles.modalDescriptionWrapper}>
+                  <Text style={styles.modalDescription}>
+                    {selectedPlan.descriptionEnglish}
                   </Text>
                 </View>
 
@@ -346,7 +424,7 @@ const UserPlan = () => {
                   <>
                     <ScrollView
                       horizontal
-                      showsHorizontalScrollIndicator={false}
+                      showsHorizontalScrollIndicator={true}
                       style={styles.daysWrapper}
                       contentContainerStyle={styles.daysContent}
                     >
@@ -363,14 +441,20 @@ const UserPlan = () => {
                             setSelectedDate(new Date(dateInfo.fullDate))
                           }
                         >
-                          <Text style={styles.dayNameText}>
+                          <Text
+                            style={[
+                              styles.dayNameText,
+                              format(selectedDate, "yyyy-MM-dd") ===
+                                dateInfo.fullDate && styles.activeDayText, // Make day text white when active
+                            ]}
+                          >
                             {dateInfo.displayDay}
                           </Text>
                           <Text
                             style={[
                               styles.dayText,
                               format(selectedDate, "yyyy-MM-dd") ===
-                                dateInfo.fullDate && styles.activeDayText,
+                                dateInfo.fullDate && styles.activeDayText, // Make date text white when active
                             ]}
                           >
                             {dateInfo.displayDate}
@@ -381,7 +465,7 @@ const UserPlan = () => {
 
                     <ScrollView
                       horizontal
-                      showsHorizontalScrollIndicator={false}
+                      showsHorizontalScrollIndicator={true}
                       style={styles.itemsWrapper}
                       contentContainerStyle={styles.itemsContent}
                     >
@@ -431,7 +515,7 @@ const UserPlan = () => {
                           }
                           size={18}
                           color={
-                            selectedPackages.includes(pkg) ? "#fff" : "#C5A85F"
+                            selectedPackages.includes(pkg) ? "#fff" : "#DC2626"
                           }
                         />
                         <Text
@@ -448,224 +532,340 @@ const UserPlan = () => {
                   </View>
                 </View>
               </View>
+              {/* Select Button */}
+              <View style={styles.selectButtonContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.selectButton,
+                    !canProceed() && styles.disabledButton,
+                  ]}
+                  onPress={handleNavigateToUserPlanDuration}
+                  disabled={!canProceed()}
+                >
+                  <Text style={styles.selectButtonText}>
+                    Select Plan ({selectedPackages.length} packages)
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </ScrollView>
-
-            {/* Select Button */}
-            <View style={styles.selectButtonContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.selectButton,
-                  !canProceed() && styles.disabledButton,
-                ]}
-                onPress={handleNavigateToUserPlanDuration}
-                disabled={!canProceed()}
-              >
-                <Text style={styles.selectButtonText}>
-                  Select Plan ({selectedPackages.length} packages)
-                </Text>
-              </TouchableOpacity>
-            </View>
           </Animated.View>
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 };
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "white",
   },
+
+  AdContainer: {
+    marginBottom: 10,
+    backgroundColor: "white",
+    width: "100%",
+  },
+
+  AdText: {
+    width: "100%",
+    paddingHorizontal: 10,
+    marginTop: 20,
+    fontSize: 20,
+    textAlign: "center",
+    fontWeight: 600,
+    color: "black",
+  },
+
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
+
   errorContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: 12,
   },
+
   errorText: {
     fontSize: 13,
     color: "red",
     textAlign: "center",
   },
+
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-    paddingHorizontal: 30,
-    paddingVertical: 10,
   },
-  button: {
-    backgroundColor: "#C5A85F",
-    borderRadius: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  profileIcon: {
-    padding: 4,
-  },
-  planWrapper: {
-    padding: 12,
-    paddingBottom: 24,
-  },
-  planCard: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+
+  PlanTitleContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
     flexDirection: "row",
-    marginVertical: 6,
-    padding: 10,
-    width: "100%",
-    elevation: 2,
-  },
-  planImage: {
-    width: 56,
-    height: 56,
-    borderRadius: 6,
-  },
-  planTextContainer: {
-    flex: 1,
+    alignItems: "center",
     justifyContent: "center",
-    marginLeft: 10,
   },
+
+  PlansTitle: {
+    fontSize: 20,
+    textAlign: "center",
+    fontWeight: 600,
+    color: "black",
+  },
+
+  planWrapper: {
+    flexGrow: 1,
+    paddingBottom: 20,
+  },
+
+  planCard: {
+    overflow: "hidden",
+    backgroundColor: "#f7f7f7",
+    borderRadius: 30,
+    marginBottom: 20,
+    marginHorizontal: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 15 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+
+    elevation: 10,
+  },
+
+  planImage: {
+    width: "100%",
+    height: 180,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+  },
+
+  planTextContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+
   planName: {
-    fontSize: 15,
-    fontWeight: "600",
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 5,
   },
+
+  planDescription: {
+    fontSize: 14,
+    color: "#666",
+    lineHeight: 18,
+    maxWidth: 180,
+  },
+
+  startingFrom: {
+    fontSize: 12,
+
+    color: "#333",
+  },
+
+  priceContainer: {
+    justifyContent: "flex-start",
+    alignItems: "flex-end",
+    flexShrink: 1,
+  },
+
+  price: {
+    fontSize: 26, // Make the price font a bit smaller
+    fontWeight: "900",
+    color: "#DC2626", // Red color for price to make it stand out
+  },
+
+  sar: {
+    fontSize: 12,
+    fontWeight: "normal",
+    color: "#333",
+  },
+
+  selectButtonContainerCard: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+
   overlay: {
     ...StyleSheet.absoluteFillObject,
+    zIndex: 999,
   },
+
   overlayBackground: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
+
   modalContainer: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
     backgroundColor: "#fff",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    height: height * 0.8,
+    borderTopLeftRadius: 50,
+    borderTopRightRadius: 50,
+    height: height * 0.7,
+    zIndex: 10,
   },
+
   modalHandle: {
     height: 20,
     justifyContent: "center",
     alignItems: "center",
   },
+
   handleBar: {
     width: 32,
     height: 4,
     backgroundColor: "#DDD",
     borderRadius: 2,
   },
+
   modalScroll: {
     flex: 1,
-    marginBottom: 60,
   },
+
   modalContent: {
     padding: 0,
   },
+
   modalTitleWrapper: {
     marginTop: 20,
     marginBottom: 15,
     paddingHorizontal: 20,
   },
+
   modalTitle: {
-    fontSize: 20,
+    fontSize: 25,
     fontWeight: "600",
     color: "#333",
+    textAlign: "center",
   },
+
+  modalDescriptionWrapper: {
+    marginHorizontal: 20,
+    textAlign: "center",
+    alignItems: "center",
+  },
+
+  modalDescription: {
+    textAlign: "center",
+    marginBottom: 5,
+  },
+
+  modalImage: {
+    width: "100%",
+    backgroundColor: "red",
+  },
+
   packageTabsContainer: {
     flexDirection: "row",
-    height: 32,
-    justifyContent: "flex-start",
+    height: "auto",
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 20,
-    paddingHorizontal: 15,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
   },
+
   packageTab: {
-    borderRadius: 16,
+    borderRadius: 25,
+    marginRight: 10,
     backgroundColor: "#f0f0f0",
     alignItems: "center",
-    marginHorizontal: 5,
-    paddingHorizontal: 16,
+    width: 100,
     justifyContent: "center",
-    height: 32,
+    height: 40,
   },
+
   activePackageTab: {
-    backgroundColor: "#C5A85F",
+    backgroundColor: "#DC2626",
   },
+
   packageTabText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "500",
     color: "#666",
   },
+
   activePackageTabText: {
     color: "#fff",
   },
+
   daysWrapper: {
     marginBottom: 15,
-    marginHorizontal: 15,
+    height: "auto",
+    paddingVertical: 15,
+    paddingHorizontal: 5,
+    backgroundColor: "#F2F2F2F2",
   },
+
   daysContent: {
     paddingHorizontal: 5,
   },
+
   dayButton: {
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,
-    backgroundColor: "#f0f0f0",
+    // backgroundColor: "#f0f0f0",
     marginHorizontal: 4,
     minWidth: 55,
     alignItems: "center",
   },
+
   activeDayButton: {
-    backgroundColor: "#C5A85F",
+    backgroundColor: "#DC2626",
+    color: "white",
   },
+
   todayButton: {
     borderWidth: 1,
-    borderColor: "#C5A85F",
+    borderColor: "#DC2626",
   },
+
   dayNameText: {
     fontSize: 12,
     color: "#666",
     marginBottom: 2,
     fontWeight: "500",
   },
+
   dayText: {
     fontSize: 14,
     fontWeight: "600",
     color: "#666",
   },
+
   activeDayText: {
-    color: "#fff",
+    color: "white",
   },
+
   itemsWrapper: {
     marginBottom: 20,
+    display: "flex",
+    marginTop: 20,
+    paddingVertical: 20,
   },
+
   itemsContent: {
     paddingHorizontal: 15,
   },
+
   itemContainer: {
     width: 120,
     marginRight: 10,
   },
+
   itemCard: {
     width: "100%",
     height: 120,
@@ -673,11 +873,13 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     marginBottom: 6,
   },
+
   itemImage: {
     width: "100%",
     height: "100%",
     borderRadius: 8,
   },
+
   itemName: {
     fontSize: 12,
     fontWeight: "500",
@@ -685,70 +887,75 @@ const styles = StyleSheet.create({
     color: "#333",
     height: 32,
   },
+
   packageSelectionContainer: {
     paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderTopWidth: 1,
     borderTopColor: "#eee",
-    marginTop: 10,
   },
+
   packageSelectionTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "500",
     color: "#666",
     marginBottom: 12,
   },
+
   packageButtonsContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
+    justifyContent: "flex-start",
     gap: 8,
   },
+
   packageButton: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#fff",
-    paddingVertical: 8,
+    paddingVertical: 12,
     paddingHorizontal: 12,
-    borderRadius: 6,
+    borderRadius: 25,
     borderWidth: 1,
     borderColor: "#eee",
     minWidth: 100,
   },
+
   packageButtonSelected: {
-    backgroundColor: "#C5A85F",
-    borderColor: "#C5A85F",
+    backgroundColor: "#DC2626",
+    borderColor: "#DC2626",
   },
+
   packageButtonText: {
     fontSize: 12,
     fontWeight: "500",
     color: "#333",
     marginLeft: 6,
   },
+
   packageButtonTextSelected: {
     color: "#fff",
   },
+
   selectButtonContainer: {
-    position: "absolute",
-    bottom: 0,
     left: 0,
     right: 0,
     backgroundColor: "#fff",
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderTopWidth: 1,
-    borderTopColor: "#eee",
+    paddingVertical: 20,
   },
+
   selectButton: {
-    backgroundColor: "#C5A85F",
-    borderRadius: 8,
+    backgroundColor: "#DC2626",
+    borderRadius: 25,
     paddingVertical: 12,
     alignItems: "center",
   },
+
   selectButtonText: {
     color: "#fff",
     fontSize: 14,
     fontWeight: "600",
   },
+
   disabledButton: {
     backgroundColor: "#CCCCCC",
     opacity: 0.7,

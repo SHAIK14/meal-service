@@ -44,7 +44,7 @@ const Items = ({ activeCategory, onAddToCart }) => {
     const quantity = quantities[item.id] || 0;
 
     return (
-      <div className="mt-2">
+      <div className="mt-2 ">
         {quantity === 0 ? (
           <button
             onClick={() => handleQuantityChange(item.id, 1)}
@@ -74,24 +74,26 @@ const Items = ({ activeCategory, onAddToCart }) => {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ">
       {categoryItems.map((item) => (
         <div
           key={item.id}
-          className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
+          className="bg-white rounded-xl flex flex-col sm:flex-row items-center sm:items-start shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden w-full max-w-lg mx-auto"
         >
-          <div className="relative h-48">
+          {/* Image Section */}
+          <div className="relative w-full sm:w-40 h-32 flex-shrink-0">
             <img
               src={item.image}
               alt={item.nameEnglish}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover rounded-l-xl"
               onError={(e) => {
-                e.target.src = "https://via.placeholder.com/300x200";
+                e.target.src = "https://via.placeholder.com/150";
               }}
             />
           </div>
 
-          <div className="p-4">
+          {/* Content Section */}
+          <div className="flex flex-col justify-between p-4 flex-grow w-full">
             <h3 className="text-lg font-semibold text-gray-800">
               {item.nameEnglish}
             </h3>
@@ -99,11 +101,10 @@ const Items = ({ activeCategory, onAddToCart }) => {
               {item.descriptionEnglish}
             </p>
 
-            <div className="mt-4">
-              <div className="flex items-baseline mb-2">
-                <span className="text-xl font-bold text-gray-900">
-                  {item.price}
-                </span>
+            {/* Price and Add to Cart */}
+            <div className="mt-3 flex items-center justify-between">
+              <div className="text-xl font-bold text-gray-900 flex items-baseline">
+                {item.price}
                 <span className="ml-1 text-sm text-gray-500">SAR</span>
               </div>
               <AddToCartButton item={item} />

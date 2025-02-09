@@ -2,10 +2,10 @@ import { Platform } from "react-native";
 import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// const API_URL = "http://localhost:5000/api";
+// // const API_URL = "http://localhost:5000/api";
 const getApiUrl = () => {
   if (__DEV__) {
-    const localIpAddress = "192.168.1.105"; // Replace with your actual IP address if different
+    const localIpAddress = "192.168.1.18"; // Replace with your actual IP address if different
 
     return `http://${localIpAddress}:5000/api`;
   } else {

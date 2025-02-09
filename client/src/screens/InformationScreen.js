@@ -27,7 +27,7 @@ const CustomInput = ({
   keyboardType = "default",
 }) => (
   <View style={styles.inputContainer}>
-    <Ionicons name={icon} size={24} color="#858585" style={styles.inputIcon} />
+    <Ionicons name={icon} size={24} color="#ffff" style={styles.inputIcon} />
     <TextInput
       style={styles.input}
       placeholder={placeholder}
@@ -48,7 +48,7 @@ const GenderSelector = ({ gender, setGender }) => (
       <Ionicons
         name="man"
         size={24}
-        color={gender === "male" ? "#FAF9D9" : "#858585"}
+        color={gender === "male" ? "#dc2626" : "#ffff"}
       />
       <Text
         style={[
@@ -69,7 +69,7 @@ const GenderSelector = ({ gender, setGender }) => (
       <Ionicons
         name="woman"
         size={24}
-        color={gender === "female" ? "#FAF9D9" : "#858585"}
+        color={gender === "female" ? "#dc2626" : "#ffff"}
       />
       <Text
         style={[
@@ -87,7 +87,7 @@ const GenderSelector = ({ gender, setGender }) => (
       <Ionicons
         name="person"
         size={24}
-        color={gender === "other" ? "#FAF9D9" : "#858585"}
+        color={gender === "other" ? "#dc2626" : "#ffff"}
       />
       <Text
         style={[
@@ -168,11 +168,12 @@ const InformationScreen = ({ navigation }) => {
 
   return (
     <ImageBackground
-      source={backgroundImage}
+      source={require("../../assets/Information_Screen-02.jpg")} // Replace with the path to your image
       style={styles.background}
-      resizeMode="cover"
+      resizeMode="cover" // Adjust how the image scales (e.g., "cover", "contain", "stretch")
     >
-      <View style={styles.overlay} />
+      <View style={styles.backgroundContainer}> </View>
+
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.container}
@@ -185,23 +186,29 @@ const InformationScreen = ({ navigation }) => {
             <CustomInput
               icon="person-outline"
               placeholder="Enter your first name"
+              placeholderTextColor="#999" // Slightly darker placeholder for contrast
               value={firstName}
               onChangeText={setFirstName}
+              style={styles.input} // Pass custom styles to the input
             />
 
             <CustomInput
               icon="person-outline"
               placeholder="Enter your last name"
+              placeholderTextColor="#999"
               value={lastName}
               onChangeText={setLastName}
+              style={styles.input}
             />
 
             <CustomInput
               icon="mail-outline"
               placeholder="Enter your email"
+              placeholderTextColor="#999"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
+              style={styles.input}
             />
 
             <Text style={styles.subtitle}>Select your Gender</Text>
@@ -220,58 +227,74 @@ const InformationScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   background: {
     flex: 1,
+    backgroundColor: "white",
   },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
-  },
+
   container: {
     flex: 1,
   },
+
   scrollView: {
     flexGrow: 1,
     justifyContent: "flex-end",
   },
+
   formContainer: {
-    backgroundColor: "#fff",
+    backgroundColor: "#dc2626",
     padding: width * 0.06,
-    borderTopLeftRadius: 25,
-    borderTopRightRadius: 25,
+    padding: height * 0.04,
+    borderTopLeftRadius: 50,
+    borderTopRightRadius: 50,
   },
+
   title: {
     fontSize: width * 0.07,
     fontWeight: "bold",
     marginBottom: height * 0.03,
     textAlign: "center",
-    color: "#333",
+    color: "white",
   },
+
   subtitle: {
     fontSize: width * 0.045,
     fontWeight: "bold",
-    color: "#333",
+    color: "white",
     marginBottom: height * 0.02,
     marginTop: height * 0.02,
   },
+
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "#858585",
+    backgroundColor: "white",
+    borderRadius: 50,
+    paddingHorizontal: width * 0.05,
     marginBottom: height * 0.02,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
+
   inputIcon: {
     marginRight: width * 0.03,
+    color: "#333",
   },
+
   input: {
     flex: 1,
     height: height * 0.06,
     fontSize: width * 0.04,
+    color: "#333",
   },
+
   genderContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: height * 0.03,
   },
+
   genderButton: {
     flex: 1,
     flexDirection: "row",
@@ -279,39 +302,42 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingVertical: height * 0.015,
     borderWidth: 1,
-    borderColor: "#858585",
+    borderColor: "white",
     borderRadius: 10,
     marginHorizontal: width * 0.01,
   },
+
   selectedGender: {
-    backgroundColor: "#333",
-    borderColor: "#333",
+    backgroundColor: "white",
+    borderColor: "white",
   },
+
   genderText: {
     marginLeft: width * 0.02,
     fontSize: width * 0.035,
-    color: "#858585",
+    color: "white",
   },
+
   selectedGenderText: {
-    color: "#FAF9D9",
+    color: "#dc2626",
   },
+
   nextButton: {
-    backgroundColor: "#FAF9D9",
-    paddingVertical: height * 0.02,
+    backgroundColor: "white",
+    paddingVertical: 12,
+    paddingHorizontal: 30,
     borderRadius: 25,
+    flexDirection: "row",
+    justifyContent: "center",
     alignItems: "center",
-    marginTop: height * 0.03,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
   },
+
   buttonText: {
     color: "#333",
-    fontSize: width * 0.045,
+    fontSize: width * 0.04,
     fontWeight: "bold",
   },
+
   loadingContainer: {
     flex: 1,
     justifyContent: "center",

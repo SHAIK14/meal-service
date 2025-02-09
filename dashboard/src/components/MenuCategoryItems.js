@@ -131,26 +131,27 @@ const MenuCategoryItems = () => {
 
   if (isLoading || !category) {
     return (
-      <div className="min-h-screen bg-gray-100 p-4 flex justify-center items-center">
-        Loading...
+      <div className="flex flex-col justify-center items-center w-full h-screen">
+        <div className="w-12 h-12 border-4 border-t-4 border-gray-200 border-t-red-500 rounded-full animate-spin"></div>
+        <div className="mt-4 text-gray-700">Just a Moment</div>
       </div>
     );
   }
 
   // Rest of your JSX remains the same
   return (
-    <div className="min-h-screen bg-gray-100 p-4 flex flex-col justify-center items-center">
+    <div className="p-8">
       {/* Category Header */}
-      <div className="w-full bg-white shadow-md p-4 rounded-md mb-4">
-        <h1 className="text-2xl font-bold text-gray-800">
+      <div className=" flex items-center p-0 m-0">
+        <h1 className="text-2xl font-bold text-black">
           Managing Items for: {category?.name}
         </h1>
       </div>
 
       {/* Your existing JSX for the two columns */}
-      <div className="flex w-full justify-center items-center">
+      <div className="flex w-full justify-center items-center p-4">
         {/* Left Section (Available Items) */}
-        <div className="w-1/2 p-8 h-[600px] bg-white shadow-md rounded-md mr-4 overflow-y-scroll">
+        <div className="flex-1 flex flex-col p-8 h-[600px] bg-white border  rounded-md mr-4 overflow-y-scroll">
           {/* ... rest of your existing JSX ... */}
           <div>
             <h2 className="text-xl font-bold text-gray-800 mb-4">
@@ -167,7 +168,7 @@ const MenuCategoryItems = () => {
             />
           </div>
 
-          <div className="space-y-4">
+          <div className="grid grid-cols-3">
             {availableItems
               .filter((item) =>
                 item.nameEnglish
@@ -209,7 +210,7 @@ const MenuCategoryItems = () => {
 
         {/* Right Section (Added Items) */}
         <div
-          className={`w-1/2 p-8 bg-white h-[600px] shadow-md rounded-md overflow-y-scroll ${
+          className={`flex-1 flex flex-col bg-white p-8 h-[600px] shadow-md rounded-md overflow-y-scroll ${
             isDraggingOver ? "border-2 border-dashed border-blue-500" : ""
           }`}
           onDragOver={handleDragOver}
