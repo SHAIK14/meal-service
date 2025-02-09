@@ -82,11 +82,11 @@ const Plans = () => {
   return (
     <div className="bg-white p-8 h-screen">
       <div className="">
-        <div className="flex items-center bg-gray-100 justify-between rounded-2xl p-4">
-          <h1 className=" text-3xl font-semibold m-0 p-0">Meal Plans</h1>
+        <div className="flex items-center  justify-between rounded-2xl p-4">
+          <h1 className=" text-2xl font-bold text-black m-0 p-0">Meal Plans</h1>
 
           <button
-            className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-green-500 text-sm font-semibold text-black hover:text-white transition-all duration-300 bg-gray-200"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-green-500 text-sm font-semibold text-black hover:text-white transition-all duration-300 bg-gray-100"
             onClick={() => navigate("/plans/create")}
           >
             Create New Plan
@@ -110,11 +110,11 @@ const Plans = () => {
                   )}
                 </div>
                 <div className="">
-                  <h2 className="font-bold text-2xl mb-2">
-                    {plan.nameEnglish}
-                  </h2>
-                  <div className="admin-service-info">
-                    <span className="font-semibold">Service Type: </span>
+                  <h2 className="font-bold text-lg ">{plan.nameEnglish}</h2>
+                  <div className="m-0 p-0">
+                    <span className="font-semibold text-sm">
+                      Service Type:{" "}
+                    </span>
                     <span className="text-gray-700">
                       {getServiceLabel(plan.service)}
                     </span>

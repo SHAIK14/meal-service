@@ -32,6 +32,7 @@ import Configuration from "./components/Configuration";
 import Branch from "./components/Branch";
 import AddBranch from "./components/AddBranch";
 import EditBranch from "./components/BranchEdit";
+import DiningConfig from "./components/DiningConfig";
 import MenuItems from "./components/MenuItems";
 import MenuCategoryItems from "./components/MenuCategoryItems";
 
@@ -128,9 +129,10 @@ const App = () => {
                   <Route path="/" element={<Navigate to="/plans" replace />} />
                   <Route path="/invoice" element={<InvoiceTemplate />} />
                   <Route path="/configuration" element={<Configuration />} />
+                  <Route path="/dining-config" element={<DiningConfig />} />
                   <Route path="/menuItems" element={<MenuItems />} />
                   <Route
-                    path="/menuCategoryItems"
+                    path="/menuCategoryItems/:categoryId"
                     element={<MenuCategoryItems />}
                   />
                 </Routes>

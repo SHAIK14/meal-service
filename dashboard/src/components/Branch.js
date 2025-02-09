@@ -101,10 +101,12 @@ const Branch = () => {
 
   return (
     <div className=" bg-white flex flex-col gap-4 p-8 h-screen">
-      <div className="flex items-center bg-gray-100 justify-between rounded-2xl p-4">
-        <h2 className="text-3xl font-semibold m-0 p-0">Branch Management</h2>
+      <div className="flex items-center justify-between rounded-2xl p-4">
+        <h2 className="text-2xl font-bold text-black m-0 p-0">
+          Branch Management
+        </h2>
         <button
-          className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-green-500 text-sm font-semibold text-black hover:text-white transition-all duration-300 bg-gray-200"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-green-500 text-sm font-semibold text-black hover:text-white transition-all duration-300   bg-gray-100"
           onClick={() => navigate("/branches/add")}
         >
           <FaPlus /> Add New Branch
@@ -113,27 +115,27 @@ const Branch = () => {
 
       <div className=" min-h-[400px] max-h-[600px]   rounded-2xl shadow-lg overflow-auto">
         <table className="w-full table-auto">
-          <thead className="  text-gray-700">
-            <tr>
-              <th className="py-3 px-6 text-left text-sm font-medium">
+          <thead className="  text-white bg-gray-800 ">
+            <tr className=" ">
+              <th className="text-white py-3 px-6 text-left text-sm font-medium">
                 Branch Name
               </th>
-              <th className="py-3 px-6 text-left text-sm font-medium">
+              <th className="text-white py-3 px-6 text-left text-sm font-medium">
                 CR Number
               </th>
-              <th className="py-3 px-6 text-left text-sm font-medium">
+              <th className="text-white py-3 px-6 text-left text-sm font-medium">
                 Municipality Number
               </th>
-              <th className="py-3 px-6 text-left text-sm font-medium">
+              <th className="text-white py-3 px-6 text-left text-sm font-medium">
                 VAT Number
               </th>
-              <th className="py-3 px-6 text-left text-sm font-medium">
+              <th className="text-white py-3 px-6 text-left text-sm font-medium">
                 Service Radius
               </th>
-              <th className="py-3 px-6 text-left text-sm font-medium">
+              <th className="text-white py-3 px-6 text-left text-sm font-medium">
                 Username/Pincode
               </th>
-              <th className="py-3 px-6 text-center text-sm font-medium">
+              <th className="text-white py-3 px-6 text-center text-sm font-medium">
                 Actions
               </th>
             </tr>

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getAllCategories, createCategory, deleteCategory } from "../utils/api";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { FaPlus, FaTimes } from "react-icons/fa";
+import { FaPlus, FaTrash } from "react-icons/fa";
 // import "../styles/Items.css";
 
 const Items = () => {
@@ -17,18 +17,6 @@ const Items = () => {
   useEffect(() => {
     fetchCategories();
   }, []);
-
-  const getRandomColor = () => {
-    const colors = [
-      "bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500",
-      "bg-gradient-to-r from-green-400 to-blue-500",
-      "bg-gradient-to-r from-yellow-500 to-orange-500",
-      "bg-gradient-to-r from-red-500 to-yellow-500",
-      "bg-gradient-to-r from-teal-400 to-blue-500",
-      "bg-gradient-to-r from-pink-400 to-red-500",
-    ];
-    return colors[Math.floor(Math.random() * colors.length)];
-  };
 
   const fetchCategories = async () => {
     setLoading(true);
@@ -136,7 +124,12 @@ const Items = () => {
   };
 
   if (loading) {
-    return <div className="loading">Loading categories...</div>;
+    return (
+      <div className="flex flex-col justify-center items-center w-full h-screen">
+        <div className="w-12 h-12 border-4 border-t-4 border-gray-200 border-t-red-500 rounded-full animate-spin"></div>
+        <div className="mt-4 text-gray-700">Just a Moment</div>
+      </div>
+    );
   }
 
   if (error) {
@@ -146,8 +139,10 @@ const Items = () => {
   return (
     <div className="items-page bg-white p-8 h-screen">
       <ToastContainer position="top-right" autoClose={3000} />
-      <div className="flex items-center bg-gray-100 justify-between rounded-2xl p-4">
-        <h1 className="font-semibold text-3xl text-gray-800 p-0 m-0">Items</h1>
+      <div className="flex items-center justify-between rounded-2xl">
+        <h1 className="font-semibold text-2xl text-black p-0 m-0">
+          Subscription Items
+        </h1>
         <div className="flex gap-3 p-0">
           <button
             className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-blue-500 text-sm font-semibold text-black hover:text-white transition- duration-300 bg-gray-200"
@@ -210,22 +205,29 @@ const Items = () => {
         {categories.map((category) => (
           <div
             key={category._id}
-            className={`flex p-6 shadow-md rounded-lg items-center justify-between ${getRandomColor()}`}
+            className="relative flex p-4 overflow-hidden border hover:bg-gray-100 rounded-lg items-center justify-between group transition-all duration-300"
           >
+            {/* Category Name with Animated Underline */}
             <h3
-              className="text-white text-lg font-semibold cursor-pointer"
+              className="text-black text-lg font-semibold cursor-pointer relative 
+                       after:content-[''] after:absolute after:left-0 after:bottom-0 after:w-0 after:h-[2px] after:bg-black 
+                       group-hover:after:w-full after:transition-all after:duration-300"
               onClick={() => handleCategoryClick(category)}
             >
               {category.name}
             </h3>
+
+            {/* Delete Button (Initially Hidden, Appears on Hover) */}
             <button
-              className="text-white hover:text-red-500"
+              className="absolute right-4  transform  bg-red-500 text-white p-2 rounded-full 
+                       opacity-0 translate-y-1/2 group-hover:opacity-100 group-hover:translate-y-0 
+                       transition-all duration-300"
               onClick={(e) => {
                 e.stopPropagation();
                 handleDeleteCategory(category._id);
               }}
             >
-              <FaTimes />
+              <FaTrash />
             </button>
           </div>
         ))}

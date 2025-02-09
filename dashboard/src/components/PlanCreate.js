@@ -26,6 +26,17 @@ const PlanCreate = () => {
   });
   const [showPackageWarning, setShowPackageWarning] = useState(false);
   const [showServiceWarning, setShowServiceWarning] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = () => {
+    setIsSaving(true);
+
+    // Simulating an API call or processing delay
+    setTimeout(() => {
+      setIsSaving(false);
+      alert("Plan saved successfully!"); // Replace this with actual save logic
+    }, 2000);
+  };
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -194,16 +205,16 @@ const PlanCreate = () => {
                 </div>
               </div>
             </div>
+            {showServiceWarning && (
+              <div className="flex text-sm items-center   text-red-500 gap-1 font-semibold">
+                <AlertTriangle size={16} color="red" />
+                <span className="">
+                  Warning: Service type cannot be modified after creation.
+                </span>
+              </div>
+            )}
           </div>
 
-          {showServiceWarning && (
-            <div className="admin-warning-message">
-              <AlertTriangle size={16} />
-              <span>
-                Warning: Service type cannot be modified after creation.
-              </span>
-            </div>
-          )}
           <div className="names flex-1 flex flex-col  ">
             <div className="flex flex-1 flex-col gap-4">
               <div className="flex gap-4">
@@ -286,16 +297,17 @@ const PlanCreate = () => {
                   <span>Multiple Plan</span>
                 </label>
               </div>
+              {showPackageWarning && (
+                <div className="flex items-center text-sm text-red-500 gap- font-semibold">
+                  <AlertTriangle size={16} />
+                  <span>
+                    Warning: Package selection cannot be modified after
+                    creation.
+                  </span>
+                </div>
+              )}
             </div>
 
-            {showPackageWarning && (
-              <div className="admin-warning-message">
-                <AlertTriangle size={16} />
-                <span>
-                  Warning: Package selection cannot be modified after creation.
-                </span>
-              </div>
-            )}
             <div className="plan select "></div>
             <div className="buttons flex gap-8  items-right justify-end">
               <button
@@ -307,9 +319,11 @@ const PlanCreate = () => {
               </button>
               <button
                 type="submit"
-                className="px-8 py-2 text-white hover:bg-green-600  bg-green-500"
+                className="px-8 py-2 text-white hover:bg-green-600 bg-green-500 disabled:opacity-50"
+                onClick={handleSave}
+                disabled={isSaving} // Disable button while saving
               >
-                Save Plan
+                {isSaving ? "Saving..." : "Save Plan"}
               </button>
             </div>
           </div>
