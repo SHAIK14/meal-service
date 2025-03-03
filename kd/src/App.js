@@ -14,6 +14,7 @@ import TableManagement from "./pages/TableManagement";
 import TopNav from "./components/TopNav";
 import Kot from "./pages/kot";
 import Login from "./components/Auth/Login";
+import CateringDashboard from "./pages/CateringDashboard";
 import "./App.css";
 
 const AuthenticatedLayout = ({ children }) => (
@@ -52,6 +53,7 @@ const App = () => {
                     <Route path="/alacarte" element={<Alacarte />} />
                     <Route path="/tables" element={<TableManagement />} />
                     <Route path="/kot" element={<Kot />} />
+                    <Route path="/catering" element={<CateringDashboard />} />
                     <Route
                       path="/"
                       element={<Navigate to="/dashboard" replace />}

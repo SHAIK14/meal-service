@@ -40,6 +40,9 @@ function TopNav() {
       <NavLink className="nav-item" to="/tables">
         TableManagement
       </NavLink>
+      <NavLink className="nav-item" to="/catering">
+        Catering
+      </NavLink>
     </div>
   );
 }

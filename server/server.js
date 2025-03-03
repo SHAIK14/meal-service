@@ -29,7 +29,12 @@ const diningRoutes = require("./routes/admin/diningRoutes");
 const kitchenDiningRoutes = require("./routes/kitchen/diningRoutes");
 const diningMenuRoutes = require("./routes/menu/diningMenuRoutes");
 const diningCategoryRoutes = require("./routes/admin/diningCategoryRoutes");
-
+const roleRoutes = require("./routes/admin/roleRoutes");
+const serviceRoutes = require("./routes/admin/serviceRoutes");
+const staffRoutes = require("./routes/admin/staffRoutes");
+const cateringRoutes = require("./routes/admin/cateringRoutes");
+const cateringMenuRoutes = require("./routes/catering/cateringMenuRoutes");
+const kitchenCateringRoutes = require("./routes/kitchen/cateringRoutes");
 dotenv.config();
 const app = express();
 const server = http.createServer(app); // Create an HTTP server
@@ -82,7 +87,12 @@ app.use("/api/admin/dining", diningRoutes);
 app.use("/api/kitchen/dining", kitchenDiningRoutes);
 app.use("/api/dining-menu", diningMenuRoutes);
 app.use("/api/admin/dining-categories", diningCategoryRoutes);
-
+app.use("/api/admin/roles", roleRoutes);
+app.use("/api/admin/services", serviceRoutes);
+app.use("/api/admin/staff", staffRoutes);
+app.use("/api/admin/catering", cateringRoutes);
+app.use("/api/catering-menu", cateringMenuRoutes);
+app.use("/api/kitchen/catering", kitchenCateringRoutes);
 const PORT = process.env.PORT || 5000;
 const HOST = "0.0.0.0";
 

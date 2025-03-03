@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
-
 import {
   BrowserRouter as Router,
   Route,
   Routes,
   Navigate,
 } from "react-router-dom";
+import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "./components/Login";
 import Logout from "./components/Logout";
 import Sidebar from "./components/Sidebar";
@@ -35,7 +35,10 @@ import EditBranch from "./components/BranchEdit";
 import DiningConfig from "./components/DiningConfig";
 import MenuItems from "./components/MenuItems";
 import MenuCategoryItems from "./components/MenuCategoryItems";
-
+import RoleServiceManagement from "./components/RoleServiceManagement";
+import StaffManagement from "./components/StaffManagement";
+import StaffList from "./components/StaffList";
+import CateringConfig from "./components/CateringConfig";
 const AuthenticatedLayout = ({ children }) => (
   <div
     style={{ display: "flex", backgroundColor: "#F4F4F4", minHeight: "100vh" }}
@@ -72,67 +75,255 @@ const App = () => {
             isLoggedIn ? (
               <AuthenticatedLayout>
                 <Routes>
-                  <Route path="/branches" element={<Branch />} />
-                  <Route path="/branches/add" element={<AddBranch />} />;
+                  <Route
+                    path="/role-service"
+                    element={
+                      <ProtectedRoute
+                        element={<RoleServiceManagement />}
+                        path="/role-service"
+                      />
+                    }
+                  />
+                  <Route
+                    path="/staff-management"
+                    element={
+                      <ProtectedRoute
+                        element={<StaffManagement />}
+                        path="/staff-management"
+                      />
+                    }
+                  />
+                  <Route
+                    path="/staff-list"
+                    element={
+                      <ProtectedRoute
+                        element={<StaffList />}
+                        path="/staff-list"
+                      />
+                    }
+                  />
+                  <Route
+                    path="/branches"
+                    element={
+                      <ProtectedRoute element={<Branch />} path="/branches" />
+                    }
+                  />
+                  <Route
+                    path="/branches/add"
+                    element={
+                      <ProtectedRoute
+                        element={<AddBranch />}
+                        path="/branches"
+                      />
+                    }
+                  />
                   <Route
                     path="/branches/edit/:branchId"
-                    element={<EditBranch />}
+                    element={
+                      <ProtectedRoute
+                        element={<EditBranch />}
+                        path="/branches"
+                      />
+                    }
                   />
-                  <Route path="/plans" element={<Plans />} />
-                  <Route path="/plans/create" element={<PlanCreate />} />
-                  <Route path="/plans/edit/:planId" element={<PlanEdit />} />
+                  <Route
+                    path="/plans"
+                    element={
+                      <ProtectedRoute element={<Plans />} path="/plans" />
+                    }
+                  />
+                  <Route
+                    path="/plans/create"
+                    element={
+                      <ProtectedRoute element={<PlanCreate />} path="/plans" />
+                    }
+                  />
+                  <Route
+                    path="/plans/edit/:planId"
+                    element={
+                      <ProtectedRoute element={<PlanEdit />} path="/plans" />
+                    }
+                  />
                   <Route
                     path="/plans/:planId/add-items"
-                    element={<PlanItemSelection />}
+                    element={
+                      <ProtectedRoute
+                        element={<PlanItemSelection />}
+                        path="/plans"
+                      />
+                    }
                   />
                   <Route
                     path="/plans/:planId/edit-items"
-                    element={<PlanItemEdit />}
+                    element={
+                      <ProtectedRoute
+                        element={<PlanItemEdit />}
+                        path="/plans"
+                      />
+                    }
                   />
-                  <Route path="/items" element={<Items />} />
+                  <Route
+                    path="/items"
+                    element={
+                      <ProtectedRoute element={<Items />} path="/items" />
+                    }
+                  />
                   <Route
                     path="/category/:categoryName"
-                    element={<ItemsCategories />}
+                    element={
+                      <ProtectedRoute
+                        element={<ItemsCategories />}
+                        path="/items"
+                      />
+                    }
                   />
-                  <Route path="/edit-item/:id" element={<ItemsEdit />} />
-                  <Route path="/add-item" element={<AddItemPage />} />
-                  <Route path="/payment-options" element={<PaymentPage />} />
+                  <Route
+                    path="/edit-item/:id"
+                    element={
+                      <ProtectedRoute element={<ItemsEdit />} path="/items" />
+                    }
+                  />
+                  <Route
+                    path="/add-item"
+                    element={
+                      <ProtectedRoute element={<AddItemPage />} path="/items" />
+                    }
+                  />
+                  <Route
+                    path="/payment-options"
+                    element={
+                      <ProtectedRoute
+                        element={<PaymentPage />}
+                        path="/payment-options"
+                      />
+                    }
+                  />
                   <Route
                     path="/driver/register"
-                    element={<DriverRegistration />}
+                    element={
+                      <ProtectedRoute
+                        element={<DriverRegistration />}
+                        path="/driver"
+                      />
+                    }
                   />
                   <Route
                     path="/driver/edit/:driverId"
-                    element={<DriverRegisterEdit />}
+                    element={
+                      <ProtectedRoute
+                        element={<DriverRegisterEdit />}
+                        path="/driver"
+                      />
+                    }
                   />
                   <Route
                     path="/driver/management"
-                    element={<DriverManagement />}
+                    element={
+                      <ProtectedRoute
+                        element={<DriverManagement />}
+                        path="/driver"
+                      />
+                    }
                   />
                   <Route
-                    path="/driver/edit/:driverId"
-                    element={<DriverRegistration />}
+                    path="/banners-container"
+                    element={
+                      <ProtectedRoute element={<Banners />} path="/banners" />
+                    }
                   />
-                  <Route path="/banners-container" element={<Banners />} />
-                  <Route path="/subscriptions" element={<Subscriptions />} />
-                  <Route path="/users" element={<Users />} />
+                  <Route
+                    path="/subscriptions"
+                    element={
+                      <ProtectedRoute
+                        element={<Subscriptions />}
+                        path="/subscriptions"
+                      />
+                    }
+                  />
+                  <Route
+                    path="/users"
+                    element={
+                      <ProtectedRoute element={<Users />} path="/users" />
+                    }
+                  />
                   <Route
                     path="/select-item-page"
-                    element={<SelectItemPage />}
+                    element={
+                      <ProtectedRoute
+                        element={<SelectItemPage />}
+                        path="/items"
+                      />
+                    }
                   />
-                  <Route path="/vouchers" element={<Vouchers />} />
+                  <Route
+                    path="/vouchers"
+                    element={
+                      <ProtectedRoute element={<Vouchers />} path="/vouchers" />
+                    }
+                  />
                   <Route
                     path="/planitemselection/:planId"
-                    element={<PlanItemSelection />}
+                    element={
+                      <ProtectedRoute
+                        element={<PlanItemSelection />}
+                        path="/plans"
+                      />
+                    }
                   />
                   <Route path="/" element={<Navigate to="/plans" replace />} />
-                  <Route path="/invoice" element={<InvoiceTemplate />} />
-                  <Route path="/configuration" element={<Configuration />} />
-                  <Route path="/dining-config" element={<DiningConfig />} />
-                  <Route path="/menuItems" element={<MenuItems />} />
+                  <Route
+                    path="/invoice"
+                    element={
+                      <ProtectedRoute
+                        element={<InvoiceTemplate />}
+                        path="/invoice"
+                      />
+                    }
+                  />
+                  <Route
+                    path="/configuration"
+                    element={
+                      <ProtectedRoute
+                        element={<Configuration />}
+                        path="/configuration"
+                      />
+                    }
+                  />
+                  <Route
+                    path="/dining-config"
+                    element={
+                      <ProtectedRoute
+                        element={<DiningConfig />}
+                        path="/dining-config"
+                      />
+                    }
+                  />
+                  <Route
+                    path="/catering-config"
+                    element={
+                      <ProtectedRoute
+                        element={<CateringConfig />}
+                        path="/catering-config"
+                      />
+                    }
+                  />
+                  <Route
+                    path="/menuItems"
+                    element={
+                      <ProtectedRoute
+                        element={<MenuItems />}
+                        path="/menuItems"
+                      />
+                    }
+                  />
                   <Route
                     path="/menuCategoryItems/:categoryId"
-                    element={<MenuCategoryItems />}
+                    element={
+                      <ProtectedRoute
+                        element={<MenuCategoryItems />}
+                        path="/menuItems"
+                      />
+                    }
                   />
                 </Routes>
               </AuthenticatedLayout>

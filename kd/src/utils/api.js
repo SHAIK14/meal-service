@@ -176,4 +176,42 @@ export const generateInvoice = async (sessionId) => {
     api.get(`/kitchen/dining/sessions/${sessionId}/invoice`)
   );
 };
+// Get pending catering orders that need acceptance
+export const getPendingCateringOrders = async () => {
+  return handleResponse(api.get("/kitchen/catering/orders/pending"));
+};
+
+// Get catering orders for a specific date
+export const getCateringOrdersByDate = async (date) => {
+  const formattedDate =
+    date instanceof Date ? date.toISOString().split("T")[0] : date;
+
+  return handleResponse(
+    api.get(`/kitchen/catering/orders/date/${formattedDate}`)
+  );
+};
+
+// Get upcoming accepted catering orders
+export const getUpcomingCateringOrders = async () => {
+  return handleResponse(api.get("/kitchen/catering/orders/upcoming"));
+};
+
+// Get order counts by month (for calendar)
+export const getCateringOrderCountsByMonth = async (year, month) => {
+  return handleResponse(
+    api.get(`/kitchen/catering/orders/counts/${year}/${month}`)
+  );
+};
+
+// Update catering order status
+export const updateCateringOrderStatus = async (orderId, status) => {
+  return handleResponse(
+    api.put(`/kitchen/catering/orders/${orderId}/status`, { status })
+  );
+};
+
+// Get specific catering order details
+export const getCateringOrderById = async (orderId) => {
+  return handleResponse(api.get(`/kitchen/catering/orders/${orderId}`));
+};
 export default api;
