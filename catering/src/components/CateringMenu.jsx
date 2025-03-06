@@ -256,6 +256,10 @@ const CateringMenu = () => {
     notes: "",
     eventDate: new Date(new Date().setDate(new Date().getDate() + 1)),
     eventTime: "12:00",
+    advanceAmount: 0,
+    isPremium: false,
+    premiumDetails: "",
+    totalAmount: "",
   });
   const [checkoutStep, setCheckoutStep] = useState(0); // 0: Menu, 1: Form
   const [submitting, setSubmitting] = useState(false);
@@ -416,8 +420,14 @@ const CateringMenu = () => {
   };
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setOrderDetails((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+
+    // For checkbox inputs, use the "checked" property
+    if (type === "checkbox") {
+      setOrderDetails((prev) => ({ ...prev, [name]: checked }));
+    } else {
+      setOrderDetails((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleDateChange = (date) => {
@@ -434,6 +444,40 @@ const CateringMenu = () => {
 
   const handleBackToMenu = () => {
     setCheckoutStep(0);
+  };
+  const validatePaymentDetails = () => {
+    // Calculate the appropriate total based on whether it's premium or not
+    let total = orderDetails.isPremium
+      ? parseFloat(orderDetails.totalAmount || getCartTotal())
+      : parseFloat(getCartTotal());
+
+    const advance = parseFloat(orderDetails.advanceAmount) || 0;
+
+    if (advance < 0) {
+      toast.error("Advance amount cannot be negative");
+      return false;
+    }
+
+    if (advance > total) {
+      toast.error("Advance amount cannot exceed total amount");
+      return false;
+    }
+
+    // For premium orders, ensure totalAmount is not less than the cart total
+    if (orderDetails.isPremium) {
+      const cartTotal = parseFloat(getCartTotal());
+      if (
+        !orderDetails.totalAmount ||
+        parseFloat(orderDetails.totalAmount) < cartTotal
+      ) {
+        toast.error(
+          "Premium total amount cannot be less than base order amount"
+        );
+        return false;
+      }
+    }
+
+    return true;
   };
 
   const handleSubmitOrder = async () => {
@@ -454,6 +498,16 @@ const CateringMenu = () => {
       }
     }
 
+    // Validate payment details
+    if (!validatePaymentDetails()) {
+      return;
+    }
+
+    // Calculate the final total amount based on premium status
+    const finalTotalAmount = orderDetails.isPremium
+      ? parseFloat(orderDetails.totalAmount || getCartTotal())
+      : parseFloat(getCartTotal());
+
     // Prepare order data
     const orderData = {
       branchId: branchDetails.id,
@@ -463,8 +517,19 @@ const CateringMenu = () => {
         quantity: item.quantity,
         price: item.price || 0,
       })),
-      totalAmount: parseFloat(getCartTotal()),
-      ...orderDetails,
+      totalAmount: finalTotalAmount,
+      advanceAmount: parseFloat(orderDetails.advanceAmount) || 0,
+      isPremium: orderDetails.isPremium,
+      premiumDetails: orderDetails.premiumDetails,
+      cateringType: orderDetails.cateringType,
+      numberOfPeople: orderDetails.numberOfPeople,
+      referralSource: orderDetails.referralSource,
+      staffName: orderDetails.staffName,
+      customerName: orderDetails.customerName,
+      customerContact: orderDetails.customerContact,
+      notes: orderDetails.notes,
+      eventDate: orderDetails.eventDate,
+      eventTime: orderDetails.eventTime,
     };
 
     console.log("Submitting order data:", orderData);
@@ -489,6 +554,10 @@ const CateringMenu = () => {
           notes: "",
           eventDate: new Date(new Date().setDate(new Date().getDate() + 1)),
           eventTime: "12:00",
+          advanceAmount: 0,
+          isPremium: false,
+          premiumDetails: "",
+          totalAmount: "", // Reset this field too
         });
         setCheckoutStep(0);
       } else {
@@ -782,10 +851,249 @@ const CateringMenu = () => {
                     </span>
                   </div>
                 ))}
-                <div className="flex justify-between font-bold pt-2 border-t">
-                  <span>Total:</span>
-                  <span>
-                    {getCartTotal()} {currency}
+              </div>
+            </div>
+            {/* Add this right after the Order Summary section but before the Submit buttons */}
+            {/* Replace the existing Payment Details section with this updated version */}
+            <div className="mt-4 border-t pt-4">
+              <h3 className="font-medium mb-3 text-sm">Payment Details</h3>
+
+              {/* Premium Option Checkbox */}
+              <div className="mb-4">
+                <label className="flex items-center space-x-2 text-sm">
+                  <input
+                    type="checkbox"
+                    name="isPremium"
+                    checked={orderDetails.isPremium}
+                    onChange={handleInputChange}
+                    className="rounded text-green-600 focus:ring-green-500"
+                  />
+                  <span>Premium Order (Special Rice/Extra Meat)</span>
+                </label>
+              </div>
+
+              {/* Premium Payment Fields */}
+              {orderDetails.isPremium ? (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Premium Details
+                    </label>
+                    <textarea
+                      name="premiumDetails"
+                      value={orderDetails.premiumDetails}
+                      onChange={handleInputChange}
+                      rows="2"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="Specify premium items (e.g., premium rice, extra meat)"
+                    ></textarea>
+                  </div>
+
+                  {/* Manual Premium Total Amount */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Premium Total Amount ({currency})
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span className="text-gray-500 sm:text-sm">
+                          {currency}
+                        </span>
+                      </div>
+                      <input
+                        type="number"
+                        name="totalAmount"
+                        value={orderDetails.totalAmount || getCartTotal()}
+                        onChange={handleInputChange}
+                        placeholder={getCartTotal()}
+                        min={getCartTotal()}
+                        step="0.01"
+                        className="w-full pl-12 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                      />
+                    </div>
+                    <p className="mt-1 text-xs text-gray-500">
+                      Base order total: {getCartTotal()} {currency}
+                    </p>
+                  </div>
+
+                  {/* Advance Payment Field */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Advance Amount ({currency})
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span className="text-gray-500 sm:text-sm">
+                          {currency}
+                        </span>
+                      </div>
+                      <input
+                        type="number"
+                        name="advanceAmount"
+                        value={orderDetails.advanceAmount}
+                        onChange={handleInputChange}
+                        placeholder="0.00"
+                        min="0"
+                        max={orderDetails.totalAmount || getCartTotal()}
+                        step="0.01"
+                        className="w-full pl-12 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Detailed Payment Breakdown */}
+                  <div className="bg-gray-50 p-3 rounded-md mt-2">
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">
+                      Payment Breakdown
+                    </h4>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Premium Total:</span>
+                        <span className="font-medium">
+                          {parseFloat(
+                            orderDetails.totalAmount || getCartTotal()
+                          ).toFixed(2)}{" "}
+                          {currency}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Advance Amount:</span>
+                        <span className="font-medium">
+                          {parseFloat(orderDetails.advanceAmount || 0).toFixed(
+                            2
+                          )}{" "}
+                          {currency}
+                        </span>
+                      </div>
+                      <div className="flex justify-between pt-1 border-t border-gray-200">
+                        <span className="text-gray-800 font-medium">
+                          Due Amount:
+                        </span>
+                        <span className="font-medium">
+                          {(
+                            parseFloat(
+                              orderDetails.totalAmount || getCartTotal()
+                            ) - parseFloat(orderDetails.advanceAmount || 0)
+                          ).toFixed(2)}{" "}
+                          {currency}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Standard Order Total (Fixed) */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Total Amount ({currency})
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span className="text-gray-500 sm:text-sm">
+                          {currency}
+                        </span>
+                      </div>
+                      <input
+                        type="number"
+                        value={getCartTotal()}
+                        className="w-full pl-12 pr-3 py-2 border border-gray-300 rounded-md text-sm bg-gray-100"
+                        disabled
+                      />
+                    </div>
+                  </div>
+
+                  {/* Standard Advance Payment */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Advance Amount ({currency})
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span className="text-gray-500 sm:text-sm">
+                          {currency}
+                        </span>
+                      </div>
+                      <input
+                        type="number"
+                        name="advanceAmount"
+                        value={orderDetails.advanceAmount}
+                        onChange={handleInputChange}
+                        placeholder="0.00"
+                        min="0"
+                        max={getCartTotal()}
+                        step="0.01"
+                        className="w-full pl-12 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Detailed Payment Breakdown */}
+                  <div className="bg-gray-50 p-3 rounded-md mt-2">
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">
+                      Payment Breakdown
+                    </h4>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Total Amount:</span>
+                        <span className="font-medium">
+                          {parseFloat(getCartTotal()).toFixed(2)} {currency}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Advance Amount:</span>
+                        <span className="font-medium">
+                          {parseFloat(orderDetails.advanceAmount || 0).toFixed(
+                            2
+                          )}{" "}
+                          {currency}
+                        </span>
+                      </div>
+                      <div className="flex justify-between pt-1 border-t border-gray-200">
+                        <span className="text-gray-800 font-medium">
+                          Due Amount:
+                        </span>
+                        <span className="font-medium">
+                          {(
+                            parseFloat(getCartTotal()) -
+                            parseFloat(orderDetails.advanceAmount || 0)
+                          ).toFixed(2)}{" "}
+                          {currency}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Payment Status */}
+              <div className="mt-4">
+                <div className="flex justify-between text-sm">
+                  <span className="font-medium">Payment Status:</span>
+                  <span
+                    className={`font-medium ${
+                      parseFloat(orderDetails.advanceAmount) >=
+                      parseFloat(
+                        orderDetails.isPremium
+                          ? orderDetails.totalAmount || getCartTotal()
+                          : getCartTotal()
+                      )
+                        ? "text-green-600"
+                        : parseFloat(orderDetails.advanceAmount) > 0
+                        ? "text-orange-500"
+                        : "text-gray-600"
+                    }`}
+                  >
+                    {parseFloat(orderDetails.advanceAmount) >=
+                    parseFloat(
+                      orderDetails.isPremium
+                        ? orderDetails.totalAmount || getCartTotal()
+                        : getCartTotal()
+                    )
+                      ? "Fully Paid"
+                      : parseFloat(orderDetails.advanceAmount) > 0
+                      ? "Partially Paid"
+                      : "Not Paid"}
                   </span>
                 </div>
               </div>
@@ -936,6 +1244,7 @@ const CateringMenu = () => {
                       {getCartTotal()} {currency}
                     </p>
                   </div>
+
                   <button
                     type="button"
                     className="w-full py-2 px-4 rounded-md shadow-sm bg-green-600 text-white font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"

@@ -258,12 +258,17 @@ const getMenuItemDetails = async (req, res) => {
 };
 
 // Create catering order
+// Update the createCateringOrder function in controllers/catering/cateringMenuController.js
+
 const createCateringOrder = async (req, res) => {
   try {
     const {
       branchId,
       items,
       totalAmount,
+      advanceAmount, // New field
+      isPremium, // New field
+      premiumDetails, // New field
       cateringType,
       numberOfPeople,
       referralSource,
@@ -324,11 +329,30 @@ const createCateringOrder = async (req, res) => {
       });
     }
 
+    // Validate advance amount if provided
+    const safeAdvanceAmount = advanceAmount || 0;
+    if (safeAdvanceAmount < 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Advance amount cannot be negative",
+      });
+    }
+
+    if (safeAdvanceAmount > totalAmount) {
+      return res.status(400).json({
+        success: false,
+        message: "Advance amount cannot exceed total amount",
+      });
+    }
+
     // Create order
     const cateringOrder = new CateringOrder({
       branchId,
       items,
       totalAmount,
+      advanceAmount: safeAdvanceAmount,
+      isPremium: !!isPremium, // Convert to boolean
+      premiumDetails: premiumDetails || "",
       cateringType,
       numberOfPeople,
       referralSource,
@@ -358,7 +382,6 @@ const createCateringOrder = async (req, res) => {
     });
   }
 };
-
 // Get catering orders for a branch (for kitchen dashboard)
 const getBranchCateringOrders = async (req, res) => {
   try {

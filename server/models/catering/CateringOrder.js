@@ -30,6 +30,19 @@ const cateringOrderSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    // New fields for payment tracking
+    advanceAmount: {
+      type: Number,
+      default: 0, // Optional field, defaults to 0
+    },
+    isPremium: {
+      type: Boolean,
+      default: false,
+    },
+    premiumDetails: {
+      type: String,
+      default: "",
+    },
     cateringType: {
       type: String,
       enum: ["indoor", "outdoor"],
