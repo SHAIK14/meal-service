@@ -39,6 +39,7 @@ import RoleServiceManagement from "./components/RoleServiceManagement";
 import StaffManagement from "./components/StaffManagement";
 import StaffList from "./components/StaffList";
 import CateringConfig from "./components/CateringConfig";
+import TakeAwayConfig from "./components/TakeAwayConfig";
 const AuthenticatedLayout = ({ children }) => (
   <div
     style={{ display: "flex", backgroundColor: "#F4F4F4", minHeight: "100vh" }}
@@ -304,6 +305,15 @@ const App = () => {
                       <ProtectedRoute
                         element={<CateringConfig />}
                         path="/catering-config"
+                      />
+                    }
+                  />
+                  <Route
+                    path="/takeAway-config"
+                    element={
+                      <ProtectedRoute
+                        element={<TakeAwayConfig />}
+                        path="/takeAway-config"
                       />
                     }
                   />

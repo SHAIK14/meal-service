@@ -35,6 +35,9 @@ const staffRoutes = require("./routes/admin/staffRoutes");
 const cateringRoutes = require("./routes/admin/cateringRoutes");
 const cateringMenuRoutes = require("./routes/catering/cateringMenuRoutes");
 const kitchenCateringRoutes = require("./routes/kitchen/cateringRoutes");
+const takeAwayRoutes = require("./routes/admin/takeAwayRoutes");
+const TakeAwayOrderRoutes = require("./routes/takeAway/takeAwayOrder");
+const kitchenTakeawayRoutes = require("./routes/kitchen/takeawayKitchenRoutes");
 dotenv.config();
 const app = express();
 const server = http.createServer(app); // Create an HTTP server
@@ -93,6 +96,9 @@ app.use("/api/admin/staff", staffRoutes);
 app.use("/api/admin/catering", cateringRoutes);
 app.use("/api/catering-menu", cateringMenuRoutes);
 app.use("/api/kitchen/catering", kitchenCateringRoutes);
+app.use("/api/admin/takeaway", takeAwayRoutes);
+app.use("/api/takeaway/order", TakeAwayOrderRoutes);
+app.use("/api/kitchen/takeaway", kitchenTakeawayRoutes);
 const PORT = process.env.PORT || 5000;
 const HOST = "0.0.0.0";
 

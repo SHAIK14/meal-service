@@ -360,6 +360,8 @@ export const updateStaffServices = async (staffId, services) => {
     api.put(`/admin/staff/${staffId}/services`, { services })
   );
 };
+
+// catering
 export const getCateringConfig = async (branchId) => {
   return handleResponse(api.get(`/admin/catering/branch/${branchId}`));
 };
@@ -384,4 +386,30 @@ export const toggleCateringStatus = async (branchId, isEnabled) => {
 
 export const deleteCateringConfig = async (branchId) => {
   return handleResponse(api.delete(`/admin/catering/branch/${branchId}`));
+};
+// Take away
+// Fix these functions in your api.js/api2.js file
+
+export const getTakeAwayConfig = async (branchId) => {
+  return handleResponse(api.get(`/admin/takeaway/${branchId}`));
+};
+
+export const createUpdateTakeAwayConfig = async (branchId, configData) => {
+  return handleResponse(api.post(`/admin/takeaway/${branchId}`, configData));
+};
+
+export const updateTakeAwayUrl = async (branchId, baseUrl) => {
+  return handleResponse(
+    api.patch(`/admin/takeaway/${branchId}/url`, { baseUrl })
+  );
+};
+
+export const toggleTakeAwayStatus = async (branchId, isEnabled) => {
+  return handleResponse(
+    api.patch(`/admin/takeaway/${branchId}/status`, { isEnabled })
+  );
+};
+
+export const deleteTakeAwayConfig = async (branchId) => {
+  return handleResponse(api.delete(`/admin/takeaway/${branchId}`));
 };

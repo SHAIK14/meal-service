@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import {
   getAllBranches,
-  getCateringConfig,
-  createUpdateCateringConfig,
-  updateCateringUrl,
-  toggleCateringStatus,
-  deleteCateringConfig,
+  getTakeAwayConfig,
+  createUpdateTakeAwayConfig,
+  updateTakeAwayUrl,
+  toggleTakeAwayStatus,
+  deleteTakeAwayConfig,
   getBranchById,
 } from "../utils/api2";
 import {
@@ -18,14 +18,14 @@ import {
   FaLink,
   FaExclamationTriangle,
 } from "react-icons/fa";
-import "../styles/CateringConfig.css";
+import "../styles/TakeAwayConfig.css";
 
-const CateringConfig = () => {
+const TakeAwayConfig = () => {
   const [branches, setBranches] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState("");
   const [selectedBranchDetails, setSelectedBranchDetails] = useState(null);
   const [baseUrl, setBaseUrl] = useState("");
-  const [cateringConfig, setCateringConfig] = useState(null);
+  const [takeAwayConfig, setTakeAwayConfig] = useState(null);
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
   const [isConfirmDeleteModalOpen, setIsConfirmDeleteModalOpen] =
     useState(false);
@@ -36,10 +36,10 @@ const CateringConfig = () => {
     fetchBranches();
   }, []);
 
-  // Fetch catering config and branch details when a branch is selected
+  // Fetch takeaway config and branch details when a branch is selected
   useEffect(() => {
     if (selectedBranch) {
-      fetchCateringConfig();
+      fetchTakeAwayConfig();
       fetchBranchDetails();
     }
   }, [selectedBranch]);
@@ -60,17 +60,17 @@ const CateringConfig = () => {
     }
   };
 
-  const fetchCateringConfig = async () => {
-    console.log("Fetching catering config for branch:", selectedBranch);
-    const response = await getCateringConfig(selectedBranch);
-    console.log("Received catering config:", response);
+  const fetchTakeAwayConfig = async () => {
+    console.log("Fetching takeaway config for branch:", selectedBranch);
+    const response = await getTakeAwayConfig(selectedBranch);
+    console.log("Received takeaway config:", response);
 
     if (response.success) {
-      setCateringConfig(response.data.data);
+      setTakeAwayConfig(response.data.data);
       setBaseUrl(response.data.data.baseUrl || "");
     } else {
       // Config might not exist yet
-      setCateringConfig(null);
+      setTakeAwayConfig(null);
       setBaseUrl("");
     }
   };
@@ -79,52 +79,52 @@ const CateringConfig = () => {
     e.preventDefault();
     if (!selectedBranch) return;
 
-    // Example: baseUrl would be "http://localhost:5173/catering"
-    const response = await createUpdateCateringConfig(selectedBranch, {
+    // Example: baseUrl would be "http://localhost:5173/takeaway"
+    const response = await createUpdateTakeAwayConfig(selectedBranch, {
       baseUrl,
     });
 
     if (response.success) {
-      alert("Catering configuration updated successfully");
-      fetchCateringConfig();
+      alert("Takeaway configuration updated successfully");
+      fetchTakeAwayConfig();
     } else {
       setError(response.error);
     }
   };
 
   const handleUpdateUrl = async () => {
-    if (!selectedBranch || !cateringConfig) return;
+    if (!selectedBranch || !takeAwayConfig) return;
 
-    const response = await updateCateringUrl(selectedBranch, baseUrl);
+    const response = await updateTakeAwayUrl(selectedBranch, baseUrl);
     if (response.success) {
       alert("URL updated successfully");
-      fetchCateringConfig();
+      fetchTakeAwayConfig();
     } else {
       setError(response.error);
     }
   };
 
   const handleToggleStatus = async () => {
-    if (!selectedBranch || !cateringConfig) return;
+    if (!selectedBranch || !takeAwayConfig) return;
 
-    const response = await toggleCateringStatus(
+    const response = await toggleTakeAwayStatus(
       selectedBranch,
-      !cateringConfig.isEnabled
+      !takeAwayConfig.isEnabled
     );
     if (response.success) {
-      fetchCateringConfig();
+      fetchTakeAwayConfig();
     } else {
       setError(response.error);
     }
   };
 
   const handleDeleteConfig = async () => {
-    if (!selectedBranch || !cateringConfig) return;
+    if (!selectedBranch || !takeAwayConfig) return;
 
-    const response = await deleteCateringConfig(selectedBranch);
+    const response = await deleteTakeAwayConfig(selectedBranch);
     if (response.success) {
-      alert("Catering configuration deleted successfully");
-      setCateringConfig(null);
+      alert("Takeaway configuration deleted successfully");
+      setTakeAwayConfig(null);
       setBaseUrl("");
       setIsConfirmDeleteModalOpen(false);
     } else {
@@ -137,11 +137,11 @@ const CateringConfig = () => {
   };
 
   const downloadQR = () => {
-    if (!cateringConfig) return;
+    if (!takeAwayConfig) return;
 
     const link = document.createElement("a");
-    link.href = cateringConfig.qrCode;
-    link.download = `Catering_QR_${
+    link.href = takeAwayConfig.qrCode;
+    link.download = `TakeAway_QR_${
       selectedBranchDetails?.name || "branch"
     }.png`;
     document.body.appendChild(link);
@@ -150,13 +150,13 @@ const CateringConfig = () => {
   };
 
   return (
-    <div className="catering-dashboard">
-      <div className="catering-header">
-        <h1>Catering Configuration</h1>
+    <div className="takeaway-dashboard">
+      <div className="takeaway-header">
+        <h1>Takeaway Configuration</h1>
         <select
           value={selectedBranch}
           onChange={(e) => setSelectedBranch(e.target.value)}
-          className="catering-branch-select"
+          className="takeaway-branch-select"
         >
           <option value="">Select Branch</option>
           {branches.map((branch) => (
@@ -169,38 +169,38 @@ const CateringConfig = () => {
 
       {selectedBranch && selectedBranchDetails && (
         <>
-          <div className="catering-config-section">
-            <div className="catering-branch-info">
+          <div className="takeaway-config-section">
+            <div className="takeaway-branch-info">
               <h3>Branch Details</h3>
               <p>Name: {selectedBranchDetails.name}</p>
               <p>Pincode: {selectedBranchDetails.address.pincode}</p>
             </div>
 
-            <div className="catering-config-inputs">
-              <div className="catering-input-group">
+            <div className="takeaway-config-inputs">
+              <div className="takeaway-input-group">
                 <label>Base URL</label>
                 <input
                   type="url"
                   value={baseUrl}
                   onChange={(e) => setBaseUrl(e.target.value)}
-                  placeholder="http://localhost:5173/catering"
+                  placeholder="http://localhost:5173/takeaway"
                 />
-                <small className="catering-url-preview">
+                <small className="takeaway-url-preview">
                   Final URL format: {baseUrl}/
                   {selectedBranchDetails.address.pincode}
                 </small>
               </div>
-              {!cateringConfig ? (
+              {!takeAwayConfig ? (
                 <button
                   onClick={handleCreateUpdateConfig}
-                  className="catering-update-btn"
+                  className="takeaway-update-btn"
                 >
                   Create Configuration
                 </button>
               ) : (
                 <button
                   onClick={handleUpdateUrl}
-                  className="catering-update-btn"
+                  className="takeaway-update-btn"
                 >
                   Update URL
                 </button>
@@ -208,19 +208,19 @@ const CateringConfig = () => {
             </div>
           </div>
 
-          {cateringConfig && (
-            <div className="catering-view-section">
-              <div className="catering-view-header">
-                <h2>Catering QR Code</h2>
+          {takeAwayConfig && (
+            <div className="takeaway-view-section">
+              <div className="takeaway-view-header">
+                <h2>Takeaway QR Code</h2>
               </div>
-              <div className="catering-box">
-                <div className="catering-box-header">
-                  <h3>{selectedBranchDetails.name} Catering</h3>
-                  <div className="catering-actions">
+              <div className="takeaway-box">
+                <div className="takeaway-box-header">
+                  <h3>{selectedBranchDetails.name} Takeaway</h3>
+                  <div className="takeaway-actions">
                     <button
-                      className="catering-url-btn"
+                      className="takeaway-url-btn"
                       onClick={() => {
-                        navigator.clipboard.writeText(cateringConfig.customUrl);
+                        navigator.clipboard.writeText(takeAwayConfig.customUrl);
                         alert("URL copied to clipboard!");
                       }}
                       title="Copy URL"
@@ -228,24 +228,24 @@ const CateringConfig = () => {
                       <FaLink />
                     </button>
                     <button
-                      className={`catering-toggle-btn ${
-                        cateringConfig.isEnabled ? "enabled" : ""
+                      className={`takeaway-toggle-btn ${
+                        takeAwayConfig.isEnabled ? "enabled" : ""
                       }`}
                       onClick={handleToggleStatus}
                       title={
-                        cateringConfig.isEnabled
-                          ? "Disable Catering"
-                          : "Enable Catering"
+                        takeAwayConfig.isEnabled
+                          ? "Disable Takeaway"
+                          : "Enable Takeaway"
                       }
                     >
-                      {cateringConfig.isEnabled ? (
+                      {takeAwayConfig.isEnabled ? (
                         <FaToggleOn />
                       ) : (
                         <FaToggleOff />
                       )}
                     </button>
                     <button
-                      className="catering-delete-btn"
+                      className="takeaway-delete-btn"
                       onClick={() => setIsConfirmDeleteModalOpen(true)}
                       title="Delete Configuration"
                     >
@@ -254,22 +254,22 @@ const CateringConfig = () => {
                   </div>
                 </div>
                 <div
-                  className="catering-custom-url"
-                  title={cateringConfig.customUrl}
+                  className="takeaway-custom-url"
+                  title={takeAwayConfig.customUrl}
                 >
-                  {cateringConfig.customUrl}
+                  {takeAwayConfig.customUrl}
                 </div>
-                <div className="catering-qr-container" onClick={openQRModal}>
-                  <img src={cateringConfig.qrCode} alt="QR Code" />
+                <div className="takeaway-qr-container" onClick={openQRModal}>
+                  <img src={takeAwayConfig.qrCode} alt="QR Code" />
                 </div>
                 <div
-                  className={`catering-status ${
-                    cateringConfig.isEnabled ? "active" : "disabled"
+                  className={`takeaway-status ${
+                    takeAwayConfig.isEnabled ? "active" : "disabled"
                   }`}
                 >
-                  Status: {cateringConfig.isEnabled ? "Active" : "Disabled"}
+                  Status: {takeAwayConfig.isEnabled ? "Active" : "Disabled"}
                 </div>
-                <button className="catering-download-btn" onClick={downloadQR}>
+                <button className="takeaway-download-btn" onClick={downloadQR}>
                   <FaDownload /> Download QR Code
                 </button>
               </div>
@@ -277,24 +277,24 @@ const CateringConfig = () => {
           )}
 
           {/* QR Code Modal */}
-          {isQRModalOpen && cateringConfig && (
-            <div className="catering-modal-overlay">
-              <div className="catering-modal">
-                <div className="catering-modal-header">
-                  <h2>Catering QR Code: {selectedBranchDetails.name}</h2>
+          {isQRModalOpen && takeAwayConfig && (
+            <div className="takeaway-modal-overlay">
+              <div className="takeaway-modal">
+                <div className="takeaway-modal-header">
+                  <h2>Takeaway QR Code: {selectedBranchDetails.name}</h2>
                   <button
                     onClick={() => setIsQRModalOpen(false)}
-                    className="catering-close-btn"
+                    className="takeaway-close-btn"
                   >
                     <FaTimes />
                   </button>
                 </div>
-                <div className="catering-modal-content catering-qr-modal">
-                  <img src={cateringConfig.qrCode} alt="QR Code" />
-                  <p className="catering-qr-url">{cateringConfig.customUrl}</p>
+                <div className="takeaway-modal-content takeaway-qr-modal">
+                  <img src={takeAwayConfig.qrCode} alt="QR Code" />
+                  <p className="takeaway-qr-url">{takeAwayConfig.customUrl}</p>
                   <button
                     onClick={downloadQR}
-                    className="catering-download-btn"
+                    className="takeaway-download-btn"
                   >
                     <FaDownload /> Download QR Code
                   </button>
@@ -305,36 +305,36 @@ const CateringConfig = () => {
 
           {/* Delete Confirmation Modal */}
           {isConfirmDeleteModalOpen && (
-            <div className="catering-modal-overlay">
-              <div className="catering-modal">
-                <div className="catering-modal-header">
+            <div className="takeaway-modal-overlay">
+              <div className="takeaway-modal">
+                <div className="takeaway-modal-header">
                   <h2>Confirm Deletion</h2>
                   <button
                     onClick={() => setIsConfirmDeleteModalOpen(false)}
-                    className="catering-close-btn"
+                    className="takeaway-close-btn"
                   >
                     <FaTimes />
                   </button>
                 </div>
-                <div className="catering-modal-content">
-                  <div className="catering-warning-message">
-                    <FaExclamationTriangle className="catering-warning-icon" />
+                <div className="takeaway-modal-content">
+                  <div className="takeaway-warning-message">
+                    <FaExclamationTriangle className="takeaway-warning-icon" />
                     <p>
-                      Are you sure you want to delete this catering
+                      Are you sure you want to delete this takeaway
                       configuration?
                     </p>
                     <p>This action cannot be undone.</p>
                   </div>
-                  <div className="catering-modal-actions">
+                  <div className="takeaway-modal-actions">
                     <button
                       onClick={() => setIsConfirmDeleteModalOpen(false)}
-                      className="catering-cancel-btn"
+                      className="takeaway-cancel-btn"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleDeleteConfig}
-                      className="catering-delete-confirm-btn"
+                      className="takeaway-delete-confirm-btn"
                     >
                       Delete
                     </button>
@@ -346,9 +346,9 @@ const CateringConfig = () => {
         </>
       )}
 
-      {error && <div className="catering-error-message">{error}</div>}
+      {error && <div className="takeaway-error-message">{error}</div>}
     </div>
   );
 };
 
-export default CateringConfig;
+export default TakeAwayConfig;

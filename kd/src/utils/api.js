@@ -214,4 +214,48 @@ export const updateCateringOrderStatus = async (orderId, status) => {
 export const getCateringOrderById = async (orderId) => {
   return handleResponse(api.get(`/kitchen/catering/orders/${orderId}`));
 };
+
+// Get pending takeaway orders that need acceptance
+export const getPendingTakeawayOrders = async () => {
+  return handleResponse(api.get("/kitchen/takeaway/orders/pending"));
+};
+
+// Get accepted takeaway orders
+export const getAcceptedTakeawayOrders = async () => {
+  return handleResponse(api.get("/kitchen/takeaway/orders/accepted"));
+};
+
+// Get takeaway orders for a specific date
+export const getTakeawayOrdersByDate = async (date) => {
+  const formattedDate =
+    date instanceof Date ? date.toISOString().split("T")[0] : date;
+
+  return handleResponse(
+    api.get(`/kitchen/takeaway/orders/date/${formattedDate}`)
+  );
+};
+
+// Update takeaway order status (accept, decline, etc.)
+export const updateTakeawayOrderStatus = async (orderId, status) => {
+  return handleResponse(
+    api.put(`/kitchen/takeaway/orders/${orderId}/status`, { status })
+  );
+};
+
+// Generate KOT for a takeaway order
+export const generateTakeawayKOT = async (orderId) => {
+  return handleResponse(api.post(`/kitchen/takeaway/orders/${orderId}/kot`));
+};
+
+// Get specific takeaway order details
+export const getTakeawayOrderById = async (orderId) => {
+  return handleResponse(api.get(`/kitchen/takeaway/orders/${orderId}`));
+};
+
+// Get all takeaway orders with optional filtering
+export const getAllTakeawayOrders = async (filters) => {
+  return handleResponse(
+    api.get("/kitchen/takeaway/orders", { params: filters })
+  );
+};
 export default api;

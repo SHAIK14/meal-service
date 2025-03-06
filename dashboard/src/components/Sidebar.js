@@ -225,6 +225,16 @@ const Sidebar = () => {
             </NavLink>
           </li>
         )}
+        {hasAccess("/takeAway-config") && (
+          <li>
+            <NavLink
+              to="/takeAway-config"
+              className={({ isActive }) => (isActive ? "active" : "")}
+            >
+              <FaUtensils className="icon" /> <span>TakeAway Config</span>
+            </NavLink>
+          </li>
+        )}
 
         <li>
           <NavLink to="/logout" className="logout-button">
