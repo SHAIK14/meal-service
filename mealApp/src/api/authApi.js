@@ -4,7 +4,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 // Base URL for all API calls
 const API_URL = "http://192.168.1.106:5000/api";
 
-// Create axios instance
 const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -12,7 +11,6 @@ const api = axios.create({
   },
 });
 
-// Add token to requests if available
 api.interceptors.request.use(
   async (config) => {
     const token = await AsyncStorage.getItem("token");
@@ -51,7 +49,7 @@ export const verifyOTP = async (phoneNumber, countryCode, otp) => {
       otp,
     });
     console.log("Verification response:", response.data);
-    // Save token if verification successful
+
     if (response.data.token) {
       await AsyncStorage.setItem("token", response.data.token);
     }
@@ -251,6 +249,111 @@ export const geocodeAddress = async (address) => {
     return response.data;
   } catch (error) {
     console.error("Error geocoding address:", error);
+    throw error;
+  }
+};
+
+// Branch API functions
+export const getNearbyBranches = async (coordinates) => {
+  try {
+    const response = await api.post("/mobile/branches/nearby", coordinates);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching nearby branches:", error);
+    throw error;
+  }
+};
+
+export const checkDeliveryAvailability = async (coordinates) => {
+  try {
+    const response = await api.post(
+      "/mobile/branches/check-delivery",
+      coordinates
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error checking delivery availability:", error);
+    throw error;
+  }
+};
+
+// Order preparation API functions
+export const preparePickupOrder = async (branchId, addressId) => {
+  try {
+    const response = await api.post("/mobile/orders/prepare-pickup", {
+      branchId,
+      addressId,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error preparing pickup order:", error);
+    throw error;
+  }
+};
+
+export const prepareDeliveryOrder = async (addressId) => {
+  try {
+    const response = await api.post("/mobile/orders/prepare-delivery", {
+      addressId,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error preparing delivery order:", error);
+    throw error;
+  }
+};
+
+// Voucher API functions
+export const validateVoucher = async (promoCode) => {
+  try {
+    const response = await api.post("/mobile/voucher/validate", { promoCode });
+    return response.data;
+  } catch (error) {
+    console.error("Error validating voucher:", error);
+    throw error;
+  }
+};
+
+export const applyVoucher = async (voucherId) => {
+  try {
+    const response = await api.post("/mobile/voucher/apply", { voucherId });
+    return response.data;
+  } catch (error) {
+    console.error("Error applying voucher:", error);
+    throw error;
+  }
+};
+
+// Payment API functions
+export const getPaymentMethods = async () => {
+  try {
+    const response = await api.get("/mobile/payment/methods");
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching payment methods:", error);
+    throw error;
+  }
+};
+
+export const processPayment = async (paymentMethod, voucherId) => {
+  try {
+    const response = await api.post("/mobile/payment/process", {
+      paymentMethod,
+      voucherId,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error processing payment:", error);
+    throw error;
+  }
+};
+
+export const finalizeOrder = async (orderData) => {
+  try {
+    const response = await api.post("/mobile/payment/finalize", orderData);
+    return response.data;
+  } catch (error) {
+    console.error("Error finalizing order:", error);
     throw error;
   }
 };

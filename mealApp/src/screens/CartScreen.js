@@ -13,9 +13,10 @@ import {
   Alert,
 } from "react-native";
 import useCartStore from "../store/cartStore";
+import useOrderStore from "../store/orderStore";
 import { getAddresses } from "../api/authApi";
 
-const CartScreen = ({ navigation }) => {
+const CartScreen = ({ navigation, route }) => {
   const {
     items,
     itemCount,
@@ -24,10 +25,16 @@ const CartScreen = ({ navigation }) => {
     fetchCart,
     updateItem,
     removeItem,
-    clearCartItems, // This was the issue - using the correct function name
+    clearCartItems,
   } = useCartStore();
+
+  const { setSelectedAddress } = useOrderStore();
+
   const [addresses, setAddresses] = useState([]);
   const [addressLoading, setAddressLoading] = useState(false);
+
+  // Extract selectedAddress from route params
+  const { selectedAddress } = route.params || {};
 
   useEffect(() => {
     // Load cart data when component mounts
@@ -36,6 +43,17 @@ const CartScreen = ({ navigation }) => {
     // Check if user has addresses
     checkAddresses();
   }, []);
+
+  // Handle address selection from route params
+  useEffect(() => {
+    if (selectedAddress) {
+      // If an address was selected, store it and proceed to delivery type selection
+      setSelectedAddress(selectedAddress);
+
+      // Navigate to delivery type screen with the selected address
+      navigation.navigate("DeliveryType", { selectedAddress });
+    }
+  }, [selectedAddress]);
 
   const checkAddresses = async () => {
     try {
@@ -82,7 +100,7 @@ const CartScreen = ({ navigation }) => {
       },
       {
         text: "Clear",
-        onPress: () => clearCartItems(), // Using the correct function
+        onPress: () => clearCartItems(),
         style: "destructive",
       },
     ]);
@@ -106,7 +124,7 @@ const CartScreen = ({ navigation }) => {
         ]
       );
     } else {
-      // Has addresses - navigate to checkout/address selection screen
+      // Has addresses - navigate to address selection screen
       navigation.navigate("Address", { fromCheckout: true });
     }
   };
@@ -250,8 +268,6 @@ const CartScreen = ({ navigation }) => {
                 {currency} {cartTotal.toFixed(2)}
               </Text>
             </View>
-
-            {/* Removing the dummy fee and tax section */}
 
             <View style={styles.divider} />
 

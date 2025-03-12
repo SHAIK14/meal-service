@@ -51,7 +51,6 @@ const mobileUserSchema = new mongoose.Schema({
   },
 });
 
-// Update the 'updatedAt' field on save
 mobileUserSchema.pre("save", function (next) {
   this.updatedAt = new Date();
   next();

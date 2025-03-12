@@ -60,7 +60,7 @@ const ProfileScreen = () => {
           <View style={styles.divider} />
 
           <TouchableOpacity style={styles.option}>
-            <Text style={styles.optionText}>Language</Text>
+            <Text style={styles.optionText}>Orders</Text>
             <Text style={styles.optionArrow}>›</Text>
           </TouchableOpacity>
 

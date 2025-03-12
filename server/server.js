@@ -42,6 +42,10 @@ const mobileAuthRoutes = require("./routes/mobile/mobileAuthRoutes");
 const mobileMenuRoutes = require("./routes/mobile/mobileMenuRoutes");
 const mobileCartRoutes = require("./routes/mobile/cartRoutes");
 const mobileAddressRoutes = require("./routes/mobile/addressRoutes");
+const mobileBranchRoutes = require("./routes/mobile/mobileBranchRoutes");
+const mobileOrderRoutes = require("./routes/mobile/orderRoutes");
+const mobileVoucherRoutes = require("./routes/mobile/voucherRoutes");
+const mobilePaymentRoutes = require("./routes/mobile/paymentRoutes");
 dotenv.config();
 const app = express();
 const server = http.createServer(app); // Create an HTTP server
@@ -107,6 +111,10 @@ app.use("/api/mobile/auth", mobileAuthRoutes);
 app.use("/api/mobile/menu", mobileMenuRoutes);
 app.use("/api/mobile/cart", mobileCartRoutes);
 app.use("/api/mobile/address", mobileAddressRoutes);
+app.use("/api/mobile/branches", mobileBranchRoutes);
+app.use("/api/mobile/orders", mobileOrderRoutes);
+app.use("/api/mobile/voucher", mobileVoucherRoutes);
+app.use("/api/mobile/payment", mobilePaymentRoutes);
 const PORT = process.env.PORT || 5000;
 const HOST = "0.0.0.0";
 

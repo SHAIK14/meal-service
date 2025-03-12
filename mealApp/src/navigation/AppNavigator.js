@@ -9,6 +9,9 @@ import PhoneScreen from "../screens/PhoneScreen";
 import OtpScreen from "../screens/OtpScreen";
 import MainTabNavigator from "./MainTabNavigator";
 import AddressScreen from "../screens/AddressScreen";
+import DeliveryTypeScreen from "../screens/DeliveryTypeScreen";
+import BranchSelectionScreen from "../screens/BranchSelectionScreen";
+import PaymentScreen from "../screens/PaymentScreen";
 
 const Stack = createStackNavigator();
 
@@ -49,6 +52,48 @@ const AppNavigator = () => {
                 presentation: "modal",
                 headerShown: true,
                 headerTitle: "Delivery Address",
+                headerTintColor: "#333",
+                headerStyle: {
+                  backgroundColor: "#fff",
+                  elevation: 0,
+                  shadowOpacity: 0,
+                },
+              }}
+            />
+            <Stack.Screen
+              name="DeliveryType"
+              component={DeliveryTypeScreen}
+              options={{
+                headerShown: true,
+                headerTitle: "Delivery Options",
+                headerTintColor: "#333",
+                headerStyle: {
+                  backgroundColor: "#fff",
+                  elevation: 0,
+                  shadowOpacity: 0,
+                },
+              }}
+            />
+            <Stack.Screen
+              name="BranchSelection"
+              component={BranchSelectionScreen}
+              options={{
+                headerShown: true,
+                headerTitle: "Select Pickup Location",
+                headerTintColor: "#333",
+                headerStyle: {
+                  backgroundColor: "#fff",
+                  elevation: 0,
+                  shadowOpacity: 0,
+                },
+              }}
+            />
+            <Stack.Screen
+              name="Payment"
+              component={PaymentScreen}
+              options={{
+                headerShown: true,
+                headerTitle: "Checkout & Payment",
                 headerTintColor: "#333",
                 headerStyle: {
                   backgroundColor: "#fff",

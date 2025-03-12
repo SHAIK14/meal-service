@@ -9,38 +9,25 @@ import {
   SafeAreaView,
   StatusBar,
   Platform,
-  TextInput,
   Alert,
-  KeyboardAvoidingView,
-  ScrollView,
-  Modal,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import {
   getAddresses,
   addAddress,
   updateAddress,
   deleteAddress,
   setDefaultAddress,
-  geocodeAddress,
 } from "../api/authApi";
+import MapAddressSelector from "../components/MapAddressSelector";
 
 const AddressScreen = ({ navigation, route }) => {
   const [addresses, setAddresses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [formMode, setFormMode] = useState("add"); // 'add' or 'edit'
+  const [mapVisible, setMapVisible] = useState(false);
   const [currentAddress, setCurrentAddress] = useState(null);
-  const [formData, setFormData] = useState({
-    name: "",
-    address: "",
-    apartment: "",
-    city: "",
-    state: "",
-    pincode: "",
-    coordinates: { latitude: 0, longitude: 0 },
-    isDefault: false,
-  });
+  const [formMode, setFormMode] = useState("add"); // 'add' or 'edit'
 
   const fromCheckout = route.params?.fromCheckout || false;
 
@@ -62,102 +49,26 @@ const AddressScreen = ({ navigation, route }) => {
     }
   };
 
-  const handleInputChange = (field, value) => {
-    setFormData({ ...formData, [field]: value });
-  };
-
   const openAddressForm = (mode, address = null) => {
-    if (mode === "edit" && address) {
-      setFormData({
-        name: address.name || "",
-        address: address.address || "",
-        apartment: address.apartment || "",
-        city: address.city || "",
-        state: address.state || "",
-        pincode: address.pincode || "",
-        coordinates: address.coordinates || { latitude: 0, longitude: 0 },
-        isDefault: address.isDefault || false,
-      });
-      setCurrentAddress(address);
-    } else {
-      // Default values for new address
-      setFormData({
-        name: "",
-        address: "",
-        apartment: "",
-        city: "",
-        state: "",
-        pincode: "",
-        coordinates: { latitude: 0, longitude: 0 },
-        isDefault: addresses.length === 0, // Make default if it's the first address
-      });
-      setCurrentAddress(null);
-    }
-
     setFormMode(mode);
-    setModalVisible(true);
+    setCurrentAddress(address);
+    setMapVisible(true);
   };
 
-  const searchLocation = async () => {
+  const handleSaveAddress = async (addressData) => {
     try {
-      if (!formData.address) {
-        Alert.alert("Error", "Please enter an address to search");
-        return;
-      }
-
-      setLoading(true);
-      const searchQuery = `${formData.address}, ${formData.city || ""} ${
-        formData.state || ""
-      } ${formData.pincode || ""}`;
-
-      const response = await geocodeAddress(searchQuery);
-      const { coordinates, city, state, pincode, formattedAddress } =
-        response.data;
-
-      setFormData({
-        ...formData,
-        address: formattedAddress || formData.address,
-        city: city || formData.city,
-        state: state || formData.state,
-        pincode: pincode || formData.pincode,
-        coordinates,
-      });
-
-      setLoading(false);
-    } catch (error) {
-      console.error("Geocode error:", error);
-      Alert.alert(
-        "Error",
-        "Failed to find location. Please check the address."
-      );
-      setLoading(false);
-    }
-  };
-
-  const saveAddress = async () => {
-    try {
-      // Validate form
-      if (
-        !formData.address ||
-        !formData.city ||
-        !formData.state ||
-        !formData.pincode
-      ) {
-        Alert.alert("Error", "Please fill all required fields");
-        return;
-      }
-
       setLoading(true);
 
       if (formMode === "add") {
-        await addAddress(formData);
+        await addAddress(addressData);
+        Alert.alert("Success", "Address added successfully");
       } else if (formMode === "edit" && currentAddress) {
-        await updateAddress(currentAddress._id, formData);
+        await updateAddress(currentAddress._id, addressData);
+        Alert.alert("Success", "Address updated successfully");
       }
 
       // Refresh addresses list
       await loadAddresses();
-      setModalVisible(false);
       setLoading(false);
     } catch (error) {
       console.error("Save address error:", error);
@@ -210,8 +121,8 @@ const AddressScreen = ({ navigation, route }) => {
 
   const handleSelectAddress = (address) => {
     if (fromCheckout) {
-      // If coming from checkout, go back with the selected address
-      navigation.navigate("Cart", { selectedAddress: address });
+      // If coming from checkout, go to delivery type screen with the selected address
+      navigation.navigate("DeliveryType", { selectedAddress: address });
     }
   };
 
@@ -280,7 +191,7 @@ const AddressScreen = ({ navigation, route }) => {
         </TouchableOpacity>
       </View>
 
-      {loading && !modalVisible ? (
+      {loading && !mapVisible ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#ff6b6b" />
           <Text style={styles.loadingText}>Loading addresses...</Text>
@@ -317,120 +228,14 @@ const AddressScreen = ({ navigation, route }) => {
         />
       )}
 
-      {/* Address Form Modal */}
-      <Modal
-        visible={modalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.modalContainer}
-        >
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {formMode === "add" ? "Add New Address" : "Edit Address"}
-              </Text>
-
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setModalVisible(false)}
-              >
-                <Text style={styles.closeButtonText}>×</Text>
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.formContainer}>
-              <Text style={styles.inputLabel}>Address Name</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Home, Work, etc."
-                value={formData.name}
-                onChangeText={(text) => handleInputChange("name", text)}
-              />
-
-              <Text style={styles.inputLabel}>Address</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Street address"
-                value={formData.address}
-                onChangeText={(text) => handleInputChange("address", text)}
-              />
-
-              <TouchableOpacity
-                style={styles.searchButton}
-                onPress={searchLocation}
-              >
-                <Text style={styles.searchButtonText}>Find on Map</Text>
-              </TouchableOpacity>
-
-              <Text style={styles.inputLabel}>Apartment / Building</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Apartment, building, floor, etc."
-                value={formData.apartment}
-                onChangeText={(text) => handleInputChange("apartment", text)}
-              />
-
-              <Text style={styles.inputLabel}>City</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="City"
-                value={formData.city}
-                onChangeText={(text) => handleInputChange("city", text)}
-              />
-
-              <Text style={styles.inputLabel}>State</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="State"
-                value={formData.state}
-                onChangeText={(text) => handleInputChange("state", text)}
-              />
-
-              <Text style={styles.inputLabel}>Pincode</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Pincode"
-                value={formData.pincode}
-                onChangeText={(text) => handleInputChange("pincode", text)}
-                keyboardType="number-pad"
-              />
-
-              <View style={styles.checkboxContainer}>
-                <TouchableOpacity
-                  style={[
-                    styles.checkbox,
-                    formData.isDefault && styles.checkboxChecked,
-                  ]}
-                  onPress={() =>
-                    handleInputChange("isDefault", !formData.isDefault)
-                  }
-                >
-                  {formData.isDefault && (
-                    <Text style={styles.checkmark}>✓</Text>
-                  )}
-                </TouchableOpacity>
-                <Text style={styles.checkboxLabel}>Set as default address</Text>
-              </View>
-            </ScrollView>
-
-            <TouchableOpacity
-              style={styles.saveButton}
-              onPress={saveAddress}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Text style={styles.saveButtonText}>Save Address</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+      {/* Map Address Selector Component */}
+      <MapAddressSelector
+        visible={mapVisible}
+        onClose={() => setMapVisible(false)}
+        onSave={handleSaveAddress}
+        initialAddress={currentAddress}
+        fromCheckout={fromCheckout}
+      />
     </SafeAreaView>
   );
 };
@@ -588,112 +393,6 @@ const styles = StyleSheet.create({
   },
   deleteText: {
     color: "#ff4b4b",
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: "flex-end",
-    backgroundColor: "rgba(0,0,0,0.5)",
-  },
-  modalContent: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: Platform.OS === "ios" ? 40 : 20,
-    maxHeight: "90%",
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  closeButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: "#f0f0f0",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  closeButtonText: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#666",
-  },
-  formContainer: {
-    padding: 16,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#666",
-    marginBottom: 6,
-  },
-  input: {
-    backgroundColor: "#f9f9f9",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 16,
-    fontSize: 16,
-  },
-  searchButton: {
-    backgroundColor: "#f0f0f0",
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  searchButtonText: {
-    color: "#ff6b6b",
-    fontWeight: "600",
-  },
-  checkboxContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: "#ccc",
-    marginRight: 8,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  checkboxChecked: {
-    backgroundColor: "#ff6b6b",
-    borderColor: "#ff6b6b",
-  },
-  checkmark: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  checkboxLabel: {
-    fontSize: 16,
-    color: "#333",
-  },
-  saveButton: {
-    backgroundColor: "#ff6b6b",
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: "center",
-    margin: 16,
-  },
-  saveButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
   },
 });
 
