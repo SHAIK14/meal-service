@@ -12,6 +12,7 @@ import AddressScreen from "../screens/AddressScreen";
 import DeliveryTypeScreen from "../screens/DeliveryTypeScreen";
 import BranchSelectionScreen from "../screens/BranchSelectionScreen";
 import PaymentScreen from "../screens/PaymentScreen";
+import OrderDetailsScreen from "../screens/OrderDetailsScreen";
 
 const Stack = createStackNavigator();
 
@@ -100,6 +101,13 @@ const AppNavigator = () => {
                   elevation: 0,
                   shadowOpacity: 0,
                 },
+              }}
+            />
+            <Stack.Screen
+              name="OrderDetails"
+              component={OrderDetailsScreen}
+              options={{
+                headerShown: false,
               }}
             />
           </>

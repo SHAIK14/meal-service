@@ -51,7 +51,8 @@ const PaymentScreen = ({ navigation }) => {
   // Handle order placed
   useEffect(() => {
     if (orderPlaced && orderId) {
-      // Format order ID for display if needed
+      // Save the full orderId for navigation
+      const fullOrderId = orderId; // Store the full ID
       const displayOrderId =
         orderId.length > 8 ? orderId.substring(orderId.length - 8) : orderId;
 
@@ -60,20 +61,30 @@ const PaymentScreen = ({ navigation }) => {
         `Your order #${displayOrderId} has been placed successfully!`,
         [
           {
-            text: "OK",
+            text: "View Order",
             onPress: () => {
-              // Reset navigation to main screen
+              // Navigate to Orders tab first, then to details
               navigation.reset({
                 index: 0,
-                routes: [{ name: "Main" }], // Reset navigation stack
+                routes: [
+                  {
+                    name: "Main",
+                    params: { screen: "Orders" },
+                  },
+                ],
               });
+
+              // We'll use a timeout to ensure the navigation to Orders tab is complete
+              // before trying to navigate to OrderDetails
+              setTimeout(() => {
+                navigation.navigate("OrderDetails", { orderId: fullOrderId });
+              }, 500);
             },
           },
         ]
       );
     }
   }, [orderPlaced, orderId]);
-
   const handlePlaceOrder = async () => {
     if (!selectedPaymentMethod) {
       Alert.alert(

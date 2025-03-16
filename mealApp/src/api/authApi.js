@@ -357,3 +357,57 @@ export const finalizeOrder = async (orderData) => {
     throw error;
   }
 };
+// Order tracking API functions
+export const getOrderHistory = async (page = 1, limit = 10, status = null) => {
+  try {
+    let url = `/mobile/orders/history?page=${page}&limit=${limit}`;
+    if (status) {
+      url += `&status=${status}`;
+    }
+    const response = await api.get(url);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching order history:", error);
+    throw error;
+  }
+};
+
+export const getOrderDetails = async (orderId) => {
+  try {
+    const response = await api.get(`/mobile/orders/details/${orderId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching order details:", error);
+    throw error;
+  }
+};
+
+export const getLatestOrder = async () => {
+  try {
+    const response = await api.get("/mobile/orders/latest");
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching latest order:", error);
+    throw error;
+  }
+};
+
+export const getOrderStatus = async (orderId) => {
+  try {
+    const response = await api.get(`/mobile/orders/status/${orderId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching order status:", error);
+    throw error;
+  }
+};
+
+export const cancelOrder = async (orderId) => {
+  try {
+    const response = await api.put(`/mobile/orders/cancel/${orderId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error cancelling order:", error);
+    throw error;
+  }
+};
