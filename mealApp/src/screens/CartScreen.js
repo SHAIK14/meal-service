@@ -32,17 +32,24 @@ const CartScreen = ({ navigation, route }) => {
 
   const [addresses, setAddresses] = useState([]);
   const [addressLoading, setAddressLoading] = useState(false);
+  const [isFromOrderCompletion, setIsFromOrderCompletion] = useState(false);
 
   // Extract selectedAddress from route params
   const { selectedAddress } = route.params || {};
 
   useEffect(() => {
+    // Check if we're coming from order completion
+    if (route.params?.fromOrderCompletion) {
+      setIsFromOrderCompletion(true);
+      return; // Skip the empty cart check if coming from order completion
+    }
+
     // Load cart data when component mounts
     fetchCart();
 
     // Check if user has addresses
     checkAddresses();
-  }, []);
+  }, [route.params]);
 
   // Handle address selection from route params
   useEffect(() => {
@@ -201,8 +208,8 @@ const CartScreen = ({ navigation, route }) => {
   const currency =
     items.length > 0 ? items[0].item.prices[0]?.currency || "" : "";
 
-  // Empty cart view
-  if (!loading && items.length === 0) {
+  // Empty cart view - Updated to use isFromOrderCompletion flag
+  if (!loading && items.length === 0 && !isFromOrderCompletion) {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor="#fff" />

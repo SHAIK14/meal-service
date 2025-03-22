@@ -27,23 +27,36 @@ const BranchSelectionScreen = ({ navigation }) => {
   } = useOrderStore();
 
   const handleSelectBranch = (branch) => {
+    console.log("Branch selected:", branch._id);
     setSelectedBranch(branch);
   };
 
+  // Inside handleContinue function
   const handleContinue = async () => {
+    console.log("==========================================");
+    console.log("handleContinue STARTED in BranchSelectionScreen");
+    console.log("Selected branch:", selectedBranch?._id);
+    console.log("==========================================");
+
     if (!selectedBranch) {
+      console.log("No branch selected, showing alert");
       Alert.alert("Required", "Please select a branch for pickup");
       return;
     }
 
+    console.log("Setting selected branch in store");
     storeSetSelectedBranch(selectedBranch);
 
+    console.log("Calling preparePickupOrder");
     const success = await preparePickupOrder();
+    console.log("preparePickupOrder result:", success);
 
     if (success) {
+      console.log("Order prepared successfully, navigating to Payment screen");
       // Navigate to payment screen
       navigation.navigate("Payment");
     } else {
+      console.log("Order preparation failed:", error);
       Alert.alert("Error", error || "Failed to prepare order");
     }
   };

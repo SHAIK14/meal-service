@@ -20,9 +20,11 @@ import PaymentMethodSelector from "../components/PaymentMethodSelector";
 import useOrderStore from "../store/orderStore";
 import useCartStore from "../store/cartStore";
 
-const PaymentScreen = ({ navigation }) => {
+const PaymentScreen = ({ navigation, route }) => {
   const [orderNotes, setOrderNotes] = useState("");
   const [processing, setProcessing] = useState(false);
+  const [orderCompleted, setOrderCompleted] = useState(false);
+  const [canPlaceOrder, setCanPlaceOrder] = useState(true);
 
   const {
     loading,
@@ -33,28 +35,79 @@ const PaymentScreen = ({ navigation }) => {
     orderPlaced,
     orderId,
     deliveryType,
+    resetOrderState,
   } = useOrderStore();
 
   const { itemCount } = useCartStore();
 
-  // If no items in cart, go back to main
+  // Enhanced logging when component mounts
   useEffect(() => {
-    if (itemCount === 0) {
+    console.log("==========================================");
+    console.log("PaymentScreen MOUNTED with state:", {
+      orderPlaced,
+      orderId,
+      selectedPaymentMethod,
+      deliveryType,
+      loading,
+      error,
+    });
+    console.log("==========================================");
+
+    // Cleanup function when component unmounts
+    return () => {
+      console.log("==========================================");
+      console.log("PaymentScreen UNMOUNTING");
+      console.log("==========================================");
+    };
+  }, []);
+
+  // Check if we're coming from order completion
+  useEffect(() => {
+    if (route.params?.fromOrderCompletion) {
+      setOrderCompleted(true);
+    }
+  }, [route.params]);
+
+  // If no items in cart, go back to main - BUT only if not coming from order completion
+  useEffect(() => {
+    console.log("ItemCount check effect triggered:", {
+      itemCount,
+      orderCompleted,
+    });
+    if (itemCount === 0 && !orderCompleted) {
+      console.log("Cart is empty, navigating to Main");
       Alert.alert(
         "Cart Empty",
         "Your cart is empty. Please add items to continue."
       );
-      navigation.navigate("Main"); // Navigate to Main instead of Cart
+      navigation.navigate("Main");
     }
-  }, [itemCount]);
+  }, [itemCount, orderCompleted]);
 
   // Handle order placed
   useEffect(() => {
+    console.log("==========================================");
+    console.log("Order placed effect TRIGGERED with:", {
+      orderPlaced,
+      orderId,
+      timestamp: new Date().toISOString(),
+    });
+    console.log("==========================================");
+
     if (orderPlaced && orderId) {
+      console.log("Showing order success alert for orderId:", orderId);
+
       // Save the full orderId for navigation
-      const fullOrderId = orderId; // Store the full ID
+      const fullOrderId = orderId;
       const displayOrderId =
         orderId.length > 8 ? orderId.substring(orderId.length - 8) : orderId;
+
+      // Mark order as completed to prevent empty cart alert
+      setOrderCompleted(true);
+
+      // IMPORTANT: Reset the order state BEFORE showing the alert
+      console.log("Resetting order state after successful order");
+      resetOrderState();
 
       Alert.alert(
         "Order Placed Successfully",
@@ -63,21 +116,28 @@ const PaymentScreen = ({ navigation }) => {
           {
             text: "View Order",
             onPress: () => {
+              console.log("User selected to view order details");
               // Navigate to Orders tab first, then to details
               navigation.reset({
                 index: 0,
                 routes: [
                   {
                     name: "Main",
-                    params: { screen: "Orders" },
+                    // Add this params object to pass the flag
+                    params: {
+                      screen: "Orders",
+                      params: { fromOrderCompletion: true },
+                    },
                   },
                 ],
               });
 
-              // We'll use a timeout to ensure the navigation to Orders tab is complete
-              // before trying to navigate to OrderDetails
+              // Pass the same flag to OrderDetails
               setTimeout(() => {
-                navigation.navigate("OrderDetails", { orderId: fullOrderId });
+                navigation.navigate("OrderDetails", {
+                  orderId: fullOrderId,
+                  fromOrderCompletion: true, // Add this flag
+                });
               }, 500);
             },
           },
@@ -85,8 +145,23 @@ const PaymentScreen = ({ navigation }) => {
       );
     }
   }, [orderPlaced, orderId]);
+
   const handlePlaceOrder = async () => {
+    console.log("==========================================");
+    console.log(
+      "handlePlaceOrder STARTED with payment method:",
+      selectedPaymentMethod?.id
+    );
+    console.log("==========================================");
+
+    // Prevent multiple order placements in quick succession
+    if (!canPlaceOrder) {
+      console.log("Order placement prevented - too soon after previous order");
+      return;
+    }
+
     if (!selectedPaymentMethod) {
+      console.log("No payment method selected, showing alert");
       Alert.alert(
         "Payment Method Required",
         "Please select a payment method to continue."
@@ -95,13 +170,19 @@ const PaymentScreen = ({ navigation }) => {
     }
 
     try {
+      // Disable order placement temporarily
+      setCanPlaceOrder(false);
       setProcessing(true);
+      console.log("Processing payment...");
 
       // Process payment
       const paymentSuccess = await processPayment();
+      console.log("Payment process result:", paymentSuccess);
 
       if (!paymentSuccess) {
         setProcessing(false);
+        setCanPlaceOrder(true); // Re-enable order placement
+        console.log("Payment failed");
         Alert.alert(
           "Payment Failed",
           "There was an error processing your payment. Please try again."
@@ -109,25 +190,39 @@ const PaymentScreen = ({ navigation }) => {
         return;
       }
 
+      console.log(
+        "Payment successful, finalizing order with notes:",
+        orderNotes
+      );
       // Finalize order
       const orderSuccess = await finalizeOrder(orderNotes);
+      console.log("Order finalization result:", orderSuccess);
 
       setProcessing(false);
 
       if (!orderSuccess) {
+        setCanPlaceOrder(true); // Re-enable order placement
+        console.log("Order finalization failed");
         Alert.alert(
           "Order Failed",
           "There was an error placing your order. Please try again."
         );
       }
+
+      // Re-enable order placement after a delay
+      setTimeout(() => {
+        setCanPlaceOrder(true);
+      }, 3000);
     } catch (err) {
-      setProcessing(false);
-      Alert.alert("Error", "An unexpected error occurred. Please try again.");
       console.error("Place order error:", err);
+      setProcessing(false);
+      setCanPlaceOrder(true); // Re-enable on error
+      Alert.alert("Error", "An unexpected error occurred. Please try again.");
     }
   };
 
   const handleChangeAddress = () => {
+    console.log("Change address requested, delivery type:", deliveryType);
     // Go back to address selection or delivery type selection based on current flow
     if (deliveryType === "pickup") {
       navigation.navigate("BranchSelection");
@@ -136,15 +231,18 @@ const PaymentScreen = ({ navigation }) => {
     }
   };
 
+  // Add a log when back button is pressed
+  const handleBackPress = () => {
+    console.log("Back button pressed on PaymentScreen");
+    navigation.goBack();
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Checkout</Text>
@@ -185,11 +283,16 @@ const PaymentScreen = ({ navigation }) => {
         <TouchableOpacity
           style={[
             styles.placeOrderButton,
-            (loading || processing || !selectedPaymentMethod) &&
+            (loading ||
+              processing ||
+              !selectedPaymentMethod ||
+              !canPlaceOrder) &&
               styles.disabledButton,
           ]}
           onPress={handlePlaceOrder}
-          disabled={loading || processing || !selectedPaymentMethod}
+          disabled={
+            loading || processing || !selectedPaymentMethod || !canPlaceOrder
+          }
         >
           {processing || loading ? (
             <ActivityIndicator size="small" color="#fff" />
@@ -201,7 +304,6 @@ const PaymentScreen = ({ navigation }) => {
     </SafeAreaView>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,

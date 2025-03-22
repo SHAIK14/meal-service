@@ -117,9 +117,9 @@ const OrdersScreen = ({ navigation }) => {
           <Text style={styles.sectionTitle}>Active Orders</Text>
         </View>
 
-        {activeOrders.map((order, index) => (
+        {activeOrders.map((order) => (
           <OrderCard
-            key={`active-${order._id}-${index}`}
+            key={`active-${order._id}-${Date.now()}`} // Add timestamp to ensure uniqueness
             order={order}
             onPress={() => handleOrderPress(order)}
           />
@@ -212,7 +212,7 @@ const OrdersScreen = ({ navigation }) => {
           renderItem={({ item }) => (
             <OrderCard order={item} onPress={() => handleOrderPress(item)} />
           )}
-          keyExtractor={(item) => item._id}
+          keyExtractor={(item) => `past-${item._id}`}
           contentContainerStyle={styles.listContent}
           ListHeaderComponent={renderListHeader}
           ListEmptyComponent={renderEmpty}

@@ -36,13 +36,31 @@ const useOrderStore = create((set, get) => ({
   orderId: null,
 
   // Existing actions
-  setDeliveryType: (type) => set({ deliveryType: type }),
+  setDeliveryType: (type) => {
+    console.log("setDeliveryType called with:", type);
+    set({ deliveryType: type });
+  },
 
-  setSelectedAddress: (address) => set({ selectedAddress: address }),
+  setSelectedAddress: (address) => {
+    console.log("setSelectedAddress called with ID:", address?._id);
+    set({ selectedAddress: address });
+  },
 
-  setSelectedBranch: (branch) => set({ selectedBranch: branch }),
+  setSelectedBranch: (branch) => {
+    console.log("setSelectedBranch called with ID:", branch?._id);
+    set({ selectedBranch: branch });
+  },
 
-  resetOrderState: () =>
+  resetOrderState: () => {
+    console.log("==========================================");
+    console.log("resetOrderState CALLED");
+    console.log("Current state before reset:", {
+      orderPlaced: get().orderPlaced,
+      orderId: get().orderId,
+      deliveryType: get().deliveryType,
+    });
+    console.log("==========================================");
+
     set({
       deliveryType: null,
       selectedAddress: null,
@@ -64,7 +82,14 @@ const useOrderStore = create((set, get) => ({
       paymentError: null,
       orderPlaced: false,
       orderId: null,
-    }),
+    });
+
+    console.log("State AFTER reset:", {
+      orderPlaced: get().orderPlaced,
+      orderId: get().orderId,
+      deliveryType: get().deliveryType,
+    });
+  },
 
   // Existing methods for branches and delivery
   fetchNearbyBranches: async () => {
@@ -137,19 +162,39 @@ const useOrderStore = create((set, get) => ({
   },
 
   preparePickupOrder: async () => {
+    console.log("==========================================");
+    console.log("preparePickupOrder STARTED");
     const { selectedBranch, selectedAddress } = get();
+    console.log("Current state:", {
+      branchId: selectedBranch?._id,
+      addressId: selectedAddress?._id,
+      orderPlaced: get().orderPlaced,
+      orderId: get().orderId,
+    });
+    console.log("==========================================");
 
     if (!selectedBranch || !selectedAddress) {
+      console.log("Missing branch or address");
       set({ error: "Branch and address must be selected" });
       return false;
     }
 
     try {
       set({ loading: true, error: null });
+      console.log("Calling API preparePickupOrder with:", {
+        branchId: selectedBranch._id,
+        addressId: selectedAddress._id,
+      });
+
       const response = await preparePickupOrder(
         selectedBranch._id,
         selectedAddress._id
       );
+
+      console.log("preparePickupOrder API response:", {
+        success: response.success,
+        totalAmount: response.data?.totalAmount,
+      });
 
       set({
         orderData: response.data,
@@ -157,8 +202,17 @@ const useOrderStore = create((set, get) => ({
         finalTotal: response.data.totalAmount,
         loading: false,
       });
+
+      console.log("State AFTER preparePickupOrder:", {
+        cartTotal: get().cartTotal,
+        finalTotal: get().finalTotal,
+        orderPlaced: get().orderPlaced,
+        orderId: get().orderId,
+      });
+
       return true;
     } catch (error) {
+      console.error("Error in preparePickupOrder:", error);
       set({
         error: "Failed to prepare pickup order",
         loading: false,
@@ -166,7 +220,6 @@ const useOrderStore = create((set, get) => ({
       return false;
     }
   },
-
   prepareDeliveryOrder: async () => {
     const { selectedAddress } = get();
 
@@ -277,27 +330,55 @@ const useOrderStore = create((set, get) => ({
   },
 
   processPayment: async () => {
+    console.log("==========================================");
+    console.log("processPayment STARTED");
     const { selectedPaymentMethod, voucher } = get();
+    console.log("Current state:", {
+      paymentMethodId: selectedPaymentMethod?.id,
+      voucherId: voucher?.voucherId,
+      orderPlaced: get().orderPlaced,
+      orderId: get().orderId,
+    });
+    console.log("==========================================");
 
     if (!selectedPaymentMethod) {
+      console.log("No payment method selected");
       set({ paymentError: "Please select a payment method" });
       return false;
     }
 
     try {
       set({ paymentProcessing: true, paymentError: null });
+
+      console.log("Calling API processPayment with:", {
+        paymentMethodId: selectedPaymentMethod.id,
+        voucherId: voucher?.voucherId,
+      });
+
       const response = await processPayment(
         selectedPaymentMethod.id,
         voucher ? voucher.voucherId : null
       );
+
+      console.log("processPayment API response:", {
+        success: response.success,
+      });
 
       if (response.success) {
         set({
           paymentDetails: response.data.payment,
           paymentProcessing: false,
         });
+
+        console.log("State AFTER successful payment:", {
+          paymentDetails: response.data.payment,
+          orderPlaced: get().orderPlaced,
+          orderId: get().orderId,
+        });
+
         return true;
       } else {
+        console.log("Payment API returned error:", response.message);
         set({
           paymentError: response.message || "Payment processing failed",
           paymentProcessing: false,
@@ -305,6 +386,7 @@ const useOrderStore = create((set, get) => ({
         return false;
       }
     } catch (error) {
+      console.error("Error in processPayment:", error);
       set({
         paymentError:
           error.response?.data?.message || "Payment processing failed",
@@ -315,6 +397,8 @@ const useOrderStore = create((set, get) => ({
   },
 
   finalizeOrder: async (notes = "") => {
+    console.log("==========================================");
+    console.log("finalizeOrder STARTED");
     const {
       deliveryType,
       selectedBranch,
@@ -322,7 +406,21 @@ const useOrderStore = create((set, get) => ({
       selectedPaymentMethod,
       voucher,
       paymentDetails,
+      orderPlaced,
+      orderId,
     } = get();
+
+    console.log("Current state before finalizing:", {
+      deliveryType,
+      branchId: selectedBranch?._id,
+      addressId: selectedAddress?._id,
+      paymentMethodId: selectedPaymentMethod?.id,
+      voucherId: voucher?.voucherId,
+      notes,
+      orderPlaced,
+      orderId,
+    });
+    console.log("==========================================");
 
     if (
       !deliveryType ||
@@ -330,6 +428,7 @@ const useOrderStore = create((set, get) => ({
       !selectedAddress ||
       !selectedPaymentMethod
     ) {
+      console.log("Missing required order information");
       set({ error: "Missing required order information" });
       return false;
     }
@@ -347,7 +446,13 @@ const useOrderStore = create((set, get) => ({
         notes,
       };
 
+      console.log("Calling API finalizeOrder with data:", orderData);
+
       const response = await finalizeOrder(orderData);
+      console.log("finalizeOrder API response:", {
+        success: response.success,
+        orderId: response.data?.orderId,
+      });
 
       if (response.success) {
         set({
@@ -355,8 +460,15 @@ const useOrderStore = create((set, get) => ({
           orderId: response.data.orderId,
           loading: false,
         });
+
+        console.log("State AFTER successful order:", {
+          orderPlaced: true,
+          orderId: response.data.orderId,
+        });
+
         return true;
       } else {
+        console.log("Order finalization API returned error:", response.message);
         set({
           error: response.message || "Failed to place order",
           loading: false,
@@ -364,6 +476,7 @@ const useOrderStore = create((set, get) => ({
         return false;
       }
     } catch (error) {
+      console.error("Error in finalizeOrder:", error);
       set({
         error: error.response?.data?.message || "Failed to place order",
         loading: false,
