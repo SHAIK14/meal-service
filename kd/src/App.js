@@ -17,6 +17,8 @@ import Login from "./components/Auth/Login";
 import CateringDashboard from "./pages/CateringDashboard";
 import TakeawayAdminDashboard from "./pages/TakeawayAdminDashboard";
 import TakeawayWorkerDashboard from "./pages/TakeawayWorkerDashboard";
+import MealAdminDashboard from "./pages/MealAdminDashboard";
+import MealStaffDashboard from "./pages/MealStaffDashboard";
 import "./App.css";
 
 const AuthenticatedLayout = ({ children }) => (
@@ -56,7 +58,7 @@ const App = () => {
                     <Route path="/tables" element={<TableManagement />} />
                     <Route path="/kot" element={<Kot />} />
                     <Route path="/catering" element={<CateringDashboard />} />
-                    {/* New Takeaway Routes */}
+                    {/* Takeaway Routes */}
                     <Route
                       path="/takeaway-admin"
                       element={<TakeawayAdminDashboard />}
@@ -64,6 +66,15 @@ const App = () => {
                     <Route
                       path="/takeaway-kitchen"
                       element={<TakeawayWorkerDashboard />}
+                    />
+                    {/* New Meal App Routes */}
+                    <Route
+                      path="/meal-admin"
+                      element={<MealAdminDashboard />}
+                    />
+                    <Route
+                      path="/meal-kitchen"
+                      element={<MealStaffDashboard />}
                     />
                     <Route
                       path="/"

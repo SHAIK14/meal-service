@@ -49,6 +49,12 @@ function TopNav() {
       <NavLink className="nav-item" to="/takeaway-kitchen">
         Takeaway Kitchen
       </NavLink>
+      <NavLink className="nav-item" to="/meal-admin">
+        Meal Admin
+      </NavLink>
+      <NavLink className="nav-item" to="/meal-kitchen">
+        Meal Kitchen
+      </NavLink>
     </div>
   );
 }

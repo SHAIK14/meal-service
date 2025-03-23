@@ -258,4 +258,58 @@ export const getAllTakeawayOrders = async (filters) => {
     api.get("/kitchen/takeaway/orders", { params: filters })
   );
 };
+// Get pending meal orders that need acceptance (admin only)
+export const getPendingMealOrders = async () => {
+  return handleResponse(api.get("/kitchen/meal/orders/pending"));
+};
+
+// Get accepted meal orders (for kitchen staff)
+export const getAcceptedMealOrders = async () => {
+  return handleResponse(api.get("/kitchen/meal/orders/accepted"));
+};
+
+// Get ready meal orders (admin only)
+export const getReadyMealOrders = async () => {
+  return handleResponse(api.get("/kitchen/meal/orders/ready"));
+};
+
+// Get meal orders for a specific date (admin view)
+export const getMealOrdersByDate = async (date) => {
+  const formattedDate =
+    date instanceof Date ? date.toISOString().split("T")[0] : date;
+
+  return handleResponse(api.get(`/kitchen/meal/orders/date/${formattedDate}`));
+};
+
+// Get meal orders for staff by date (only accepted/preparing)
+export const getStaffMealOrdersByDate = async (date) => {
+  const formattedDate =
+    date instanceof Date ? date.toISOString().split("T")[0] : date;
+
+  return handleResponse(
+    api.get(`/kitchen/meal/staff/orders/date/${formattedDate}`)
+  );
+};
+
+// Update meal order status (admin only)
+export const updateMealOrderStatus = async (orderId, status) => {
+  return handleResponse(
+    api.put(`/kitchen/meal/orders/${orderId}/status`, { status })
+  );
+};
+
+// Get specific meal order details
+export const getMealOrderById = async (orderId) => {
+  return handleResponse(api.get(`/kitchen/meal/orders/${orderId}`));
+};
+
+// Get all meal orders with filters (admin only)
+export const getAllMealOrders = async (filters) => {
+  return handleResponse(api.get("/kitchen/meal/orders", { params: filters }));
+};
+
+// Get meal order dashboard statistics
+export const getMealOrderStats = async () => {
+  return handleResponse(api.get("/kitchen/meal/stats"));
+};
 export default api;
