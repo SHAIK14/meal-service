@@ -80,29 +80,27 @@ const Plans = () => {
   };
 
   return (
-    <div className="bg-white h-screen text-gray-800 overflow-y-scroll  p-6">
-      <div className="p-6 bg-gray-100 h-full overflow-auto rounded-lg">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-left  text-2xl font-semibold m-0">Meal Plans</h1>
+    <div className="bg-white overflow-y-auto p-8 h-screen ">
+      <div className="">
+        <div className="flex items-center  justify-between rounded-2xl p-4">
+          <h1 className=" text-2xl font-bold text-black m-0 p-0">Meal Plans</h1>
 
-          <div className="m-0">
-            <button
-              className="px-4 py-3 bg-gray-300 text-gray-800 font-semibold hover:bg-gray-800 hover:text-white transition-all ease-in-out duration-300"
-              onClick={() => navigate("/plans/create")}
-            >
-              Create New Plan
-            </button>
-          </div>
+          <button
+            className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-green-500 text-sm font-semibold text-black hover:text-white transition-all duration-300 bg-gray-100"
+            onClick={() => navigate("/plans/create")}
+          >
+            Create New Plan
+          </button>
         </div>
 
         {plans.length > 0 ? (
-          <div className="grid lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 max-lg:grid-cols-4 grid-cols-1  place-items-center place-content-center gap-4">
+          <div className="grid sm:grid-cols-1 mt-4 md:grid-col-2 lg:grid-cols-3 place-content-center place-items-center w-fit gap-4">
             {plans.map((plan) => (
               <div
                 key={plan._id}
-                className=" flex bg-white  rounded-xl w-fit max-h-[200px] h-[150px]  overflow-hidden  items-center justify-center"
+                className="flex border items-center p-4 rounded-2xl gap-4 "
               >
-                <div className="w-40 h-full">
+                <div className="w-20 h-20 rounded-2xl overflow-hidden">
                   {plan.image && (
                     <img
                       src={plan.image}
@@ -111,66 +109,54 @@ const Plans = () => {
                     />
                   )}
                 </div>
-                <div className="flex gap-2 p-2">
-                  <div className=" flex flex-col   p-2 justify-center">
-                    <h2 className="text-xl font-bold">{plan.nameEnglish}</h2>
-                    <div className="flex text-sm my-1  text-gray-500 gap-1">
-                      <span className="">Service Type: </span>
-                      <span className="text-gray-800 font-semibold">
-                        {getServiceLabel(plan.service)}
-                      </span>
-                    </div>
+                <div className="">
+                  <h2 className="font-bold text-lg ">{plan.nameEnglish}</h2>
+                  <div className="m-0 p-0">
+                    <span className="font-semibold text-sm">
+                      Service Type:{" "}
+                    </span>
+                    <span className="text-gray-700">
+                      {getServiceLabel(plan.service)}
+                    </span>
                   </div>
-                  <div className="flex flex-col justify-center items-center gap-4 text-lg">
-                    {/* Edit Plan Button */}
-                    <div className="relative group flex items-center">
-                      {/* Tooltip (Left Side, Adjusted Position) */}
-                      <span className="absolute -left-16 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-gray-800 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
-                        Edit Plan
-                      </span>
-                      <button
-                        className=" ml-4 hover:text-green-500"
-                        onClick={() => navigate(`/plans/edit/${plan._id}`)}
-                      >
-                        <FaEdit />
-                      </button>
-                    </div>
-
-                    {/* Delete Plan Button */}
-                    <div className="relative group flex items-center">
-                      {/* Tooltip (Left Side, Adjusted Position) */}
-                      <span className="absolute -left-16 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-gray-800 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
-                        Delete Plan
-                      </span>
-                      <button
-                        className="admin-delete-btn ml-4  hover:text-red-500"
-                        onClick={() => handleDelete(plan._id)}
-                      >
-                        <FaTrash />
-                      </button>
-                    </div>
-
-                    {/* Add/Edit Items Button */}
-                    <div className="relative group flex items-center">
-                      {/* Tooltip (Left Side, Adjusted Position) */}
-                      <span className="absolute -left-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-gray-800 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
-                        {plansWithItems[plan._id] ? "Edit Items" : "Add Items"}
-                      </span>
-                      <button
-                        className={`  hover:text-blue-700 admin-${
-                          plansWithItems[plan._id] ? "edit" : "add"
-                        }-items-btn ml-4`}
-                        onClick={() =>
-                          handleAddOrEditItems(
-                            plan._id,
-                            plansWithItems[plan._id]
-                          )
-                        }
-                      >
-                        <FaListAlt />
-                      </button>
-                    </div>
-                  </div>
+                </div>
+                <div className=" flex  gap-2">
+                  <button
+                    className="relative bg-blue-500 text-sm p-2 text-white rounded-full hover:bg-blue-600 transition-all duration-300 group"
+                    onClick={() => navigate(`/plans/edit/${plan._id}`)}
+                    title="Edit Plan"
+                  >
+                    <FaEdit />
+                    <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 text-xs text-white bg-black rounded-md py-1 px-2 opacity-0 group-hover:opacity-100 group-hover:block transition-opacity duration-300">
+                      Edit
+                    </span>
+                  </button>
+                  <button
+                    className="relative bg-red-500 text-sm p-2 text-white rounded-full hover:bg-red-600 transition-all duration-300 group"
+                    onClick={() => handleDelete(plan._id)}
+                    title="Delete Plan"
+                  >
+                    <FaTrash />
+                    <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 text-xs text-white bg-black rounded-md py-1 px-2 opacity-0 group-hover:opacity-100 group-hover:block transition-opacity duration-300">
+                      Delete
+                    </span>
+                  </button>
+                  <button
+                    className={` relative bg-green-500 text-sm p-2 text-white rounded-full hover:bg-green-600 transition-all duration-300 group  admin-${
+                      plansWithItems[plan._id] ? "edit" : "add"
+                    }-items-btn`}
+                    onClick={() =>
+                      handleAddOrEditItems(plan._id, plansWithItems[plan._id])
+                    }
+                    title={
+                      plansWithItems[plan._id] ? "Edit Items" : "Add Items"
+                    }
+                  >
+                    <FaListAlt />
+                    <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 text-xs text-white bg-black rounded-md py-1 px-2 opacity-0 group-hover:opacity-100 group-hover:block transition-opacity duration-300">
+                      Items
+                    </span>
+                  </button>
                 </div>
               </div>
             ))}

@@ -4,10 +4,9 @@ import {
   getSubscriptionAnalytics,
   updateSubscriptionStatus,
 } from "../utils/api.js";
-import { MdOutlineNavigateNext } from "react-icons/md";
-import { IoFilter } from "react-icons/io5";
-import { FaCalendarAlt } from "react-icons/fa";
-import { FaSearch } from "react-icons/fa";
+import { Calendar, Search, Filter } from "lucide-react";
+
+// import "../styles/Subscriptions.css";
 
 const Subscriptions = () => {
   const [subscriptions, setSubscriptions] = useState([]);
@@ -132,34 +131,41 @@ const Subscriptions = () => {
   };
 
   const renderAnalytics = () => {
-    return Object.entries(analytics).map(([status, data]) => (
-      <div
-        className={`h-[100px]  ${
-          status === "active"
-            ? "bg-green-500"
-            : status === "paused"
-            ? "bg-yellow-500"
-            : "bg-red-500"
-        } p-4 flex flex-col justify-between flex-1`}
-      >
-        <div className="">
-          <h3 className="text-white text-xl">{status}</h3>
-        </div>
-        <div className="flex-1 flex  items-center justify-between">
-          <div className="flex items-center">
-            <span className="count text-2xl text-white font-bold">
-              {data?.count || 0}
-            </span>
-            <span className="label text-white text-md font-semibold ml-2">
-              subscriptions
-            </span>
+    return Object.entries(analytics).map(([status, data]) => {
+      // Debugging: Log the status to verify it's being passed correctly
+      console.log("Status:", status);
+
+      return (
+        <div className="py-4 flex flex-1  ">
+          <div
+            key={status}
+            className={`p-4  flex flex-col flex-1   rounded-lg shadow-md text-white 
+            ${
+              status === "active"
+                ? "bg-green-600"
+                : status === "paused"
+                ? "bg-yellow-500"
+                : status === "cancelled"
+                ? "bg-red-600"
+                : "bg-gray-500"
+            }`}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">{status}</h3>
+            </div>
+            <div>
+              <div className="mb-2">
+                <span className="text-3xl font-bold">{data?.count || 0}</span>
+                <span className="text-sm ml-2">subscriptions</span>
+              </div>
+              <div className="text-xl font-medium">
+                SAR {(data?.totalRevenue || 0).toLocaleString()}
+              </div>
+            </div>
           </div>
-          <div className="mt-2 text-2xl font-bold text-white">
-            SAR {(data?.totalRevenue || 0).toLocaleString()}
-          </div>
         </div>
-      </div>
-    ));
+      );
+    });
   };
 
   const getDurationDisplay = (plan) => {
@@ -184,62 +190,63 @@ const Subscriptions = () => {
     if (!subscription) return null;
 
     return (
-      <tr className="bg-white" key={subscription._id}>
-        <td className="text-sm">
+      <tr key={subscription._id} className="">
+        <td className="">
           <div className="font-semibold">{subscription.orderId}</div>
-          <div className="text-sm text-gray-400">
-            {subscription.user?.email || "N/A"}
-          </div>
+          <div className="user-email">{subscription.user?.email || "N/A"}</div>
         </td>
-        <td className="text-sm">
-          <div className="grid grid-cols-1  flex-wrap">
-            <div className="font-semibold mb-1">
+        <td>
+          <div className="plan-details">
+            <div className="font-semibold">
               {subscription.plan?.planId?.nameEnglish ||
                 subscription.plan?.name ||
                 "N/A"}
             </div>
-            <div className="text-gray-400">
-              <span className="package">
+            <div className="">
+              <span className="tex-gray-600">
                 {subscription.plan?.selectedPackages?.join(", ") || "N/A"}
               </span>
             </div>
-            <div className="text-gray-400">
+            <div className="text-[8pt] bg-gray-100 w-fit p-1 rounded-md">
               {getDurationDisplay(subscription.plan)}
             </div>
           </div>
         </td>
-        <td className="text-sm text-center ">
-          <div className="status-container ">
+        <td className="">
+          <div className="status-container  ">
             <span
-              className={`px-2 py-1 rounded  text-xs font-medium ${
+              className={`  status ${
                 subscription.status === "active"
-                  ? "text-green-500 bg-gray-100"
+                  ? "text-green-500"
+                  : subscription.status === "cancelled"
+                  ? "text-red-500"
                   : subscription.status === "paused"
-                  ? "text-yellow-500 bg-gray-100"
-                  : "text-red-500 bg-gray-100"
+                  ? "text-yellow-500"
+                  : ""
               }`}
             >
               {subscription.status}
             </span>
           </div>
         </td>
-
-        <td className="text-sm  flex-1">
-          <div className=" flex">
-            <div className="font-semibold">
-              SAR {(subscription.pricing?.finalAmount || 0).toLocaleString()}
-            </div>
-            {subscription.pricing?.originalAmount >
-              subscription.pricing?.finalAmount && (
-              <div className="original-amount">
-                <span className="strikethrough">
-                  SAR {subscription.pricing.originalAmount.toLocaleString()}
-                </span>
+        <td>
+          <div className="">
+            <div className="">
+              <div className="font-semibold">
+                SAR {(subscription.pricing?.finalAmount || 0).toLocaleString()}
               </div>
-            )}
+              {subscription.pricing?.originalAmount >
+                subscription.pricing?.finalAmount && (
+                <div className="">
+                  <span className="">
+                    SAR {subscription.pricing.originalAmount.toLocaleString()}
+                  </span>
+                </div>
+              )}
+            </div>
             {subscription.pricing?.voucherDiscount > 0 && (
-              <div className="discount-container ml-1 text-red-500">
-                <div className="discount-amount">
+              <div className="">
+                <div className="text-red-500">
                   -{subscription.pricing.voucherDiscount.toLocaleString()} SAR
                 </div>
                 {subscription.voucher && (
@@ -258,7 +265,7 @@ const Subscriptions = () => {
             )}
           </div>
         </td>
-        <td className="text-sm">
+        <td>
           <select
             value={subscription.status}
             onChange={(e) =>
@@ -277,114 +284,131 @@ const Subscriptions = () => {
   };
 
   return (
-    <div className="bg-white p-6 h-screen overflow-auto">
-      <div className="p-6 bg-gray-100">
-        <div className="flex w-full gap-4 justify-between">
-          {renderAnalytics()}
-        </div>
+    <div className="p-8">
+      <div className="flex flex-1 gap-4">{renderAnalytics()}</div>
 
-        <div className="p-4 flex ">
-          <div className=" w-full flex gap-4 my-4">
-            <div className="flex-1 flex gap-1 items-center w-full">
-              <IoFilter />
-
-              <select
-                value={filters.status}
-                onChange={(e) => handleFilterChange("status", e.target.value)}
-              >
-                <option value="">All Status</option>
-                <option value="active">Active</option>
-                <option value="paused">Paused</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
+      <div className="filters-section bg-white p-4 rounded-xl shadow-md ">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center ">
+          {/* Status Filter */}
+          <div className="relative group  ">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-blue-500 transition-colors">
+              <Filter className="w-5 h-5" />
             </div>
+            <select
+              className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 bg-white 
+                   transition-all hover:border-blue-400 focus:border-blue-500 
+                   focus:ring-2 focus:ring-blue-200 outline-none appearance-none  
+                   cursor-pointer h-11"
+              value={filters.status}
+              onChange={(e) => handleFilterChange("status", e.target.value)}
+            >
+              <option value="">All Status</option>
+              <option value="active">Active</option>
+              <option value="paused">Paused</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
 
-            <div className="flex gap-2 flex-1 items-center justify-center">
-              <div classNmae="">
-                <FaCalendarAlt />
-              </div>
+          {/* Date Range Filter */}
+          <div
+            className="flex items-center h-11 bg-white rounded-lg border border-gray-200 
+                    hover:border-blue-400 focus-within:border-blue-500 focus-within:ring-2 
+                    focus-within:ring-blue-200 transition-all"
+          >
+            <Calendar className="w-5 h-5 text-gray-400 mx-3" />
+            <div className="flex items-center gap-2 flex-1 pr-3">
               <input
                 type="date"
+                className="flex-1 py-2 bg-transparent outline-none border-none 
+                     text-sm focus:ring-0 h-full"
                 value={filters.startDate}
                 onChange={(e) =>
                   handleFilterChange("startDate", e.target.value)
                 }
-                placeholder="Start Date"
               />
-              <span>To</span>
+              <span className="text-gray-400">–</span>
               <input
                 type="date"
+                className="flex-1 py-2 bg-transparent outline-none border-none 
+                     text-sm focus:ring-0 h-full"
                 value={filters.endDate}
                 onChange={(e) => handleFilterChange("endDate", e.target.value)}
-                placeholder="End Date"
               />
-            </div>
-
-            <div className="search-filter">
-              <input
-                type="text"
-                placeholder="Search order ID..."
-                value={filters.search}
-                onChange={(e) => handleFilterChange("search", e.target.value)}
-              />
-              <FaSearch />
             </div>
           </div>
-        </div>
 
-        <div className="bg-gray-100">
-          <table>
-            <thead>
-              <tr className="">
-                <th>Order Details</th>
-                <th>Plan Info</th>
-                <th>Status</th>
-                <th>Amount</th>
-                <th>Actions</th>
+          {/* Search Filter */}
+          <div className="relative group">
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-blue-500 transition-colors">
+              <Search className="w-5 h-5" />
+            </div>
+            <input
+              type="text"
+              className="w-full pl-4 pr-10 py-3 rounded-lg border border-gray-200 bg-white 
+                   transition-all hover:border-blue-400 focus:border-blue-500 
+                   focus:ring-2 focus:ring-blue-200 outline-none h-11"
+              placeholder="Search order ID..."
+              value={filters.search}
+              onChange={(e) => handleFilterChange("search", e.target.value)}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="h-screen bg-white px-8 py-4 rounded-md shadow-md overflow-auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Order Details</th>
+              <th>Plan Info</th>
+              <th>Status</th>
+              <th>Amount</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan="5" className="p-4">
+                  <div className="flex justify-center items-center">
+                    <div
+                      className="w-8 h-8 border-4 border-red-400 border-t-transparent rounded-full animate-spin"
+                      role="status"
+                      aria-label="Loading"
+                    />
+                  </div>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan="5" className="text-center py-4">
-                    <div className="flex justify-center items-center">
-                      <div className="w-8 h-8 border-4 border-red-500 border-solid border-t-transparent rounded-full animate-spin"></div>
-                    </div>
-                  </td>
-                </tr>
-              ) : subscriptions.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="text-center text-gray-500 py-4">
-                    No subscriptions found
-                  </td>
-                </tr>
-              ) : (
-                subscriptions.map(renderSubscriptionRow)
-              )}
-            </tbody>
-          </table>
-        </div>
+            ) : subscriptions.length === 0 ? (
+              <tr>
+                <td colSpan="5" className="p-4 text-center text-gray-500">
+                  No subscriptions found
+                </td>
+              </tr>
+            ) : (
+              subscriptions.map(renderSubscriptionRow)
+            )}
+          </tbody>
+        </table>
+      </div>
 
-        <div className="flex gap-2 flex-col items-center justify-center mt-4">
-          <span className="text-gray-400">
-            Showing {subscriptions.length} of {totalRecords}
-          </span>
-          <div className="cursor-pointer flex gap-4">
-            <button
-              className="rotate-180 bg-gray-200 hover:bg-gray-800 cursor-pointer hover:text-white p-4 rounded-full"
-              onClick={() => handleFilterChange("page", filters.page - 1)}
-              disabled={filters.page === 1}
-            >
-              <MdOutlineNavigateNext />
-            </button>
-            <button
-              className="bg-gray-200 hover:bg-gray-800 hover:text-white p-4 cursor-pointer rounded-full "
-              onClick={() => handleFilterChange("page", filters.page + 1)}
-              disabled={subscriptions.length < filters.limit}
-            >
-              <MdOutlineNavigateNext />
-            </button>
-          </div>
+      <div className="pagination">
+        <span>
+          Showing {subscriptions.length} of {totalRecords}
+        </span>
+        <div className="pagination-controls">
+          <button
+            onClick={() => handleFilterChange("page", filters.page - 1)}
+            disabled={filters.page === 1}
+          >
+            Previous
+          </button>
+          <button
+            onClick={() => handleFilterChange("page", filters.page + 1)}
+            disabled={subscriptions.length < filters.limit}
+          >
+            Next
+          </button>
         </div>
       </div>
     </div>

@@ -66,7 +66,7 @@ const DrivingLicenseForm = () => {
               </label>
               <input
                 type="date"
-                name="dob"
+                name="issueDate"
                 value={formData.issueDate}
                 onChange={handleInputChange}
                 className="w-full px-5 py-3 bg-gray-50 border border-gray-200  text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent transform transition-all duration-300 ease-in-out  shadow-sm"
@@ -79,7 +79,7 @@ const DrivingLicenseForm = () => {
               </label>
               <input
                 type="date"
-                name="dob"
+                name="expiryDate"
                 value={formData.expiryDate}
                 onChange={handleInputChange}
                 className="w-full px-5 py-3 bg-gray-50 border border-gray-200  text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent transform transition-all duration-300 ease-in-out  shadow-sm"
@@ -94,7 +94,7 @@ const DrivingLicenseForm = () => {
             </label>
             <input
               type="text"
-              name="fullName"
+              name="issuingAuthority"
               value={formData.issuingAuthority}
               onChange={handleInputChange}
               className="w-full px-5 py-3 bg-gray-50 border border-gray-200  text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent transform transition-all duration-300 ease-in-out "
