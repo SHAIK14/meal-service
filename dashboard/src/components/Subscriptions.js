@@ -4,8 +4,10 @@ import {
   getSubscriptionAnalytics,
   updateSubscriptionStatus,
 } from "../utils/api.js";
-import { Calendar, Search, Filter } from "lucide-react";
-import "../styles/Subscriptions.css";
+import { MdOutlineNavigateNext } from "react-icons/md";
+import { IoFilter } from "react-icons/io5";
+import { FaCalendarAlt } from "react-icons/fa";
+import { FaSearch } from "react-icons/fa";
 
 const Subscriptions = () => {
   const [subscriptions, setSubscriptions] = useState([]);
@@ -131,17 +133,28 @@ const Subscriptions = () => {
 
   const renderAnalytics = () => {
     return Object.entries(analytics).map(([status, data]) => (
-      <div key={status} className="analytics-card">
-        <div className="analytics-header">
-          <h3>{status}</h3>
-          <span className={`status-dot status-${status}`} />
+      <div
+        className={`h-[100px]  ${
+          status === "active"
+            ? "bg-green-500"
+            : status === "paused"
+            ? "bg-yellow-500"
+            : "bg-red-500"
+        } p-4 flex flex-col justify-between flex-1`}
+      >
+        <div className="">
+          <h3 className="text-white text-xl">{status}</h3>
         </div>
-        <div className="analytics-body">
-          <div className="analytics-main">
-            <span className="count">{data?.count || 0}</span>
-            <span className="label">subscriptions</span>
+        <div className="flex-1 flex  items-center justify-between">
+          <div className="flex items-center">
+            <span className="count text-2xl text-white font-bold">
+              {data?.count || 0}
+            </span>
+            <span className="label text-white text-md font-semibold ml-2">
+              subscriptions
+            </span>
           </div>
-          <div className="analytics-revenue">
+          <div className="mt-2 text-2xl font-bold text-white">
             SAR {(data?.totalRevenue || 0).toLocaleString()}
           </div>
         </div>
@@ -171,38 +184,49 @@ const Subscriptions = () => {
     if (!subscription) return null;
 
     return (
-      <tr key={subscription._id}>
-        <td className="id-cell">
-          <div className="order-id">{subscription.orderId}</div>
-          <div className="user-email">{subscription.user?.email || "N/A"}</div>
+      <tr className="bg-white" key={subscription._id}>
+        <td className="text-sm">
+          <div className="font-semibold">{subscription.orderId}</div>
+          <div className="text-sm text-gray-400">
+            {subscription.user?.email || "N/A"}
+          </div>
         </td>
-        <td>
-          <div className="plan-details">
-            <div className="plan-name">
+        <td className="text-sm">
+          <div className="grid grid-cols-1  flex-wrap">
+            <div className="font-semibold mb-1">
               {subscription.plan?.planId?.nameEnglish ||
                 subscription.plan?.name ||
                 "N/A"}
             </div>
-            <div className="meta-info">
+            <div className="text-gray-400">
               <span className="package">
                 {subscription.plan?.selectedPackages?.join(", ") || "N/A"}
               </span>
             </div>
-            <div className="duration-info">
+            <div className="text-gray-400">
               {getDurationDisplay(subscription.plan)}
             </div>
           </div>
         </td>
-        <td>
-          <div className="status-container">
-            <span className={`status status-${subscription.status}`}>
+        <td className="text-sm text-center ">
+          <div className="status-container ">
+            <span
+              className={`px-2 py-1 rounded  text-xs font-medium ${
+                subscription.status === "active"
+                  ? "text-green-500 bg-gray-100"
+                  : subscription.status === "paused"
+                  ? "text-yellow-500 bg-gray-100"
+                  : "text-red-500 bg-gray-100"
+              }`}
+            >
               {subscription.status}
             </span>
           </div>
         </td>
-        <td>
-          <div className="amount-container">
-            <div className="amount">
+
+        <td className="text-sm  flex-1">
+          <div className=" flex">
+            <div className="font-semibold">
               SAR {(subscription.pricing?.finalAmount || 0).toLocaleString()}
             </div>
             {subscription.pricing?.originalAmount >
@@ -214,7 +238,7 @@ const Subscriptions = () => {
               </div>
             )}
             {subscription.pricing?.voucherDiscount > 0 && (
-              <div className="discount-container">
+              <div className="discount-container ml-1 text-red-500">
                 <div className="discount-amount">
                   -{subscription.pricing.voucherDiscount.toLocaleString()} SAR
                 </div>
@@ -234,7 +258,7 @@ const Subscriptions = () => {
             )}
           </div>
         </td>
-        <td>
+        <td className="text-sm">
           <select
             value={subscription.status}
             onChange={(e) =>
@@ -253,101 +277,114 @@ const Subscriptions = () => {
   };
 
   return (
-    <div className="subscriptions-container">
-      <div className="analytics-section">{renderAnalytics()}</div>
+    <div className="bg-white p-6 h-screen overflow-auto">
+      <div className="p-6 bg-gray-100">
+        <div className="flex w-full gap-4 justify-between">
+          {renderAnalytics()}
+        </div>
 
-      <div className="filters-section">
-        <div className="filters-group">
-          <div className="filter-item">
-            <Filter className="icon" size={16} />
-            <select
-              value={filters.status}
-              onChange={(e) => handleFilterChange("status", e.target.value)}
-            >
-              <option value="">All Status</option>
-              <option value="active">Active</option>
-              <option value="paused">Paused</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-          </div>
+        <div className="p-4 flex ">
+          <div className=" w-full flex gap-4 my-4">
+            <div className="flex-1 flex gap-1 items-center w-full">
+              <IoFilter />
 
-          <div className="date-filters">
-            <Calendar className="icon" size={16} />
-            <input
-              type="date"
-              value={filters.startDate}
-              onChange={(e) => handleFilterChange("startDate", e.target.value)}
-              placeholder="Start Date"
-            />
-            <span>to</span>
-            <input
-              type="date"
-              value={filters.endDate}
-              onChange={(e) => handleFilterChange("endDate", e.target.value)}
-              placeholder="End Date"
-            />
-          </div>
+              <select
+                value={filters.status}
+                onChange={(e) => handleFilterChange("status", e.target.value)}
+              >
+                <option value="">All Status</option>
+                <option value="active">Active</option>
+                <option value="paused">Paused</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
 
-          <div className="search-filter">
-            <Search className="icon" size={16} />
-            <input
-              type="text"
-              placeholder="Search order ID..."
-              value={filters.search}
-              onChange={(e) => handleFilterChange("search", e.target.value)}
-            />
+            <div className="flex gap-2 flex-1 items-center justify-center">
+              <div classNmae="">
+                <FaCalendarAlt />
+              </div>
+              <input
+                type="date"
+                value={filters.startDate}
+                onChange={(e) =>
+                  handleFilterChange("startDate", e.target.value)
+                }
+                placeholder="Start Date"
+              />
+              <span>To</span>
+              <input
+                type="date"
+                value={filters.endDate}
+                onChange={(e) => handleFilterChange("endDate", e.target.value)}
+                placeholder="End Date"
+              />
+            </div>
+
+            <div className="search-filter">
+              <input
+                type="text"
+                placeholder="Search order ID..."
+                value={filters.search}
+                onChange={(e) => handleFilterChange("search", e.target.value)}
+              />
+              <FaSearch />
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Order Details</th>
-              <th>Plan Info</th>
-              <th>Status</th>
-              <th>Amount</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan="5" className="loading">
-                  Loading...
-                </td>
+        <div className="bg-gray-100">
+          <table>
+            <thead>
+              <tr className="">
+                <th>Order Details</th>
+                <th>Plan Info</th>
+                <th>Status</th>
+                <th>Amount</th>
+                <th>Actions</th>
               </tr>
-            ) : subscriptions.length === 0 ? (
-              <tr>
-                <td colSpan="5" className="empty">
-                  No subscriptions found
-                </td>
-              </tr>
-            ) : (
-              subscriptions.map(renderSubscriptionRow)
-            )}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan="5" className="text-center py-4">
+                    <div className="flex justify-center items-center">
+                      <div className="w-8 h-8 border-4 border-red-500 border-solid border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  </td>
+                </tr>
+              ) : subscriptions.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="text-center text-gray-500 py-4">
+                    No subscriptions found
+                  </td>
+                </tr>
+              ) : (
+                subscriptions.map(renderSubscriptionRow)
+              )}
+            </tbody>
+          </table>
+        </div>
 
-      <div className="pagination">
-        <span>
-          Showing {subscriptions.length} of {totalRecords}
-        </span>
-        <div className="pagination-controls">
-          <button
-            onClick={() => handleFilterChange("page", filters.page - 1)}
-            disabled={filters.page === 1}
-          >
-            Previous
-          </button>
-          <button
-            onClick={() => handleFilterChange("page", filters.page + 1)}
-            disabled={subscriptions.length < filters.limit}
-          >
-            Next
-          </button>
+        <div className="flex gap-2 flex-col items-center justify-center mt-4">
+          <span className="text-gray-400">
+            Showing {subscriptions.length} of {totalRecords}
+          </span>
+          <div className="cursor-pointer flex gap-4">
+            <button
+              className="rotate-180 bg-gray-200 hover:bg-gray-800 cursor-pointer hover:text-white p-4 rounded-full"
+              onClick={() => handleFilterChange("page", filters.page - 1)}
+              disabled={filters.page === 1}
+            >
+              <MdOutlineNavigateNext />
+            </button>
+            <button
+              className="bg-gray-200 hover:bg-gray-800 hover:text-white p-4 cursor-pointer rounded-full "
+              onClick={() => handleFilterChange("page", filters.page + 1)}
+              disabled={subscriptions.length < filters.limit}
+            >
+              <MdOutlineNavigateNext />
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -23,8 +23,31 @@ const Login = ({ setIsLoggedIn }) => {
       if (result.success) {
         setDebugInfo("Login successful. Updating state and redirecting...");
         setIsLoggedIn(true);
+
+        // Store both token and user type
         localStorage.setItem("adminToken", result.data.token);
-        console.log("Token stored in localStorage");
+        localStorage.setItem("userType", result.data.type);
+
+        // If staff, store additional info
+        if (result.data.type === "staff") {
+          localStorage.setItem("userRole", JSON.stringify(result.data.role));
+          localStorage.setItem(
+            "userServices",
+            JSON.stringify(
+              result.data.services.map((service) => ({
+                id: service._id,
+                name: service.name,
+                route: service.route,
+              }))
+            )
+          );
+          localStorage.setItem(
+            "userBranch",
+            JSON.stringify(result.data.branch)
+          );
+          setDebugInfo("Staff login successful with role and services");
+        }
+        console.log("Token and user info stored in localStorage");
         navigate("/plans");
       } else {
         setDebugInfo(`Login failed: ${result.error}`);

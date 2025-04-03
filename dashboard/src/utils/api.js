@@ -37,15 +37,29 @@ const handleResponse = async (apiCall) => {
 
 // Authentication
 export const login = async (username, password) => {
-  const result = await handleResponse(
-    api.post("/admin/login", { username, password })
-  );
-  if (result.success && result.data.token) {
-    setToken(result.data.token);
-  }
-  return result;
-};
+  try {
+    const response = await api.post("/admin/login", { username, password });
+    console.log("Raw login response:", response.data); // Debug log
 
+    if (response.data.success && response.data.data.token) {
+      setToken(response.data.data.token);
+      return {
+        success: true,
+        data: response.data.data,
+      };
+    }
+    return {
+      success: false,
+      error: "Invalid credentials",
+    };
+  } catch (error) {
+    console.error("Login error:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "An unexpected error occurred",
+    };
+  }
+};
 export const logout = () => {
   removeToken();
   return { success: true, message: "Logged out successfully" };

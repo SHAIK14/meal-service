@@ -295,3 +295,121 @@ export const deleteDiningCategory = async (categoryId) => {
 export const getDiningCategoryById = async (categoryId) => {
   return handleResponse(api.get(`/admin/dining-categories/${categoryId}`));
 };
+
+// Role Management APIs
+export const createRole = async (roleData) => {
+  return handleResponse(api.post("/admin/roles", roleData));
+};
+
+export const getAllRoles = async () => {
+  return handleResponse(api.get("/admin/roles"));
+};
+
+export const updateRole = async (roleId, roleData) => {
+  return handleResponse(api.put(`/admin/roles/${roleId}`, roleData));
+};
+
+export const deleteRole = async (roleId) => {
+  return handleResponse(api.delete(`/admin/roles/${roleId}`));
+};
+
+// Service Management APIs
+export const createService = async (serviceData) => {
+  return handleResponse(api.post("/admin/services", serviceData));
+};
+
+export const getAllServices = async () => {
+  return handleResponse(api.get("/admin/services"));
+};
+
+export const updateService = async (serviceId, serviceData) => {
+  return handleResponse(api.put(`/admin/services/${serviceId}`, serviceData));
+};
+// Staff Management APIs
+export const createStaff = async (staffData) => {
+  return handleResponse(api.post("/admin/staff", staffData));
+};
+export const getAllStaff = async () => {
+  try {
+    const response = await api.get("/admin/staff");
+    return {
+      success: true,
+      data: response.data.data, // This was the issue - need to access .data.data
+    };
+  } catch (error) {
+    console.error("Error in getAllStaff:", error);
+    return {
+      success: false,
+      error: error.response?.data?.message || "An unexpected error occurred",
+      data: [], // Return empty array as fallback
+    };
+  }
+};
+export const updateStaffPassword = async (staffId, newPassword) => {
+  return handleResponse(
+    api.patch(`/admin/staff/${staffId}/password`, { newPassword })
+  );
+};
+
+export const updateStaff = async (staffId, staffData) => {
+  return handleResponse(api.put(`/admin/staff/${staffId}`, staffData));
+};
+
+export const updateStaffServices = async (staffId, services) => {
+  return handleResponse(
+    api.put(`/admin/staff/${staffId}/services`, { services })
+  );
+};
+
+// catering
+export const getCateringConfig = async (branchId) => {
+  return handleResponse(api.get(`/admin/catering/branch/${branchId}`));
+};
+
+export const createUpdateCateringConfig = async (branchId, configData) => {
+  return handleResponse(
+    api.post(`/admin/catering/branch/${branchId}`, configData)
+  );
+};
+
+export const updateCateringUrl = async (branchId, baseUrl) => {
+  return handleResponse(
+    api.patch(`/admin/catering/branch/${branchId}/url`, { baseUrl })
+  );
+};
+
+export const toggleCateringStatus = async (branchId, isEnabled) => {
+  return handleResponse(
+    api.patch(`/admin/catering/branch/${branchId}/status`, { isEnabled })
+  );
+};
+
+export const deleteCateringConfig = async (branchId) => {
+  return handleResponse(api.delete(`/admin/catering/branch/${branchId}`));
+};
+// Take away
+// Fix these functions in your api.js/api2.js file
+
+export const getTakeAwayConfig = async (branchId) => {
+  return handleResponse(api.get(`/admin/takeaway/${branchId}`));
+};
+
+export const createUpdateTakeAwayConfig = async (branchId, configData) => {
+  return handleResponse(api.post(`/admin/takeaway/${branchId}`, configData));
+};
+
+export const updateTakeAwayUrl = async (branchId, baseUrl) => {
+  return handleResponse(
+    api.patch(`/admin/takeaway/${branchId}/url`, { baseUrl })
+  );
+};
+
+export const toggleTakeAwayStatus = async (branchId, isEnabled) => {
+  return handleResponse(
+    api.patch(`/admin/takeaway/${branchId}/status`, { isEnabled })
+  );
+};
+
+export const deleteTakeAwayConfig = async (branchId) => {
+  return handleResponse(api.delete(`/admin/takeaway/${branchId}`));
+};

@@ -10,16 +10,22 @@ const {
   changeBranchPassword,
 } = require("../../controllers/admin/adminBranchController");
 const adminAuth = require("../../middleware/admin/adminAuth");
+const staffServiceAuth = require("../../middleware/admin/staffServiceAuth");
 
 // Existing routes
-router.post("/", adminAuth, createBranch);
-router.get("/", adminAuth, getAllBranches);
-router.get("/:branchId", adminAuth, getBranchById);
-router.put("/:branchId", adminAuth, updateBranch);
-router.delete("/:branchId", adminAuth, deleteBranch);
+router.post("/", adminAuth, staffServiceAuth, createBranch);
+router.get("/", adminAuth, staffServiceAuth, getAllBranches);
+router.get("/:branchId", adminAuth, staffServiceAuth, getBranchById);
+router.put("/:branchId", adminAuth, staffServiceAuth, updateBranch);
+router.delete("/:branchId", adminAuth, staffServiceAuth, deleteBranch);
 
 // New routes
 
-router.put("/:branchId/change-password", adminAuth, changeBranchPassword);
+router.put(
+  "/:branchId/change-password",
+  adminAuth,
+  staffServiceAuth,
+  changeBranchPassword
+);
 
 module.exports = router;
