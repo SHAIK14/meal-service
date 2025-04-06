@@ -8,7 +8,7 @@ import {
   FaEye,
   FaEyeSlash,
 } from "react-icons/fa";
-import "../styles/Branch.css";
+// import "../styles/Branch.css";
 import {
   getAllBranches,
   deleteBranch,
@@ -100,134 +100,163 @@ const Branch = () => {
   if (error) return <div className="error">{error}</div>;
 
   return (
-    <div className="branch-container">
-      <div className="branch-header">
-        <h2>Branch Management</h2>
-        <button
-          className="add-branch-btn"
-          onClick={() => navigate("/branches/add")}
-        >
-          <FaPlus /> Add New Branch
-        </button>
-      </div>
+    <div className="bg-white  text-gray-800 p-6 h-screen overflow-y-scroll ">
+      <div className="bg-gray-100 p-6 h-full ">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold ">Branch Management</h2>
+          <button
+            className="flex items-center gap-2 bg-gray-100 px-4 py-3 text-sm hover:bg-gray-800 hover:text-white transition-all ease-in-out duration-300 font-semibold"
+            onClick={() => navigate("/branches/add")}
+          >
+            <FaPlus /> Add New Branch
+          </button>
+        </div>
 
-      <div className="branch-table-container">
-        <table className="branch-table">
-          <thead>
-            <tr>
-              <th>Branch Name</th>
-              <th>CR Number</th>
-              <th>Municipality Number</th>
-              <th>VAT Number</th>
-              <th>Service Radius</th>
-              <th>Username/Pincode</th>
-              <th className="action-column">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {branches.map((branch) => (
-              <tr key={branch._id}>
-                <td>{branch.name}</td>
-                <td>{branch.crNumber}</td>
-                <td>{branch.municipalityNumber}</td>
-                <td>{branch.vatNumber}</td>
-                <td>{branch.serviceRadius} km</td>
-                <td>{branch.address.pincode}</td>
-                <td className="action-buttons">
-                  <div className="button-group">
+        <div className="bg-gray-100">
+          <table className="text-sm">
+            <thead className="bg-gray-200 ">
+              <tr>
+                <th>Branch Name</th>
+                <th>CR Number</th>
+                <th>Municipality Number</th>
+                <th>VAT Number</th>
+                <th>Service Radius</th>
+                <th>Username/Pincode</th>
+                <th className="text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white">
+              {branches.map((branch) => (
+                <tr key={branch._id}>
+                  <td>{branch.name}</td>
+                  <td>{branch.crNumber}</td>
+                  <td>{branch.municipalityNumber}</td>
+                  <td>{branch.vatNumber}</td>
+                  <td>{branch.serviceRadius} km</td>
+                  <td>{branch.address.pincode}</td>
+                  <td className=" flex items-center justify-center">
+                    <div className="flex space-x-8">
+                      {/* Change Password Button */}
+                      <div className="relative group">
+                        <button
+                          className="hover:text-green-500"
+                          onClick={() => handleShowPasswordModal(branch)}
+                        >
+                          <FaKey />
+                        </button>
+                        {/* Tooltip */}
+                        <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 scale-0 group-hover:scale-100 transition-transform duration-200 bg-gray-800 text-white text-center text-xs rounded px-2 py-1">
+                          Change Password
+                        </span>
+                      </div>
+
+                      {/* Edit Button */}
+                      <div className="relative group">
+                        <button
+                          className="hover:text-blue-500"
+                          onClick={() =>
+                            navigate(`/branches/edit/${branch._id}`)
+                          }
+                        >
+                          <FaEdit />
+                        </button>
+                        {/* Tooltip */}
+                        <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 scale-0 group-hover:scale-100 transition-transform duration-200 bg-gray-800 text-white text-xs rounded px-2 py-1">
+                          Edit
+                        </span>
+                      </div>
+
+                      {/* Delete Button */}
+                      <div className="relative group">
+                        <button
+                          className="hover:text-red-500 "
+                          onClick={() => handleDelete(branch._id)}
+                        >
+                          <FaTrash />
+                        </button>
+                        {/* Tooltip */}
+                        <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 scale-0 group-hover:scale-100 transition-transform duration-200 bg-gray-800 text-white text-xs rounded px-2 py-1">
+                          Delete
+                        </span>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Change Password Modal */}
+        {showPasswordModal && selectedBranch && (
+          <div className="modal-overlay">
+            <div className="modal">
+              <h3>Change Password</h3>
+              <form onSubmit={handlePasswordChange}>
+                {passwordError && (
+                  <div className="error-message">{passwordError}</div>
+                )}
+                <div className="form-group">
+                  <label>New Password</label>
+                  <div className="password-input-group">
+                    <input
+                      type={showNewPassword ? "text" : "password"}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      required
+                      minLength={6}
+                    />
                     <button
-                      className="btn-password"
-                      onClick={() => handleShowPasswordModal(branch)}
+                      type="button"
+                      className="toggle-password"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
                     >
-                      <FaKey /> Change Password
-                    </button>
-                    <button
-                      className="btn-edit"
-                      onClick={() => navigate(`/branches/edit/${branch._id}`)}
-                    >
-                      <FaEdit /> Edit
-                    </button>
-                    <button
-                      className="btn-delete"
-                      onClick={() => handleDelete(branch._id)}
-                    >
-                      <FaTrash /> Delete
+                      {showNewPassword ? <FaEyeSlash /> : <FaEye />}
                     </button>
                   </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Change Password Modal */}
-      {showPasswordModal && selectedBranch && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h3>Change Password</h3>
-            <form onSubmit={handlePasswordChange}>
-              {passwordError && (
-                <div className="error-message">{passwordError}</div>
-              )}
-              <div className="form-group">
-                <label>New Password</label>
-                <div className="password-input-group">
-                  <input
-                    type={showNewPassword ? "text" : "password"}
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    required
-                    minLength={6}
-                  />
+                </div>
+                <div className="form-group">
+                  <label>Confirm Password</label>
+                  <div className="password-input-group">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      minLength={6}
+                    />
+                    <button
+                      type="button"
+                      className="toggle-password"
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
+                    >
+                      {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
+                </div>
+                <div className="modal-actions">
+                  <button type="submit" className="btn-save">
+                    Save
+                  </button>
                   <button
                     type="button"
-                    className="toggle-password"
-                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="btn-cancel"
+                    onClick={() => {
+                      setShowPasswordModal(false);
+                      setShowNewPassword(false);
+                      setShowConfirmPassword(false);
+                    }}
                   >
-                    {showNewPassword ? <FaEyeSlash /> : <FaEye />}
+                    Cancel
                   </button>
                 </div>
-              </div>
-              <div className="form-group">
-                <label>Confirm Password</label>
-                <div className="password-input-group">
-                  <input
-                    type={showConfirmPassword ? "text" : "password"}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    minLength={6}
-                  />
-                  <button
-                    type="button"
-                    className="toggle-password"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  >
-                    {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
-                  </button>
-                </div>
-              </div>
-              <div className="modal-actions">
-                <button type="submit" className="btn-save">
-                  Save
-                </button>
-                <button
-                  type="button"
-                  className="btn-cancel"
-                  onClick={() => {
-                    setShowPasswordModal(false);
-                    setShowNewPassword(false);
-                    setShowConfirmPassword(false);
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

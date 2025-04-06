@@ -22,226 +22,227 @@ import "../styles/Sidebar.css";
 const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(true);
   const { hasAccess, isAdmin } = useServiceAccess();
+  const [hoveredItem, setHoveredItem] = useState(null);
 
   const toggleSidebar = () => {
     setIsOpen(!isOpen);
   };
 
-  const handleMouseEnter = () => {
-    setIsOpen(true);
+  // Group menu items for better organization
+  const adminMenuItems = [
+    { path: "/role-service", icon: <FaUsersCog />, label: "Roles & Services" },
+    {
+      path: "/staff-management",
+      icon: <FaUsersCog />,
+      label: "Staff Management",
+    },
+    { path: "/staff-list", icon: <FaUsersCog />, label: "Staff List" },
+  ];
+
+  const regularMenuItems = [
+    {
+      path: "/branches",
+      icon: <FaBuilding />,
+      label: "Branches",
+      access: "/branches",
+    },
+    {
+      path: "/plans",
+      icon: <FaClipboardList />,
+      label: "Plans",
+      access: "/plans",
+    },
+    { path: "/items", icon: <FaBox />, label: "Items", access: "/items" },
+    {
+      path: "/menuItems",
+      icon: <FaBox />,
+      label: "Dining Items",
+      access: "/menuItems",
+    },
+    {
+      path: "/subscriptions",
+      icon: <FaShoppingCart />,
+      label: "Subscriptions",
+      access: "/subscriptions",
+    },
+    {
+      path: "/catering",
+      icon: <FaShoppingCart />,
+      label: "Catering",
+      access: "/catering",
+    },
+    {
+      path: "/vouchers",
+      icon: <FaTicketAlt />,
+      label: "Vouchers",
+      access: "/vouchers",
+    },
+    {
+      path: "/payment-options",
+      icon: <FaCreditCard />,
+      label: "Payment",
+      access: "/payment-options",
+    },
+  ];
+
+  const deliveryMenuItems = [
+    {
+      path: "/driver/register",
+      icon: <FaTruck />,
+      label: "Delivery Register",
+      access: "/driver",
+    },
+    {
+      path: "/driver/management",
+      icon: <FaTruck />,
+      label: "Delivery Management",
+      access: "/driver",
+    },
+  ];
+
+  const configMenuItems = [
+    {
+      path: "/banners-container",
+      icon: <FaUtensilSpoon />,
+      label: "Banners",
+      access: "/banners",
+    },
+    { path: "/users", icon: <FaUsers />, label: "Users", access: "/users" },
+    {
+      path: "/configuration",
+      icon: <FaBook />,
+      label: "Config",
+      access: "/configuration",
+    },
+    {
+      path: "/dining-config",
+      icon: <FaUtensils />,
+      label: "Dining Config",
+      access: "/dining-config",
+    },
+    {
+      path: "/catering-config",
+      icon: <FaUtensils />,
+      label: "Catering Config",
+      access: "/catering-config",
+    },
+    {
+      path: "/takeAway-config",
+      icon: <FaUtensils />,
+      label: "TakeAway Config",
+      access: "/takeAway-config",
+    },
+  ];
+
+  const renderMenuItem = (item) => {
+    if (item.access && !hasAccess(item.access)) return null;
+
+    return (
+      <li
+        key={item.path}
+        className="mb-1"
+        onMouseEnter={() => setHoveredItem(item.path)}
+        onMouseLeave={() => setHoveredItem(null)}
+      >
+        <NavLink
+          to={item.path}
+          className={({ isActive }) =>
+            `flex items-center p-3  transition-all duration-300 ${
+              isActive
+                ? "bg-gray-100 text-black "
+                : "text-gray-600 hover:bg-gray-100"
+            } ${hoveredItem === item.path ? "transform scale-105" : ""}`
+          }
+        >
+          <span className={`text-lg ${!isOpen ? "mx-auto" : "mr-3"}`}>
+            {item.icon}
+          </span>
+          <span
+            className={`whitespace-nowrap overflow-hidden transition-all duration-300 ${
+              isOpen ? "opacity-100 max-w-full" : "opacity-0 max-w-0"
+            }`}
+          >
+            {item.label}
+          </span>
+          {!isOpen && hoveredItem === item.path && (
+            <div className="absolute left-16 bg-white shadow-lg text-black px-3 py-2 rounded  z-10 whitespace-nowrap">
+              {item.label}
+            </div>
+          )}
+        </NavLink>
+      </li>
+    );
   };
 
-  const handleMouseLeave = () => {
-    setIsOpen(false);
+  const renderSection = (title, items) => {
+    const filteredItems = items.filter(
+      (item) => !item.access || hasAccess(item.access)
+    );
+    if (filteredItems.length === 0) return null;
+
+    return (
+      <div className="mb-4">
+        {isOpen && (
+          <div className="text-xs uppercase text-gray-500 font-semibold pl-4 mt-4 mb-2">
+            {title}
+          </div>
+        )}
+        <ul>{filteredItems.map(renderMenuItem)}</ul>
+      </div>
+    );
   };
 
   return (
     <div
-      className={`sidebar ${isOpen ? "open" : "closed"}`}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
+      className={`bg-gradient-to-b bg-white z-10  shadow-lg  h-screen
+        flex flex-col transition-all duration-300 ease-in-out ${
+          isOpen ? "w-64" : "w-20"
+        } shadow-xl`}
     >
-      <div className="toggle-btn" onClick={toggleSidebar}>
-        <FaBars />
+      <div className="flex justify-between items-center p-4  border-gray-700">
+        <div className={`flex items-center ${isOpen ? "" : "hidden"}`}>
+          <span className="font-bold text-xl bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">
+            Admin
+          </span>
+        </div>
+        <button
+          className="p-2 rounded-full hover:bg-gray-100 transition-colors duration-200 focus:outline-none"
+          onClick={toggleSidebar}
+        >
+          <FaBars
+            className={`transform transition-transform duration-300 ${
+              !isOpen
+                ? "rotate-180 transition-all ease-in-out duration-300"
+                : ""
+            }`}
+          />
+        </button>
       </div>
-      <ul>
-        {isAdmin && (
-          <>
-            <li>
-              <NavLink
-                to="/role-service"
-                className={({ isActive }) => (isActive ? "active" : "")}
-              >
-                <FaUsersCog className="icon" /> <span>Roles & Services</span>
-              </NavLink>
-            </li>
-            <li>
-              <NavLink
-                to="/staff-management"
-                className={({ isActive }) => (isActive ? "active" : "")}
-              >
-                <FaUsersCog className="icon" /> <span>Staff Management</span>
-              </NavLink>
-            </li>
-            <li>
-              <NavLink
-                to="/staff-list"
-                className={({ isActive }) => (isActive ? "active" : "")}
-              >
-                <FaUsersCog className="icon" /> <span>Staff List</span>
-              </NavLink>
-            </li>
-          </>
-        )}
 
-        {hasAccess("/branches") && (
-          <li>
-            <NavLink
-              to="/branches"
-              className={({ isActive }) => (isActive ? "active" : "")}
-            >
-              <FaBuilding className="icon" /> <span>Branches</span>
-            </NavLink>
-          </li>
-        )}
+      <div className="flex-grow overflow-y-auto overflow-x-hidden ">
+        {isAdmin && renderSection("Administration", adminMenuItems)}
+        {renderSection("General", regularMenuItems)}
+        {renderSection("Delivery", deliveryMenuItems)}
+        {renderSection("Configuration", configMenuItems)}
+      </div>
 
-        {hasAccess("/plans") && (
-          <li>
-            <NavLink
-              to="/plans"
-              className={({ isActive }) => (isActive ? "active" : "")}
-            >
-              <FaClipboardList className="icon" /> <span>Plans</span>
-            </NavLink>
-          </li>
-        )}
-
-        {hasAccess("/items") && (
-          <li>
-            <NavLink
-              to="/items"
-              className={({ isActive }) => (isActive ? "active" : "")}
-            >
-              <FaBox className="icon" /> <span>Items</span>
-            </NavLink>
-          </li>
-        )}
-
-        {hasAccess("/menuItems") && (
-          <li>
-            <NavLink
-              to="/menuItems"
-              className={({ isActive }) => (isActive ? "active" : "")}
-            >
-              <FaBox className="icon" /> <span>Dining Items</span>
-            </NavLink>
-          </li>
-        )}
-
-        {hasAccess("/subscriptions") && (
-          <li>
-            <NavLink
-              to="/subscriptions"
-              className={({ isActive }) => (isActive ? "active" : "")}
-            >
-              <FaShoppingCart className="icon" /> <span>Subscriptions</span>
-            </NavLink>
-          </li>
-        )}
-
-        {hasAccess("/vouchers") && (
-          <li>
-            <NavLink
-              to="/vouchers"
-              className={({ isActive }) => (isActive ? "active" : "")}
-            >
-              <FaTicketAlt className="icon" /> <span>Vouchers</span>
-            </NavLink>
-          </li>
-        )}
-
-        {hasAccess("/payment-options") && (
-          <li>
-            <NavLink
-              to="/payment-options"
-              className={({ isActive }) => (isActive ? "active" : "")}
-            >
-              <FaCreditCard className="icon" /> <span>Payment</span>
-            </NavLink>
-          </li>
-        )}
-
-        {hasAccess("/driver") && (
-          <>
-            <li>
-              <NavLink
-                to="/driver/register"
-                className={({ isActive }) => (isActive ? "active" : "")}
-              >
-                <FaTruck className="icon" /> <span>DeliveryRegister</span>
-              </NavLink>
-            </li>
-            <li>
-              <NavLink
-                to="/driver/management"
-                className={({ isActive }) => (isActive ? "active" : "")}
-              >
-                <FaTruck className="icon" /> <span>DeliveryManagement</span>
-              </NavLink>
-            </li>
-          </>
-        )}
-
-        {hasAccess("/banners") && (
-          <li>
-            <NavLink
-              to="/banners-container"
-              className={({ isActive }) => (isActive ? "active" : "")}
-            >
-              <FaUtensilSpoon className="icon" /> <span>Banners</span>
-            </NavLink>
-          </li>
-        )}
-
-        {hasAccess("/users") && (
-          <li>
-            <NavLink
-              to="/users"
-              className={({ isActive }) => (isActive ? "active" : "")}
-            >
-              <FaUsers className="icon" /> <span>Users</span>
-            </NavLink>
-          </li>
-        )}
-
-        {hasAccess("/configuration") && (
-          <li>
-            <NavLink
-              to="/configuration"
-              className={({ isActive }) => (isActive ? "active" : "")}
-            >
-              <FaBook className="icon" /> <span>Config</span>
-            </NavLink>
-          </li>
-        )}
-
-        {hasAccess("/dining-config") && (
-          <li>
-            <NavLink
-              to="/dining-config"
-              className={({ isActive }) => (isActive ? "active" : "")}
-            >
-              <FaUtensils className="icon" /> <span>Dining Config</span>
-            </NavLink>
-          </li>
-        )}
-        {hasAccess("/catering-config") && (
-          <li>
-            <NavLink
-              to="/catering-config"
-              className={({ isActive }) => (isActive ? "active" : "")}
-            >
-              <FaUtensils className="icon" /> <span>Catering Config</span>
-            </NavLink>
-          </li>
-        )}
-        {hasAccess("/takeAway-config") && (
-          <li>
-            <NavLink
-              to="/takeAway-config"
-              className={({ isActive }) => (isActive ? "active" : "")}
-            >
-              <FaUtensils className="icon" /> <span>TakeAway Config</span>
-            </NavLink>
-          </li>
-        )}
-
-        <li>
-          <NavLink to="/logout" className="logout-button">
-            <FaSignOutAlt className="icon" /> <span>Logout</span>
-          </NavLink>
-        </li>
-      </ul>
+      <div className="mt-auto  border-gray-700">
+        <NavLink
+          to="/logout"
+          className="flex items-center p-4 text-red-400 hover:bg-gray-200 transition-all duration-200"
+        >
+          <span className={`text-lg ${!isOpen ? "mx-auto" : "mr-3"}`}>
+            <FaSignOutAlt />
+          </span>
+          <span
+            className={`transition-opacity duration-300 ${
+              isOpen ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            Logout
+          </span>
+        </NavLink>
+      </div>
     </div>
   );
 };

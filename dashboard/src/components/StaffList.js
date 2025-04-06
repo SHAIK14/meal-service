@@ -8,6 +8,9 @@ import {
   updateStaff,
   updateStaffServices,
 } from "../utils/api2";
+import { FaUserEdit } from "react-icons/fa";
+import { MdMiscellaneousServices } from "react-icons/md";
+import { RiLockPasswordFill } from "react-icons/ri";
 
 const StaffList = () => {
   // States for data
@@ -153,55 +156,94 @@ const StaffList = () => {
   };
 
   return (
-    <div className="p-6">
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h2 className="text-xl font-bold mb-4">Staff List</h2>
+    <div className="p-6 bg-white h-screen">
+      <div className="bg-gray-100 text-gray-800 rounded-lg h-[450px] overflow-auto p-6">
+        <h2 className="text-xl font-semibold mb-4">Staff List</h2>
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr>
-                <th className="text-left p-2 border-b">Name</th>
-                <th className="text-left p-2 border-b">Email</th>
-                <th className="text-left p-2 border-b">Phone</th>
-                <th className="text-left p-2 border-b">Username</th>
-                <th className="text-left p-2 border-b">Branch</th>
-                <th className="text-left p-2 border-b">Role</th>
-                <th className="text-left p-2 border-b">Services</th>
-                <th className="text-left p-2 border-b">Actions</th>
+          <table className="w-full bg-gray-200">
+            <thead className=" rounded-lg">
+              <tr className="">
+                <th className="text-left p-2 border-b border-b-gray-400  ">
+                  Name
+                </th>
+                <th className="text-left p-2 border-b border-b-gray-400">
+                  Email
+                </th>
+                <th className="text-left p-2 border-b border-b-gray-400">
+                  Phone
+                </th>
+                <th className="text-left p-2 border-b border-b-gray-400">
+                  Username
+                </th>
+                <th className="text-left p-2 border-b border-b-gray-400">
+                  Branch
+                </th>
+                <th className="text-left p-2 border-b border-b-gray-400">
+                  Role
+                </th>
+                <th className="text-left p-2 border-b border-b-gray-400">
+                  Services
+                </th>
+                <th className="p-2 text-center border-b border-b-gray-400 rounded-tr-lg">
+                  Actions
+                </th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="bg-white">
               {staffList.map((staff) => (
                 <tr key={staff._id}>
-                  <td className="p-2 border-b">{staff.name}</td>
-                  <td className="p-2 border-b">{staff.email}</td>
-                  <td className="p-2 border-b">{staff.phone}</td>
-                  <td className="p-2 border-b">{staff.username}</td>
-                  <td className="p-2 border-b">{staff.branch?.name}</td>
-                  <td className="p-2 border-b">{staff.role?.name}</td>
-                  <td className="p-2 border-b">
+                  <td className="p-2 ">{staff.name}</td>
+                  <td className="p-2 ">{staff.email}</td>
+                  <td className="p-2 ">{staff.phone}</td>
+                  <td className="p-2 ">{staff.username}</td>
+                  <td className="p-2 ">{staff.branch?.name}</td>
+                  <td className="p-2 ">{staff.role?.name}</td>
+                  <td className="p-2 ">
                     {staff.services?.length || 0} services
                   </td>
-                  <td className="p-2 border-b">
+                  <td className="p-2 border-b text-center  flex items-center justify-center">
                     <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleEdit(staff)}
-                        className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleEditServices(staff)}
-                        className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
-                      >
-                        Services
-                      </button>
-                      <button
-                        onClick={() => handlePasswordChange(staff)}
-                        className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
-                      >
-                        Password
-                      </button>
+                      {/* Edit Button */}
+                      <div className="relative group">
+                        <button
+                          onClick={() => handleEdit(staff)}
+                          className="hover:text-green-500 transition-all ease-in-out duration-200 text-gray-800 px-3 py-1 rounded"
+                        >
+                          <FaUserEdit />
+                          {/* Tooltip */}
+                          <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 scale-0 group-hover:scale-100 transition-transform duration-200 bg-gray-800 text-white text-xs rounded px-2 py-1">
+                            Edit
+                          </span>
+                        </button>
+                      </div>
+
+                      {/* Services Button */}
+                      <div className="relative group">
+                        <button
+                          onClick={() => handleEditServices(staff)}
+                          className="hover:text-blue-700 transition-all ease-in-out duration-200 text-gray-800 px-3 py-1 rounded"
+                        >
+                          <MdMiscellaneousServices />
+                        </button>
+                        {/* Tooltip */}
+                        <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 scale-0 group-hover:scale-100 transition-transform duration-200 bg-gray-800 text-white text-xs rounded px-2 py-1">
+                          Services
+                        </span>
+                      </div>
+
+                      {/* Password Button */}
+                      <div className="relative group">
+                        <button
+                          onClick={() => handlePasswordChange(staff)}
+                          className="hover:text-red-500 transition-all ease-in-out duration-200 text-gray-800 px-3 py-1 rounded"
+                        >
+                          <RiLockPasswordFill />
+                        </button>
+                        {/* Tooltip */}
+                        <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 scale-0 group-hover:scale-100 transition-transform duration-200 bg-gray-800 text-white text-xs rounded px-2 py-1">
+                          Password
+                        </span>
+                      </div>
                     </div>
                   </td>
                 </tr>
