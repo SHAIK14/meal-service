@@ -108,7 +108,7 @@ const PlanEdit = () => {
   };
 
   return (
-    <div className="admin-plan-create-wrapper">
+    <div className="admin-plan-create-wrapper ">
       <h1>Edit Plan</h1>
       <form onSubmit={handleUpdatePlan} className="admin-plan-create-form">
         <div className="admin-image-container">

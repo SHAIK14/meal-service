@@ -215,7 +215,7 @@ const AddItemPage = () => {
   }
 
   return (
-    <div className="add-item-page">
+    <div className="add-item-page ">
       <h1>Add New Item</h1>
       {error && <div className="error-message">{error}</div>}
       {success && (

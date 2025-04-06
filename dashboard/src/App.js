@@ -40,12 +40,13 @@ import StaffManagement from "./components/StaffManagement";
 import StaffList from "./components/StaffList";
 import CateringConfig from "./components/CateringConfig";
 import TakeAwayConfig from "./components/TakeAwayConfig";
+import Catering from "./components/Catering/Catering";
+import AddSetup from "./components/Catering/AddSetup";
+
 const AuthenticatedLayout = ({ children }) => (
-  <div
-    style={{ display: "flex", backgroundColor: "#F4F4F4", minHeight: "100vh" }}
-  >
+  <div style={{ display: "flex", minHeight: "100vh" }}>
     <Sidebar />
-    <div style={{ flexGrow: 1, marginLeft: "100px" }}>{children}</div>
+    <div style={{ flexGrow: 1 }}>{children}</div>
   </div>
 );
 
@@ -300,6 +301,12 @@ const App = () => {
                     }
                   />
                   <Route
+                    path="/catering"
+                    element={
+                      <ProtectedRoute element={<Catering />} path="/catering" />
+                    }
+                  />
+                  <Route
                     path="/catering-config"
                     element={
                       <ProtectedRoute
@@ -332,6 +339,15 @@ const App = () => {
                       <ProtectedRoute
                         element={<MenuCategoryItems />}
                         path="/menuItems"
+                      />
+                    }
+                  />
+                  <Route
+                    path="/add-setup"
+                    element={
+                      <ProtectedRoute
+                        element={<AddSetup />}
+                        path="/add-setup"
                       />
                     }
                   />

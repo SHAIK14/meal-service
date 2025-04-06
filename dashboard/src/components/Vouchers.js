@@ -5,7 +5,7 @@ import {
   toggleVoucherStatus,
   deleteVoucher,
 } from "../utils/api.js";
-import "../styles/Vouchers.css";
+// import "../styles/Vouchers.css";
 
 const Vouchers = () => {
   const [showForm, setShowForm] = useState(false);
@@ -136,223 +136,451 @@ const Vouchers = () => {
   };
 
   if (loading && promoCodes.length === 0) {
-    return <div className="loading">Loading...</div>;
+    return (
+      <div className="flex w-full h-screen justify-center items-center">
+        <div className="w-8 h-8 border-4 border-red-500 border-solid border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
   }
 
   return (
-    <div className="vouchers-page">
-      <h1>Discount Vouchers</h1>
+    <div className="bg-white min-h-screen overflow-auto p-6">
+      <div className=" mx-auto bg-gray-100 p-6 h-full  ">
+        {/* Header */}
+        <div className="   border-b border-gray-100  flex justify-between items-center">
+          <h1 className="text-2xl m-0 font-semibold text-gray-800">
+            Discount Vouchers
+          </h1>
 
-      {error && <div className="error-message">{error}</div>}
-
-      {!showForm && (
-        <button
-          className="add-promo-btn global-btn"
-          onClick={() => setShowForm(true)}
-        >
-          Add Promo Code
-        </button>
-      )}
-
-      <div className="voucher-container">
-        {showForm && (
-          <form onSubmit={handleSubmit} className="voucher-form">
-            <div className="form-group">
-              <label htmlFor="promoCode">Promo Code</label>
-              <input
-                type="text"
-                id="promoCode"
-                value={promoCode}
-                onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                placeholder="Enter Promo Code"
-                required
-              />
+          {error && (
+            <div className="px-4 py-2 text-sm bg-red-50 text-red-600 rounded-md border border-red-200">
+              {error}
             </div>
+          )}
 
-            <div className="form-group dates-group">
-              <div className="date-input">
-                <label htmlFor="startDate">Start Date</label>
-                <input
-                  type="date"
-                  id="startDate"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  min={today}
-                  required
-                />
-              </div>
-
-              <div className="date-input">
-                <label htmlFor="endDate">End Date</label>
-                <input
-                  type="date"
-                  id="endDate"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  min={startDate || today}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="eligibleMembers">
-                Number of Members Eligible
-              </label>
-              <input
-                type="number"
-                id="eligibleMembers"
-                value={eligibleMembers}
-                onChange={(e) => setEligibleMembers(e.target.value)}
-                placeholder="Enter number of members"
-                min="1"
-                required
-              />
-            </div>
-
-            <div className="discount-type-section">
-              <label>Discount Type</label>
-              <div className="discount-type-options">
-                <label className="radio-label">
-                  <input
-                    type="radio"
-                    name="discountType"
-                    value="percentage"
-                    checked={discountType === "percentage"}
-                    onChange={(e) => setDiscountType(e.target.value)}
-                  />
-                  Percentage
-                </label>
-                <label className="radio-label">
-                  <input
-                    type="radio"
-                    name="discountType"
-                    value="flat"
-                    checked={discountType === "flat"}
-                    onChange={(e) => setDiscountType(e.target.value)}
-                  />
-                  Flat
-                </label>
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="discountValue">
-                {discountType === "percentage"
-                  ? "Percentage Discount"
-                  : "Flat Discount (SAR)"}
-              </label>
-              <input
-                type="number"
-                id="discountValue"
-                value={discountValue}
-                onChange={(e) => setDiscountValue(e.target.value)}
-                placeholder={
-                  discountType === "percentage"
-                    ? "Enter percentage"
-                    : "Enter amount"
-                }
-                min="0"
-                max={discountType === "percentage" ? "100" : ""}
-                required
-              />
-            </div>
-
-            {discountType === "percentage" && (
-              <div className="form-group">
-                <label htmlFor="maxThreshold">
-                  Maximum Discount Amount (SAR)
-                </label>
-                <input
-                  type="number"
-                  id="maxThreshold"
-                  value={maxThreshold}
-                  onChange={(e) => setMaxThreshold(e.target.value)}
-                  placeholder="Enter maximum discount amount"
-                  min="0"
-                  required
-                />
-              </div>
-            )}
-
-            <div className="form-buttons">
-              <button type="submit" className="submit-btn" disabled={loading}>
-                {loading ? "Creating..." : "Create"}
-              </button>
-              <button
-                type="button"
-                className="cancel-btn"
-                onClick={() => {
-                  setShowForm(false);
-                  resetForm();
-                }}
-                disabled={loading}
+          {!showForm && (
+            <button
+              className="bg-green-500 hover:bg-green-600 text-white font-medium px-5 py-2  transition-all duration-200 flex items-center gap-2"
+              onClick={() => setShowForm(true)}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
               >
-                Cancel
-              </button>
-            </div>
-          </form>
-        )}
+                <path
+                  fillRule="evenodd"
+                  d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              Add Promo Code
+            </button>
+          )}
+        </div>
 
-        {promoCodes.length > 0 && (
-          <div className="promo-codes-list">
-            <h2>Promo Codes</h2>
-            <div className="promo-grid">
-              {promoCodes.map((promo) => {
-                const status = getVoucherStatus(promo.startDate, promo.endDate);
-                return (
-                  <div
-                    key={promo._id}
-                    className={`promo-card ${status.status}`}
-                  >
-                    <div className="promo-header">
-                      <h3>{promo.promoCode}</h3>
-                      <div className="promo-actions">
-                        <label className="switch">
-                          <input
-                            type="checkbox"
-                            checked={promo.isActive}
-                            onChange={() => togglePromoCode(promo._id)}
-                            disabled={loading || status.status === "expired"}
-                          />
-                          <span className="slider round"></span>
-                        </label>
-                        <button
-                          className="delete-btn"
-                          onClick={() => handleDeletePromoCode(promo._id)}
-                          disabled={loading}
-                        >
-                          ×
-                        </button>
-                      </div>
-                    </div>
-                    <div className="promo-details">
-                      <p>
-                        Valid: {new Date(promo.startDate).toLocaleDateString()}{" "}
-                        to {new Date(promo.endDate).toLocaleDateString()}
-                      </p>
-                      <p className={`status-tag ${status.status}`}>
-                        {status.text}
-                      </p>
-                      <p>Eligible Members: {promo.eligibleMembers}</p>
-                      <p>Used: {promo.usedCount || 0}</p>
-                      <p>
-                        Discount:{" "}
-                        {promo.discountType === "percentage"
-                          ? `${promo.discountValue}% (Max: ${promo.maxThreshold} SAR)`
-                          : `${promo.discountValue} SAR`}
-                      </p>
+        {/* Form Section */}
+        <div className="p-6">
+          {showForm && (
+            <div className="bg-gray-50 rounded-xl p-6 mb-8 border border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">
+                Create New Promo Code
+              </h2>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Promo Code */}
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="promoCode"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      Promo Code
+                    </label>
+                    <input
+                      type="text"
+                      id="promoCode"
+                      value={promoCode}
+                      onChange={(e) =>
+                        setPromoCode(e.target.value.toUpperCase())
+                      }
+                      placeholder="Enter Promo Code"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      required
+                    />
+                  </div>
+
+                  {/* Eligible Members */}
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="eligibleMembers"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      Number of Members Eligible
+                    </label>
+                    <input
+                      type="number"
+                      id="eligibleMembers"
+                      value={eligibleMembers}
+                      onChange={(e) => setEligibleMembers(e.target.value)}
+                      placeholder="Enter number of members"
+                      min="1"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Date Range */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="startDate"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      Start Date
+                    </label>
+                    <input
+                      type="date"
+                      id="startDate"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      min={today}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="endDate"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      End Date
+                    </label>
+                    <input
+                      type="date"
+                      id="endDate"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      min={startDate || today}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Discount Type and Value */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                    <span className="block text-sm font-medium text-gray-700">
+                      Discount Type
+                    </span>
+                    <div className="flex space-x-4">
+                      <label className="inline-flex items-center">
+                        <input
+                          type="radio"
+                          name="discountType"
+                          value="percentage"
+                          checked={discountType === "percentage"}
+                          onChange={(e) => setDiscountType(e.target.value)}
+                          className="form-radio h-5 w-5 text-indigo-600"
+                        />
+                        <span className="ml-2 text-gray-700">Percentage</span>
+                      </label>
+                      <label className="inline-flex items-center">
+                        <input
+                          type="radio"
+                          name="discountType"
+                          value="flat"
+                          checked={discountType === "flat"}
+                          onChange={(e) => setDiscountType(e.target.value)}
+                          className="form-radio h-5 w-5 text-indigo-600"
+                        />
+                        <span className="ml-2 text-gray-700">Flat</span>
+                      </label>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
 
-        {promoCodes.length === 0 && !showForm && (
-          <p className="no-codes">No promo codes available</p>
-        )}
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="discountValue"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      {discountType === "percentage"
+                        ? "Percentage Discount"
+                        : "Flat Discount (SAR)"}
+                    </label>
+                    <input
+                      type="number"
+                      id="discountValue"
+                      value={discountValue}
+                      onChange={(e) => setDiscountValue(e.target.value)}
+                      placeholder={
+                        discountType === "percentage"
+                          ? "Enter percentage"
+                          : "Enter amount"
+                      }
+                      min="0"
+                      max={discountType === "percentage" ? "100" : ""}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Max Threshold (Conditional) */}
+                {discountType === "percentage" && (
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="maxThreshold"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      Maximum Discount Amount (SAR)
+                    </label>
+                    <input
+                      type="number"
+                      id="maxThreshold"
+                      value={maxThreshold}
+                      onChange={(e) => setMaxThreshold(e.target.value)}
+                      placeholder="Enter maximum discount amount"
+                      min="0"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      required
+                    />
+                  </div>
+                )}
+
+                {/* Form Buttons */}
+                <div className="flex justify-end space-x-3 pt-2">
+                  <button
+                    type="button"
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    onClick={() => {
+                      setShowForm(false);
+                      resetForm();
+                    }}
+                    disabled={loading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <span className="flex items-center">
+                        <svg
+                          className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        Creating...
+                      </span>
+                    ) : (
+                      "Create Promo Code"
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Promo Code Listing */}
+          {promoCodes.length === 0 && !showForm ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-16 w-16 text-gray-300 mb-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M20 12H4M12 4v16m8-8H4"
+                />
+              </svg>
+              <p className="text-gray-500 text-lg">No promo codes available</p>
+              <button
+                className="mt-4 px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100"
+                onClick={() => setShowForm(true)}
+              >
+                Create Your First Promo Code
+              </button>
+            </div>
+          ) : (
+            promoCodes.length > 0 && (
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800 mb-4">
+                  Active Promo Codes
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {promoCodes.map((promo) => {
+                    const status = getVoucherStatus(
+                      promo.startDate,
+                      promo.endDate
+                    );
+                    return (
+                      <div
+                        key={promo._id}
+                        className={`bg-white rounded-xl border overflow-hidden shadow-sm ${
+                          status.status === "active"
+                            ? "border-green-200"
+                            : status.status === "scheduled"
+                            ? "border-blue-200"
+                            : "border-gray-200"
+                        }`}
+                      >
+                        <div className="py-4 px-5 flex justify-between items-center border-b border-gray-100">
+                          <h3 className="font-bold text-lg text-gray-800">
+                            {promo.promoCode}
+                          </h3>
+                          <div className="flex items-center space-x-2">
+                            {/* Fixed Toggle Button */}
+                            <div className="relative inline-block w-12 mr-2 align-middle select-none">
+                              <input
+                                type="checkbox"
+                                id={`toggle-${promo._id}`}
+                                checked={promo.isActive}
+                                onChange={() => togglePromoCode(promo._id)}
+                                disabled={
+                                  loading || status.status === "expired"
+                                }
+                                className="sr-only"
+                              />
+                              <label
+                                htmlFor={`toggle-${promo._id}`}
+                                className={`
+                                block overflow-hidden h-6 w-12 rounded-full cursor-pointer relative
+                                ${
+                                  promo.isActive &&
+                                  !(loading || status.status === "expired")
+                                    ? "bg-green-500"
+                                    : "bg-gray-300"
+                                }
+                                ${
+                                  loading || status.status === "expired"
+                                    ? "opacity-50 cursor-not-allowed"
+                                    : ""
+                                }
+                              `}
+                              >
+                                <span
+                                  className={`
+                                  absolute top-0.5 left-0.5 bg-white w-5 h-5 rounded-full shadow transform transition-transform duration-300 ease-in-out
+                                  ${
+                                    promo.isActive &&
+                                    !(loading || status.status === "expired")
+                                      ? "translate-x-6"
+                                      : "translate-x-0"
+                                  }
+                                `}
+                                />
+                              </label>
+                            </div>
+
+                            <button
+                              className="text-gray-400 hover:text-red-500 transition-colors"
+                              onClick={() => handleDeletePromoCode(promo._id)}
+                              disabled={loading}
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-5 w-5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Rest of the promo card content */}
+                        <div className="p-5">
+                          {/* Status badge */}
+                          <div className="mb-4">
+                            <span
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                status.status === "active"
+                                  ? "bg-green-100 text-green-800"
+                                  : status.status === "scheduled"
+                                  ? "bg-blue-100 text-blue-800"
+                                  : "bg-gray-100 text-gray-800"
+                              }`}
+                            >
+                              {status.text}
+                            </span>
+                          </div>
+
+                          {/* Promo details */}
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-500">
+                                Valid Period:
+                              </span>
+                              <span className="text-gray-700 font-medium">
+                                {new Date(promo.startDate).toLocaleDateString()}{" "}
+                                - {new Date(promo.endDate).toLocaleDateString()}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-500">
+                                Eligible Members:
+                              </span>
+                              <span className="text-gray-700 font-medium">
+                                {promo.eligibleMembers}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-500">Used:</span>
+                              <span className="text-gray-700 font-medium">
+                                {promo.usedCount || 0}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-500">Discount:</span>
+                              <span className="text-gray-700 font-medium">
+                                {promo.discountType === "percentage"
+                                  ? `${promo.discountValue}% (Max: ${promo.maxThreshold} SAR)`
+                                  : `${promo.discountValue} SAR`}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )
+          )}
+        </div>
       </div>
     </div>
   );

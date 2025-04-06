@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "../config/firebaseConfig";
 import { createDiningCategory, getAllDiningCategories } from "../utils/api2";
+import { FaTrash, FaEdit } from "react-icons/fa";
 
 const MenuItems = () => {
   const [categories, setCategories] = useState([]);
@@ -83,22 +84,20 @@ const MenuItems = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4">
+    <div className="p-8">
       {/* Header */}
-      <div className="flex justify-between items-center bg-white shadow-md p-6 rounded-2xl">
-        <h1 className="text-2xl m-0 font-bold px-2 text-gray-800">
-          Dining Menu
-        </h1>
+      <div className="flex justify-between items-center mb-10 ">
+        <h1 className="text-2xl m-0 font-bold text-gray-800">Dining Menu</h1>
         <button
           onClick={() => setShowPopup(true)}
-          className="bg-red-500 text-white px-4 py-2 rounded-full hover:bg-red-600"
+          className="bg-gray-100 text-black px-4 font-semibold py-2 rounded-lg text-sm hover:bg-green-500 hover:text-white transition-all duration-300"
         >
           + Add Category
         </button>
       </div>
 
       {/* Categories List */}
-      <div className="mt-6 grid grid-cols-4 gap-4">
+      <div className="  grid grid-cols-4 gap-4 ">
         {categories.length === 0 ? (
           <p className="text-gray-600 text-center col-span-full">
             No categories added yet. Click "Add Category" to get started.
@@ -107,25 +106,49 @@ const MenuItems = () => {
           categories.map((category) => (
             <div
               key={category._id}
-              className="bg-white shadow-md p-4 rounded-2xl flex items-center cursor-pointer hover:shadow-lg"
+              className="relative flex items-center border overflow-hidden rounded-2xl p-4 gap-4 hover:bg-gray-100 transition-all duration-300 group"
             >
-              <img
-                src={category.image}
-                alt={category.name}
-                className="w-24 h-24 object-cover rounded-2xl"
-              />
-              <div className="flex items-center justify-between ml-4 w-full">
-                <h2 className="text-lg font-semibold text-gray-800">
+              {/* Image Section */}
+              <div className="w-24 h-24 rounded-2xl bg-red-500 overflow-hidden">
+                <img
+                  src={category.image}
+                  alt={category.name}
+                  className=" w-full h-full object-cover"
+                />
+              </div>
+
+              {/* Category Info Section */}
+              <div className="flex flex-col ml-4 w-full">
+                <h2 className="text-xl font-semibold text-gray-800">
                   {category.name}
                 </h2>
                 <div>
                   <button
                     onClick={() => handleCategoryClick(category)}
-                    className="bg-green-600 rounded-full px-4 py-2 flex justify-center items-center text-white font-semibold text-md"
+                    className="text-sm flex justify-center items-center text-blue-600 font-semibold underline"
                   >
                     Manage items
                   </button>
                 </div>
+              </div>
+
+              {/* Edit & Delete Buttons with Drop Animation */}
+              <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                {/* Edit Button */}
+                <button
+                  onClick={() => alert("Edit category")}
+                  className="bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 transition-all duration-500 transform -translate-y-5 group-hover:translate-y-0"
+                >
+                  <FaEdit />
+                </button>
+
+                {/* Delete Button */}
+                <button
+                  onClick={() => alert("Delete category")}
+                  className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-all duration-500 transform -translate-y-5 group-hover:translate-y-0"
+                >
+                  <FaTrash />
+                </button>
               </div>
             </div>
           ))
@@ -156,19 +179,19 @@ const MenuItems = () => {
               type="file"
               accept="image/*"
               onChange={(e) => setNewCategoryImage(e.target.files[0])}
-              className="w-full mb-4"
+              className="w-full mb-4 text-black bg-gray-100 p-2 border border-gray-300 rounded-md"
             />
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-between gap-2">
               <button
                 onClick={() => setShowPopup(false)}
-                className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
+                className="bg-gray-100 text-black-700 flex-1 p-1 rounded-md  hover:bg-gray-200 transition-all duration-300"
                 disabled={isLoading}
               >
                 Cancel
               </button>
               <button
                 onClick={handleAddCategory}
-                className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+                className="bg-red-500 text-white flex-1 p-1 rounded-md hover:bg-red-600 transition-all  duration-300"
                 disabled={isLoading}
               >
                 {isLoading ? "Adding..." : "Add"}

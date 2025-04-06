@@ -9,6 +9,8 @@ import {
   getAllServices,
   updateService,
 } from "../utils/api2";
+import { FaUserEdit } from "react-icons/fa";
+import { MdDelete } from "react-icons/md";
 
 const RoleServiceManagement = () => {
   const [activeTab, setActiveTab] = useState("roles");
@@ -87,22 +89,22 @@ const RoleServiceManagement = () => {
   };
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
+    <div className="p-6 bg-white w-full h-screen overflow-auto">
+      <div className="mb-6 ">
         <div className="flex space-x-4 mb-4">
           <button
-            className={`px-4 py-2 rounded ${
-              activeTab === "roles" ? "bg-blue-500 text-white" : "bg-gray-200"
+            className={`px-6 py-2  ${
+              activeTab === "roles" ? "bg-gray-800 text-white" : "text-gray-800"
             }`}
             onClick={() => setActiveTab("roles")}
           >
             Roles
           </button>
           <button
-            className={`px-4 py-2 rounded ${
+            className={`px-6 py-2  ${
               activeTab === "services"
-                ? "bg-blue-500 text-white"
-                : "bg-gray-200"
+                ? "bg-gray-800 text-white"
+                : " text-gray-800"
             }`}
             onClick={() => setActiveTab("services")}
           >
@@ -113,53 +115,81 @@ const RoleServiceManagement = () => {
 
       {activeTab === "roles" ? (
         <div>
-          <div className="bg-white p-6 rounded-lg shadow-sm">
-            <h2 className="text-xl font-bold mb-4">
+          <div className="bg-gray-100 text-gray-800  flex flex-col  justify-center   p-6 ">
+            <h2 className="text-xl font-semibold mb-4">
               {editingRole ? "Edit Role" : "Create Role"}
             </h2>
-            <form onSubmit={handleRoleSubmit} className="mb-6">
-              <div className="mb-4">
-                <input
-                  type="text"
-                  placeholder="Role Name"
-                  value={newRole.name}
-                  onChange={(e) => setNewRole({ name: e.target.value })}
-                  className="p-2 border rounded w-full"
-                />
+            <form onSubmit={handleRoleSubmit} className="">
+              <div className="flex items-center justify-center w-full gap-4 ">
+                <div className="relative  flex-1 flex  group ">
+                  <input
+                    type="text"
+                    placeholder=""
+                    value={newRole.name}
+                    onChange={(e) => setNewRole({ name: e.target.value })}
+                    className="w-full  px-4 py-3 bg-transparent border-2 border-gray-400  outline-none transition-all duration-300 ease-in-out focus:border-gray-400 focus:ring-1 text-black focus:ring-gray-400 peer  placeholder-transparent"
+                    id="roleName"
+                  />
+                  <label
+                    htmlFor="roleName"
+                    className="absolute left-4 top-3 text-gray-800 transition-all duration-300 transform -translate-y-6 scale-75 opacity-0 peer-placeholder-shown:opacity-100 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:opacity-100 peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:text-gray-800 pointer-events-none origin-left bg-gray-100 px-1"
+                  >
+                    Role Name
+                  </label>
+                </div>
+                <div className="">
+                  <button
+                    type="submit"
+                    className="bg-gray-300 outline-none border-2 transition-all font-semibold ease-in hover:bg-gray-800 text-gray-800 hover:text-white  px-6 py-3  "
+                  >
+                    {editingRole ? "Update Role" : "Create Role"}
+                  </button>
+                </div>
               </div>
-              <button
-                type="submit"
-                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
-              >
-                {editingRole ? "Update Role" : "Create Role"}
-              </button>
             </form>
           </div>
 
-          <div className="mt-6 bg-white p-6 rounded-lg shadow-sm">
-            <h2 className="text-xl font-bold mb-4">Existing Roles</h2>
+          <div className="mt-6 bg-gray-100 text-gray-800 overflow-auto max-h-[350px] p-6  ">
+            <div className="bg-gray-100 p-1 items-center">
+              <h2 className="text-xl font-semibold ">Existing Roles</h2>
+            </div>
             <div className="grid gap-4">
               {roles.map((role) => (
                 <div
                   key={role._id}
-                  className="border p-4 rounded flex justify-between items-center"
+                  className="border-b p-2 border-gray-300 flex justify-between items-center"
                 >
                   <div>
-                    <h3 className="font-bold">{role.name}</h3>
+                    <h3 className="font-regular">{role.name}</h3>
                   </div>
                   <div className="flex space-x-2">
-                    <button
-                      onClick={() => handleEditRole(role)}
-                      className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDeleteRole(role._id)}
-                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
-                    >
-                      Delete
-                    </button>
+                    {/* Edit Button */}
+                    <div className="relative group">
+                      <button
+                        onClick={() => handleEditRole(role)}
+                        className="hover:text-green-500 transition-all ease-in-out duration-200 text-gray-800 px-3 py-1 rounded"
+                      >
+                        <FaUserEdit />
+                      </button>
+                      {/* Tooltip for Edit */}
+                      <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 scale-0 group-hover:scale-100 transition-transform duration-200 bg-gray-800 text-white text-xs rounded px-2 py-1">
+                        Edit
+                      </span>
+                    </div>
+
+                    {/* Delete Button */}
+                    <div className="relative group">
+                      <button
+                        onClick={() => handleDeleteRole(role._id)}
+                        className="hover:text-red-500 transition-all ease-in-out duration-200 text-gray-800 px-3 py-1 rounded"
+                      >
+                        <MdDelete />
+                      </button>
+                      {/* Tooltip for Delete */}
+                      <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 scale-0 group-hover:scale-100 transition-transform duration-200 bg-gray-800 text-white text-xs rounded px-2 py-1">
+                        Delete
+                      </span>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -168,47 +198,59 @@ const RoleServiceManagement = () => {
         </div>
       ) : (
         <div>
-          <div className="bg-white p-6 rounded-lg shadow-sm">
-            <h2 className="text-xl font-bold mb-4">
+          <div className="bg-gray-100 text-gray-800 font-semibold p-6 rounded-lg shadow-sm">
+            <h2 className="text-xl font-semibold mb-4">
               {editingService ? "Edit Service" : "Create Service"}
             </h2>
-            <form onSubmit={handleServiceSubmit} className="mb-6">
+            <form onSubmit={handleServiceSubmit} className="">
               <div className="mb-4">
-                <input
-                  type="text"
-                  placeholder="Service Name (e.g., Branch Management)"
-                  value={newService.name}
-                  onChange={(e) =>
-                    setNewService({ ...newService, name: e.target.value })
-                  }
-                  className="p-2 border rounded w-full mb-2"
-                />
-                <input
-                  type="text"
-                  placeholder="Route (e.g., /branches)"
-                  value={newService.route}
-                  onChange={(e) =>
-                    setNewService({ ...newService, route: e.target.value })
-                  }
-                  className="p-2 border rounded w-full"
-                />
+                <div className="relative mb-4 ">
+                  <input
+                    type="text"
+                    placeholder="Service Name (e.g., Branch Management)"
+                    value={newService.name}
+                    onChange={(e) =>
+                      setNewService({ ...newService, name: e.target.value })
+                    }
+                    className="w-full  px-4 py-3 bg-transparent border-2 border-gray-400  outline-none transition-all duration-300 ease-in-out focus:border-gray-400 focus:ring-2 text-gray-800 focus:ring-gray-100 peer  placeholder-transparent"
+                  />
+                  <lable className="absolute left-4 top-3 text-gray-500 transition-all duration-300 transform -translate-y-6 scale-75 opacity-0 peer-placeholder-shown:opacity-100 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:opacity-100 peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:text-gray-800 pointer-events-none origin-left bg-gray-100 px-1">
+                    Service Name
+                  </lable>
+                </div>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Route (e.g., /branches)"
+                    value={newService.route}
+                    onChange={(e) =>
+                      setNewService({ ...newService, route: e.target.value })
+                    }
+                    className="w-full  px-4 py-3 bg-transparent border-2 border-gray-400  outline-none transition-all duration-300 ease-in-out focus:border-gray-400 focus:ring-2 text-black focus:ring-gray-100 peer  placeholder-transparent"
+                  />
+                  <lable className="absolute left-4 top-3 text-gray-500 transition-all duration-300 transform -translate-y-6 scale-75 opacity-0 peer-placeholder-shown:opacity-100 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:opacity-100 peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:text-gray-500 pointer-events-none origin-left bg-gray-100 px-1">
+                    Route - Ex: /branches
+                  </lable>
+                </div>
               </div>
-              <button
-                type="submit"
-                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
-              >
-                {editingService ? "Update Service" : "Create Service"}
-              </button>
+              <div className="w-full flex items-end justify-end">
+                <button
+                  type="submit"
+                  className=" bg-gray-300  transition-all ease-in hover:bg-gray-800 hover:text-white text-gray-800  px-6 py-3  "
+                >
+                  {editingService ? "Update Service" : "Create Service"}
+                </button>
+              </div>
             </form>
           </div>
 
-          <div className="mt-6 bg-white p-6 rounded-lg shadow-sm">
-            <h2 className="text-xl font-bold mb-4">Existing Services</h2>
+          <div className="mt-6 bg-gray-100 text-gray-800 p-6 rounded-lg  max-h-[350px] overflow-auto ">
+            <h2 className="text-xl font-semibold mb-4">Existing Services</h2>
             <div className="grid gap-4">
               {services.map((service) => (
                 <div
                   key={service._id}
-                  className="border p-4 rounded flex justify-between items-center"
+                  className="p-2 border-b border-gray-400 rounded flex justify-between items-center"
                 >
                   <div>
                     <h3 className="font-bold">{service.name}</h3>
@@ -216,12 +258,18 @@ const RoleServiceManagement = () => {
                       Route: {service.route}
                     </div>
                   </div>
-                  <button
-                    onClick={() => handleEditService(service)}
-                    className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded"
-                  >
-                    Edit
-                  </button>
+                  <div className="relative group">
+                    <button
+                      onClick={() => handleEditService(service)}
+                      className="hover:text-green-500 transition-all ease-in-out duration-200 text-gray-800 px-3 py-1 rounded"
+                    >
+                      <FaUserEdit />
+                      {/* Tooltip for Edit */}
+                      <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 scale-0 group-hover:scale-100 transition-transform duration-200 bg-gray-800 text-white text-xs rounded px-2 py-1">
+                        Edit
+                      </span>
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
