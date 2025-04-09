@@ -5,6 +5,7 @@ import {
   updateOrderStatus,
 } from "../utils/api";
 import "../styles/Alacarte.css";
+import { useKitchenSocket } from "../contexts/KitchenSocketContext";
 
 function Alacarte() {
   const [modalOpen, setModalOpen] = useState(null);
@@ -18,7 +19,21 @@ function Alacarte() {
   const branchId = localStorage.getItem("branchId");
   console.log("Using branchId:", branchId);
 
-  // Fetch orders for the branch
+  // Socket context
+  const {
+    isConnected,
+    newOrderEvents,
+    orderStatusEvents,
+    clearNewOrderEvents,
+    clearOrderStatusEvents,
+  } = useKitchenSocket();
+
+  // Log connection status
+  useEffect(() => {
+    console.log("Kitchen socket connection status:", isConnected);
+  }, [isConnected]);
+
+  // Fetch orders for the branch - used for initial load
   const fetchOrders = async () => {
     if (!branchId) {
       console.error("No branchId found in localStorage");
@@ -27,7 +42,7 @@ function Alacarte() {
 
     try {
       const response = await getBranchOrders(branchId);
-      console.log("Orders response:", response);
+      console.log("Initial orders response:", response);
 
       if (response.success && response.data?.orders) {
         // Group active orders (pending and accepted) by table
@@ -42,7 +57,7 @@ function Alacarte() {
         }, {});
 
         setOrders(ordersByTable);
-        console.log("Active orders by table:", ordersByTable);
+        console.log("Initial active orders by table:", ordersByTable);
 
         // Update notifications for tables with pending orders only
         const newNotifications = { ...notifications };
@@ -54,7 +69,7 @@ function Alacarte() {
         setNotifications(newNotifications);
       }
     } catch (error) {
-      console.error("Error fetching orders:", error);
+      console.error("Error fetching initial orders:", error);
     }
   };
 
@@ -98,13 +113,124 @@ function Alacarte() {
     }
   }, []);
 
-  // Set up polling for orders
+  // Handle new order events from socket
   useEffect(() => {
-    if (!branchId) return;
+    if (newOrderEvents.length > 0) {
+      console.log("Processing new order events:", newOrderEvents);
 
-    const intervalId = setInterval(fetchOrders, 10000);
-    return () => clearInterval(intervalId);
-  }, [branchId]);
+      setOrders((prevOrders) => {
+        const updatedOrders = { ...prevOrders };
+
+        newOrderEvents.forEach((orderEvent) => {
+          const { tableName } = orderEvent;
+
+          if (!updatedOrders[tableName]) {
+            updatedOrders[tableName] = [];
+          }
+
+          // Check if order already exists (avoid duplicates)
+          const orderExists = updatedOrders[tableName].some(
+            (order) => order._id === orderEvent.orderId
+          );
+
+          if (!orderExists) {
+            // Create a properly formatted order object
+            const newOrder = {
+              _id: orderEvent.orderId,
+              tableName: orderEvent.tableName,
+              items: orderEvent.items,
+              totalAmount: orderEvent.totalAmount,
+              status: orderEvent.status,
+              createdAt: orderEvent.createdAt,
+            };
+
+            // Add to beginning of array for this table
+            updatedOrders[tableName].unshift(newOrder);
+          }
+        });
+
+        return updatedOrders;
+      });
+
+      // Update notifications for pending orders
+      setNotifications((prevNotifications) => {
+        const updatedNotifications = { ...prevNotifications };
+
+        newOrderEvents.forEach((orderEvent) => {
+          if (orderEvent.status === "pending") {
+            updatedNotifications[orderEvent.tableName] = true;
+          }
+        });
+
+        return updatedNotifications;
+      });
+
+      // Play notification sound if available
+      const audio = document.getElementById("notification-sound");
+      if (audio) {
+        audio.play().catch((e) => console.log("Error playing sound:", e));
+      }
+
+      // Clear processed events
+      clearNewOrderEvents();
+    }
+  }, [newOrderEvents]);
+
+  // Handle order status update events
+  useEffect(() => {
+    if (orderStatusEvents.length > 0) {
+      console.log("Processing order status updates:", orderStatusEvents);
+
+      setOrders((prevOrders) => {
+        const updatedOrders = { ...prevOrders };
+
+        orderStatusEvents.forEach((statusEvent) => {
+          const { orderId, tableName, status } = statusEvent;
+
+          // Find and update the specific order for the table
+          Object.keys(updatedOrders).forEach((tableKey) => {
+            updatedOrders[tableKey] = updatedOrders[tableKey].map((order) =>
+              order._id === orderId ? { ...order, status } : order
+            );
+
+            // If order is served, we may want to remove it from active orders
+            if (status === "served") {
+              updatedOrders[tableKey] = updatedOrders[tableKey].filter(
+                (order) => order._id !== orderId || order.status !== "served"
+              );
+            }
+          });
+        });
+
+        // Remove empty tables from orders
+        Object.keys(updatedOrders).forEach((tableName) => {
+          if (updatedOrders[tableName].length === 0) {
+            delete updatedOrders[tableName];
+          }
+        });
+
+        return updatedOrders;
+      });
+
+      // Update notifications based on pending orders
+      setNotifications((prevNotifications) => {
+        const updatedNotifications = { ...prevNotifications };
+
+        // For each table, check if it has pending orders
+        Object.keys(orders).forEach((tableName) => {
+          const hasPendingOrders = orders[tableName]?.some(
+            (order) => order.status === "pending"
+          );
+          updatedNotifications[tableName] = hasPendingOrders;
+        });
+
+        return updatedNotifications;
+      });
+
+      // Clear processed events
+      clearOrderStatusEvents();
+    }
+  }, [orderStatusEvents]);
 
   const handleTableClick = (tableName) => {
     console.log("Table clicked:", tableName);
@@ -124,7 +250,7 @@ function Alacarte() {
     try {
       const response = await updateOrderStatus(orderId, "accepted");
       if (response.success) {
-        await fetchOrders();
+        // No need to fetch orders anymore as socket will update it
         alert("Order accepted!");
       } else {
         throw new Error(response.message);
@@ -139,7 +265,7 @@ function Alacarte() {
     try {
       const response = await updateOrderStatus(orderId, "served");
       if (response.success) {
-        await fetchOrders();
+        // No need to fetch orders anymore as socket will update it
         alert("Order served!");
       } else {
         throw new Error(response.message);
@@ -186,6 +312,18 @@ function Alacarte() {
 
   return (
     <div className="alacarte-container">
+      {/* Optional notification sound */}
+      <audio id="notification-sound" src="/notification.mp3" />
+
+      {/* Connection status indicator (can be hidden in production) */}
+      <div
+        className={`connection-status ${
+          isConnected ? "connected" : "disconnected"
+        }`}
+      >
+        {isConnected ? "Connected" : "Disconnected"}
+      </div>
+
       <div className="dining-section">
         <h3>Dining Section</h3>
         <div className="table-container">

@@ -3,6 +3,7 @@ const http = require("http");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const connectDB = require("./config/database");
+const socketIo = require("socket.io");
 const session = require("express-session");
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
@@ -46,9 +47,24 @@ const mobileBranchRoutes = require("./routes/mobile/mobileBranchRoutes");
 const mobileOrderRoutes = require("./routes/mobile/orderRoutes");
 const mobileVoucherRoutes = require("./routes/mobile/voucherRoutes");
 const mobilePaymentRoutes = require("./routes/mobile/paymentRoutes");
+
 dotenv.config();
 const app = express();
 const server = http.createServer(app); // Create an HTTP server
+
+// Initialize Socket.io with CORS settings
+const io = socketIo(server, {
+  cors: {
+    origin: "*", // Allow all origins
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  },
+});
+
+// We'll require the socket service after defining the io instance
+const socketService = require("./services/socket/socketService");
+socketService.initialize(io);
 
 // Configure CORS
 const corsOptions = {
@@ -115,12 +131,14 @@ app.use("/api/mobile/branches", mobileBranchRoutes);
 app.use("/api/mobile/orders", mobileOrderRoutes);
 app.use("/api/mobile/voucher", mobileVoucherRoutes);
 app.use("/api/mobile/payment", mobilePaymentRoutes);
+
 const PORT = process.env.PORT || 5000;
 const HOST = "0.0.0.0";
 
 server.listen(PORT, HOST, () => {
   console.log(`Server running on http://${HOST}:${PORT}`);
   console.log(`API available at http://${HOST}:${PORT}/api`);
+  console.log(`WebSocket server initialized`);
 });
 
 server.on("error", (error) => {

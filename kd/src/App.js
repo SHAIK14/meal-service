@@ -19,6 +19,7 @@ import TakeawayAdminDashboard from "./pages/TakeawayAdminDashboard";
 import TakeawayWorkerDashboard from "./pages/TakeawayWorkerDashboard";
 import MealAdminDashboard from "./pages/MealAdminDashboard";
 import MealStaffDashboard from "./pages/MealStaffDashboard";
+import { KitchenSocketProvider } from "./contexts/KitchenSocketContext"; // Import the context provider
 import "./App.css";
 
 const AuthenticatedLayout = ({ children }) => (
@@ -50,38 +51,41 @@ const App = () => {
             path="/*"
             element={
               isLoggedIn ? (
-                <AuthenticatedLayout>
-                  <Routes>
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/orders" element={<CurrentOrder />} />
-                    <Route path="/alacarte" element={<Alacarte />} />
-                    <Route path="/tables" element={<TableManagement />} />
-                    <Route path="/kot" element={<Kot />} />
-                    <Route path="/catering" element={<CateringDashboard />} />
-                    {/* Takeaway Routes */}
-                    <Route
-                      path="/takeaway-admin"
-                      element={<TakeawayAdminDashboard />}
-                    />
-                    <Route
-                      path="/takeaway-kitchen"
-                      element={<TakeawayWorkerDashboard />}
-                    />
-                    {/* New Meal App Routes */}
-                    <Route
-                      path="/meal-admin"
-                      element={<MealAdminDashboard />}
-                    />
-                    <Route
-                      path="/meal-kitchen"
-                      element={<MealStaffDashboard />}
-                    />
-                    <Route
-                      path="/"
-                      element={<Navigate to="/dashboard" replace />}
-                    />
-                  </Routes>
-                </AuthenticatedLayout>
+                // Wrap authenticated content with KitchenSocketProvider
+                <KitchenSocketProvider>
+                  <AuthenticatedLayout>
+                    <Routes>
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/orders" element={<CurrentOrder />} />
+                      <Route path="/alacarte" element={<Alacarte />} />
+                      <Route path="/tables" element={<TableManagement />} />
+                      <Route path="/kot" element={<Kot />} />
+                      <Route path="/catering" element={<CateringDashboard />} />
+                      {/* Takeaway Routes */}
+                      <Route
+                        path="/takeaway-admin"
+                        element={<TakeawayAdminDashboard />}
+                      />
+                      <Route
+                        path="/takeaway-kitchen"
+                        element={<TakeawayWorkerDashboard />}
+                      />
+                      {/* New Meal App Routes */}
+                      <Route
+                        path="/meal-admin"
+                        element={<MealAdminDashboard />}
+                      />
+                      <Route
+                        path="/meal-kitchen"
+                        element={<MealStaffDashboard />}
+                      />
+                      <Route
+                        path="/"
+                        element={<Navigate to="/dashboard" replace />}
+                      />
+                    </Routes>
+                  </AuthenticatedLayout>
+                </KitchenSocketProvider>
               ) : (
                 <Navigate to="/login" replace />
               )

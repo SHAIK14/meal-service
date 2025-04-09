@@ -1,6 +1,11 @@
 // src/Components/MenuLayout.jsx
-import { useState } from "react";
-import { FaShoppingCart, FaClipboardList } from "react-icons/fa";
+import { useState, useEffect } from "react";
+import {
+  FaShoppingCart,
+  FaClipboardList,
+  FaWifi,
+  FaTimes,
+} from "react-icons/fa";
 import Navbar from "./Navbar";
 import Items from "./Items";
 import Cart from "./Cart";
@@ -12,9 +17,10 @@ const MenuLayout = () => {
   const [cart, setCart] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [showOrders, setShowOrders] = useState(false);
-  const { sessionDetails } = useDining();
+  const { sessionDetails, isConnected } = useDining();
 
   const handleAddToCart = (item, quantity) => {
+    console.log(`Adding to cart: ${item.nameEnglish}, quantity: ${quantity}`);
     setCart((prevCart) => {
       if (quantity === 0) {
         return prevCart.filter((i) => i.id !== item.id);
@@ -40,12 +46,34 @@ const MenuLayout = () => {
     }
   };
 
+  // Show connection status
+  useEffect(() => {
+    console.log("Socket connection status in MenuLayout:", isConnected);
+  }, [isConnected]);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar
         activeCategory={activeCategory}
         onCategoryChange={setActiveCategory}
       />
+
+      {/* Connection Status Indicator */}
+      <div
+        className={`text-xs flex items-center justify-end px-4 py-1 ${
+          isConnected ? "text-green-500" : "text-red-500"
+        }`}
+      >
+        {isConnected ? (
+          <>
+            <FaWifi className="mr-1" /> Connected
+          </>
+        ) : (
+          <>
+            <FaTimes className="mr-1" /> Disconnected
+          </>
+        )}
+      </div>
 
       <main className="container mx-auto px-4 py-6 pb-24">
         {/* View Toggle Button */}

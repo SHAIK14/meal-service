@@ -1,5 +1,6 @@
+/* eslint-disable react/prop-types */
 // src/components/Cart.jsx
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import { FaTimes, FaShoppingCart } from "react-icons/fa";
 import { useDining } from "../contexts/DiningContext";
 import { createDiningOrder } from "../utils/api";
@@ -13,9 +14,27 @@ const Cart = ({ isOpen, onClose, cart, onQuantityChange }) => {
     getUserLocation,
     updateSessionDetails,
     updateOrders,
+    socket,
+    isConnected,
   } = useDining();
 
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+  // Listen for socket confirmation of new order
+  useEffect(() => {
+    if (socket) {
+      const handleNewOrderConfirmation = (data) => {
+        console.log("New order confirmation received:", data);
+        // Could add additional confirmation UI here if needed
+      };
+
+      socket.on("new_order_confirmed", handleNewOrderConfirmation);
+
+      return () => {
+        socket.off("new_order_confirmed", handleNewOrderConfirmation);
+      };
+    }
+  }, [socket]);
 
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371;
@@ -33,10 +52,12 @@ const Cart = ({ isOpen, onClose, cart, onQuantityChange }) => {
 
   const handleOrder = async () => {
     try {
+      console.log("Placing order...");
       setIsLoading(true);
       setError(null);
 
       const location = await getUserLocation();
+      console.log("Got user location:", location);
 
       // Calculate distance
       const distance = calculateDistance(
@@ -44,6 +65,10 @@ const Cart = ({ isOpen, onClose, cart, onQuantityChange }) => {
         location.longitude,
         branchDetails.address.coordinates.latitude,
         branchDetails.address.coordinates.longitude
+      );
+
+      console.log(
+        `Distance to restaurant: ${distance}km, Allowed radius: ${branchDetails.diningRadius}km`
       );
 
       // Check if user is within dining radius
@@ -64,10 +89,14 @@ const Cart = ({ isOpen, onClose, cart, onQuantityChange }) => {
         totalAmount: total,
         userLocation: location,
       };
+
+      console.log("Sending order data:", orderData);
+
       // Send order to server
       const response = await createDiningOrder(orderData);
 
       if (response.success) {
+        console.log("Order created successfully:", response.data);
         const newOrder = response.data.order;
 
         // Update session details
@@ -118,6 +147,15 @@ const Cart = ({ isOpen, onClose, cart, onQuantityChange }) => {
           >
             <FaTimes className="text-gray-600" />
           </button>
+        </div>
+
+        {/* Connection Status (for debugging) */}
+        <div
+          className={`px-4 py-2 text-sm ${
+            isConnected ? "text-green-500" : "text-red-500"
+          }`}
+        >
+          {isConnected ? "Connected to server" : "Not connected to server"}
         </div>
 
         {/* Cart Items */}

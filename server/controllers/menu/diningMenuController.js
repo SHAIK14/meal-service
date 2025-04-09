@@ -4,8 +4,10 @@ const DiningOrder = require("../../models/menu/DiningOrder");
 const DiningCategory = require("../../models/admin/DiningCategory");
 const Item = require("../../models/admin/Item");
 const Session = require("../../models/menu/session");
+const socketService = require("../../services/socket/socketService");
 
 // Validate QR code access
+// Modify validateDiningAccess function
 const validateDiningAccess = async (req, res) => {
   try {
     const { pincode, tableName } = req.params;
@@ -46,6 +48,31 @@ const validateDiningAccess = async (req, res) => {
         tableName,
       });
       await session.save();
+
+      // NEW CODE: Update table status to occupied when a new session is created
+      // Find the table in the dining config
+      const tableIndex = diningConfig.tables.findIndex(
+        (t) => t.name === tableName
+      );
+      if (tableIndex !== -1) {
+        // Update table status to occupied if it's not already
+        if (diningConfig.tables[tableIndex].status !== "occupied") {
+          diningConfig.tables[tableIndex].status = "occupied";
+          await diningConfig.save();
+
+          // Emit socket event for table status update
+          const kitchenRoom = `kitchen:${branch._id}`;
+          const tableId = diningConfig.tables[tableIndex]._id;
+          socketService.emitToRoom(kitchenRoom, "table_status_updated", {
+            tableId,
+            tableName,
+            status: "occupied",
+          });
+          console.log(
+            `Table ${tableName} automatically marked as occupied and emitted to ${kitchenRoom}`
+          );
+        }
+      }
     }
 
     // Get orders for this session
@@ -77,7 +104,6 @@ const validateDiningAccess = async (req, res) => {
     });
   }
 };
-
 // Create new dining order
 const createDiningOrder = async (req, res) => {
   try {
@@ -165,6 +191,17 @@ const createDiningOrder = async (req, res) => {
     await diningOrder.save();
     session.totalAmount += totalAmount;
     await session.save();
+    const kitchenRoom = `kitchen:${branchId}`;
+    socketService.emitToRoom(kitchenRoom, "new_order", {
+      orderId: diningOrder._id,
+      tableId: tableName,
+      tableName: tableName,
+      items: diningOrder.items,
+      totalAmount: diningOrder.totalAmount,
+      status: diningOrder.status,
+      createdAt: diningOrder.createdAt,
+    });
+    console.log(`New order created and emitted to ${kitchenRoom}`);
 
     res.status(201).json({
       success: true,
@@ -204,6 +241,17 @@ const requestPayment = async (req, res) => {
 
     session.paymentRequested = true;
     await session.save();
+    const branchId = session.branchId;
+    const tableName = session.tableName;
+
+    // Emit socket event for payment request
+    const kitchenRoom = `kitchen:${branchId}`;
+    socketService.emitToRoom(kitchenRoom, "payment_requested", {
+      sessionId: session._id,
+      tableName: tableName,
+      totalAmount: session.totalAmount,
+    });
+    console.log(`Payment requested and emitted to ${kitchenRoom}`);
 
     res.json({
       success: true,
@@ -514,6 +562,22 @@ const updateOrderStatus = async (req, res) => {
         message: "Order not found",
       });
     }
+    // Emit socket event for order status update
+    const kitchenRoom = `kitchen:${order.branchId}`;
+    const tableRoom = `table:${order.branchId}:${order.tableName}`;
+    // Emit to kitchen staff
+    socketService.emitToRoom(kitchenRoom, "order_status_updated", {
+      orderId: order._id,
+      tableName: order.tableName,
+      status: status,
+    });
+    console.log(`Order status updated and emitted to ${kitchenRoom}`);
+    // Emit to customer table
+    socketService.emitToRoom(tableRoom, "order_status_updated", {
+      orderId: order._id,
+      status: status,
+    });
+    console.log(`Order status updated and emitted to ${tableRoom}`);
 
     res.json({
       success: true,

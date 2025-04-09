@@ -2,6 +2,7 @@ const Dining = require("../../models/admin/DiningConfig");
 const Session = require("../../models/menu/session");
 const DiningOrder = require("../../models/menu/DiningOrder");
 const Branch = require("../../models/admin/Branch");
+const socketService = require("../../services/socket/socketService");
 exports.getBranchTables = async (req, res) => {
   try {
     const branchId = req.branch._id;
@@ -90,6 +91,19 @@ exports.updateTableStatus = async (req, res) => {
         success: false,
         message: "Failed to update table status",
       });
+    }
+    const table = diningConfig.tables.find((t) => t._id.toString() === tableId);
+    const tableName = table ? table.name : null;
+
+    // Emit socket event for table status update
+    if (tableName) {
+      const kitchenRoom = `kitchen:${branchId}`;
+      socketService.emitToRoom(kitchenRoom, "table_status_updated", {
+        tableId,
+        tableName,
+        status,
+      });
+      console.log(`Table status updated and emitted to ${kitchenRoom}`);
     }
 
     res.json({
@@ -181,6 +195,19 @@ exports.completeSession = async (req, res) => {
     // Only update session status, don't change table status
     session.status = "completed";
     await session.save();
+    // Emit socket event for session completion
+    const kitchenRoom = `kitchen:${branchId}`;
+    const tableRoom = `table:${branchId}:${session.tableName}`;
+
+    socketService.emitToRoom(kitchenRoom, "session_completed", {
+      sessionId: session._id,
+      tableName: session.tableName,
+    });
+    console.log(`Session completed and emitted to ${kitchenRoom}`);
+
+    socketService.emitToRoom(tableRoom, "session_completed", {
+      sessionId: session._id,
+    });
 
     res.json({
       success: true,

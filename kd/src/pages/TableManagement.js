@@ -18,6 +18,7 @@ import {
   updateOrderStatus,
 } from "../utils/api";
 import "../styles/TableManagement.css";
+import { useKitchenSocket } from "../contexts/KitchenSocketContext";
 
 function TableManagement() {
   const [tables, setTables] = useState([]);
@@ -31,13 +32,171 @@ function TableManagement() {
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [invoiceData, setInvoiceData] = useState(null);
 
+  // Socket context
+  const {
+    isConnected,
+    newOrderEvents,
+    orderStatusEvents,
+    tableStatusEvents,
+    paymentRequestEvents,
+    clearNewOrderEvents,
+    clearOrderStatusEvents,
+    clearTableStatusEvents,
+    clearPaymentRequestEvents,
+  } = useKitchenSocket();
+
+  // Log connection status
+  useEffect(() => {
+    console.log("Table Management socket connection status:", isConnected);
+  }, [isConnected]);
+
+  // Initial data load
   useEffect(() => {
     fetchTables();
   }, []);
 
+  // Handle new order events
+  useEffect(() => {
+    if (newOrderEvents.length > 0) {
+      console.log(
+        "Table Management - New order events received:",
+        newOrderEvents
+      );
+
+      // If we have a selected table with session, update orders if needed
+      if (selectedTable && tableSession) {
+        const tableNewOrders = newOrderEvents.filter(
+          (order) => order.tableName === selectedTable.name
+        );
+
+        if (tableNewOrders.length > 0) {
+          // Reload the selected table's session to get updated orders
+          getTableSession(selectedTable.name)
+            .then((response) => {
+              if (response.success && response.data) {
+                setTableSession(response.data);
+              }
+            })
+            .catch((error) => {
+              console.error(
+                "Error refreshing table session after new order:",
+                error
+              );
+            });
+        }
+      }
+
+      // Clear processed events
+      clearNewOrderEvents();
+    }
+  }, [newOrderEvents, selectedTable]);
+
+  // Handle order status update events
+  useEffect(() => {
+    if (orderStatusEvents.length > 0) {
+      console.log(
+        "Table Management - Order status updates received:",
+        orderStatusEvents
+      );
+
+      // If we have a selected table with session, update orders if needed
+      if (selectedTable && tableSession) {
+        const tableStatusUpdates = orderStatusEvents.filter(
+          (update) => update.tableName === selectedTable.name
+        );
+
+        if (tableStatusUpdates.length > 0) {
+          // Update orders in the table session
+          if (tableSession.orders) {
+            const updatedOrders = tableSession.orders.map((order) => {
+              const update = tableStatusUpdates.find(
+                (u) => u.orderId === order._id
+              );
+              if (update) {
+                return { ...order, status: update.status };
+              }
+              return order;
+            });
+
+            setTableSession((prev) => ({
+              ...prev,
+              orders: updatedOrders,
+            }));
+          }
+        }
+      }
+
+      // Clear processed events
+      clearOrderStatusEvents();
+    }
+  }, [orderStatusEvents, selectedTable]);
+
+  // Handle table status updates
+  useEffect(() => {
+    if (tableStatusEvents.length > 0) {
+      console.log(
+        "Table Management - Table status updates received:",
+        tableStatusEvents
+      );
+
+      // Update tables with new status
+      setTables((prevTables) => {
+        return prevTables.map((table) => {
+          // Find if there's an update for this table
+          const update = tableStatusEvents.find(
+            (event) =>
+              event.tableId === table.id ||
+              (event.tableName === table.name && table.id)
+          );
+
+          if (update) {
+            return { ...table, status: update.status };
+          }
+          return table;
+        });
+      });
+
+      // Clear processed events
+      clearTableStatusEvents();
+    }
+  }, [tableStatusEvents]);
+
+  // Handle payment request events
+  useEffect(() => {
+    if (paymentRequestEvents.length > 0) {
+      console.log(
+        "Table Management - Payment requests received:",
+        paymentRequestEvents
+      );
+
+      // If we have a selected table that matches a payment request, update UI
+      if (selectedTable && tableSession) {
+        const paymentRequest = paymentRequestEvents.find(
+          (event) => event.tableName === selectedTable.name
+        );
+
+        if (paymentRequest) {
+          // Update session with payment requested flag
+          setTableSession((prev) => ({
+            ...prev,
+            session: {
+              ...prev.session,
+              paymentRequested: true,
+            },
+          }));
+        }
+      }
+
+      // Clear processed events
+      clearPaymentRequestEvents();
+    }
+  }, [paymentRequestEvents, selectedTable]);
+
   const fetchTables = async () => {
     try {
       const response = await getBranchTables();
+      console.log("Initial tables response:", response);
+
       if (response.success && Array.isArray(response.data)) {
         const uniqueTables = Array.from(
           new Set(response.data.map((table) => table.id))
@@ -73,6 +232,8 @@ function TableManagement() {
     setSelectedTable(table);
     try {
       const sessionResponse = await getTableSession(table.name);
+      console.log("Table session response:", sessionResponse);
+
       if (sessionResponse.success && sessionResponse.data?.data) {
         setTableSession(sessionResponse.data.data);
         if (table.status === "available") {
@@ -96,6 +257,7 @@ function TableManagement() {
     try {
       const response = await updateTableStatus(tableId, newStatus);
       if (response.success) {
+        // Update local state to match the new status
         setTables(
           tables.map((table) => {
             if (table.id === tableId) {
@@ -104,10 +266,12 @@ function TableManagement() {
             return table;
           })
         );
+
         if (closeModal) {
           setShowTableModal(false);
         }
-        await fetchTables();
+
+        // No need to fetch tables again as socket will update it
       } else {
         alert(response.message || "Failed to update table status");
       }
@@ -121,11 +285,19 @@ function TableManagement() {
     try {
       const response = await updateOrderStatus(orderId, newStatus);
       if (response.success) {
-        if (selectedTable) {
-          const sessionResponse = await getTableSession(selectedTable.name);
-          if (sessionResponse.success && sessionResponse.data) {
-            setTableSession(sessionResponse.data);
-          }
+        // No need to fetch session again as socket will update it
+        console.log(`Order ${orderId} status updated to ${newStatus}`);
+
+        // Update local state immediately for better UX
+        if (tableSession) {
+          const updatedOrders = tableSession.orders.map((order) =>
+            order._id === orderId ? { ...order, status: newStatus } : order
+          );
+
+          setTableSession((prev) => ({
+            ...prev,
+            orders: updatedOrders,
+          }));
         }
       }
     } catch (error) {
@@ -139,6 +311,7 @@ function TableManagement() {
       tableSession?.orders?.every((order) => order.status === "served") ?? false
     );
   };
+
   const handleGenerateInvoice = async () => {
     if (!tableSession?.session?._id) {
       alert("No active session found");
@@ -176,10 +349,11 @@ function TableManagement() {
     try {
       const response = await completeSession(tableSession.session._id);
       if (response.success) {
-        // Don't automatically mark table as available
+        // Close modals
         setShowPaymentModal(false);
         setShowTableModal(false);
-        await fetchTables(); // Refresh tables
+
+        // Session is completed - the socket will handle table status update
         setTableSession(null);
       } else {
         alert(response.message || "Failed to complete session");
@@ -195,6 +369,15 @@ function TableManagement() {
 
   return (
     <div className="table-management-container">
+      {/* Connection status indicator (can be hidden in production) */}
+      <div
+        className={`connection-status ${
+          isConnected ? "connected" : "disconnected"
+        }`}
+      >
+        {isConnected ? "Connected" : "Disconnected"}
+      </div>
+
       <div className="table-management-header">
         <h1>Table Management</h1>
       </div>
@@ -253,18 +436,6 @@ function TableManagement() {
                     Mark as Available
                   </button>
                 )}
-
-              {selectedTable.status === "available" && (
-                <button
-                  className="action-button occupy"
-                  onClick={() =>
-                    handleTableStatusChange(selectedTable.id, "occupied")
-                  }
-                >
-                  <FaUtensils />
-                  Mark as Occupied
-                </button>
-              )}
 
               {selectedTable.status === "occupied" && (
                 <>
@@ -384,6 +555,7 @@ function TableManagement() {
           </div>
         </div>
       )}
+
       {/* Invoice Modal */}
       {showInvoiceModal && invoiceData && (
         <div className="modal-overlay">
@@ -465,6 +637,7 @@ function TableManagement() {
           </div>
         </div>
       )}
+
       {/* Payment Confirmation Modal */}
       {showPaymentModal && selectedTable && (
         <div className="modal-overlay">

@@ -1,15 +1,21 @@
 // src/components/Orders.jsx
-import React from "react";
+import React, { useEffect } from "react";
 import { useDining } from "../contexts/DiningContext";
 import { requestPayment } from "../utils/api";
 
 const Orders = () => {
-  const { sessionDetails, orders } = useDining();
+  const { sessionDetails, orders, socket, isConnected } = useDining();
+
+  // Log connection status changes for debugging
+  useEffect(() => {
+    console.log("Socket connection status in Orders:", isConnected);
+  }, [isConnected]);
 
   const handleRequestPayment = async () => {
     try {
       if (!sessionDetails?.id) return;
       await requestPayment(sessionDetails.id);
+      console.log("Payment request sent successfully");
       alert("Payment request sent successfully!");
     } catch (error) {
       console.error("Error requesting payment:", error);
@@ -47,6 +53,15 @@ const Orders = () => {
 
   return (
     <div className="p-4">
+      {/* Socket Connection Indicator (for debugging) */}
+      <div
+        className={`text-sm mb-2 ${
+          isConnected ? "text-green-500" : "text-red-500"
+        }`}
+      >
+        {isConnected ? "Connected" : "Disconnected"}
+      </div>
+
       {/* Session Total */}
       <div className="bg-white rounded-lg shadow-md p-4 mb-4">
         <div className="flex justify-between items-center">
