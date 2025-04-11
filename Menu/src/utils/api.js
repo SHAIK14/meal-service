@@ -121,3 +121,30 @@ export const getBranchOrders = async (branchId) => {
     return { success: false, message: "Failed to fetch branch orders" };
   }
 };
+// Add this function to api.js
+export const startSession = async (pincode, tableName, customerData) => {
+  try {
+    console.log("Starting session with data:", {
+      pincode,
+      tableName,
+      ...customerData,
+    });
+    const response = await fetch(`${BASE_URL}/session/start`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        pincode,
+        tableName,
+        ...customerData,
+      }),
+    });
+    const data = await response.json();
+    console.log("Session start response:", data);
+    return data;
+  } catch (error) {
+    console.error("Error starting session:", error);
+    return { success: false, message: "Failed to start session" };
+  }
+};

@@ -1,15 +1,21 @@
-// src/Components/ValidateRoute.jsx - FIXED VERSION
+// src/Components/ValidateRoute.jsx - Update component
 import { useEffect, useState } from "react";
 import { useParams, Navigate } from "react-router-dom";
 import { validateQRAccess } from "../utils/api";
 import { useDining } from "../contexts/DiningContext";
+import BookingModal from "./BookingModal";
 
 const ValidateRoute = ({ children }) => {
   const [isValidating, setIsValidating] = useState(true);
   const [isValid, setIsValid] = useState(false);
-  const [validationCompleted, setValidationCompleted] = useState(false); // Add this state
+  const [validationCompleted, setValidationCompleted] = useState(false);
   const { pincode, tableName } = useParams();
-  const { setBranchDetails } = useDining();
+  const {
+    setBranchDetails,
+    showBookingModal,
+    sessionDetails,
+    handleSessionStarted,
+  } = useDining();
 
   useEffect(() => {
     // Skip if validation already completed or required params are missing
@@ -41,7 +47,7 @@ const ValidateRoute = ({ children }) => {
       } finally {
         if (isMounted) {
           setIsValidating(false);
-          setValidationCompleted(true); // Mark validation as completed
+          setValidationCompleted(true);
         }
       }
     };
@@ -51,7 +57,7 @@ const ValidateRoute = ({ children }) => {
     return () => {
       isMounted = false;
     };
-  }, [pincode, tableName, validationCompleted]); // Add validationCompleted to dependencies
+  }, [pincode, tableName, validationCompleted]);
 
   if (isValidating) {
     return (
@@ -66,8 +72,30 @@ const ValidateRoute = ({ children }) => {
     return <Navigate to="/" replace />;
   }
 
-  console.log("Access validation successful, rendering children");
-  return children;
+  return (
+    <>
+      {/* Show booking modal if needed */}
+      {showBookingModal && !sessionDetails && (
+        <BookingModal
+          isOpen={true}
+          pincode={pincode}
+          tableName={tableName}
+          onSessionStarted={handleSessionStarted}
+        />
+      )}
+
+      {/* Only show menu when session exists */}
+      {!showBookingModal || sessionDetails ? (
+        children
+      ) : (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <p className="text-gray-500">
+            Please complete the booking to access the menu
+          </p>
+        </div>
+      )}
+    </>
+  );
 };
 
 export default ValidateRoute;

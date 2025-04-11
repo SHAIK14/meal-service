@@ -5,6 +5,7 @@ import {
   FaClipboardList,
   FaWifi,
   FaTimes,
+  FaUser,
 } from "react-icons/fa";
 import Navbar from "./Navbar";
 import Items from "./Items";
@@ -33,6 +34,11 @@ const MenuLayout = () => {
     });
   };
 
+  // Function to clear the cart
+  const clearCart = () => {
+    setCart([]);
+  };
+
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const handleCartClose = () => {
@@ -46,6 +52,9 @@ const MenuLayout = () => {
     }
   };
 
+  // Get customer name from session
+  const customerName = sessionDetails?.customerName;
+
   // Show connection status
   useEffect(() => {
     console.log("Socket connection status in MenuLayout:", isConnected);
@@ -58,21 +67,31 @@ const MenuLayout = () => {
         onCategoryChange={setActiveCategory}
       />
 
-      {/* Connection Status Indicator */}
-      <div
-        className={`text-xs flex items-center justify-end px-4 py-1 ${
-          isConnected ? "text-green-500" : "text-red-500"
-        }`}
-      >
-        {isConnected ? (
-          <>
-            <FaWifi className="mr-1" /> Connected
-          </>
-        ) : (
-          <>
-            <FaTimes className="mr-1" /> Disconnected
-          </>
+      {/* Customer Name & Connection Status */}
+      <div className="px-4 py-2 flex justify-between items-center bg-white shadow-sm">
+        {customerName && (
+          <div className="text-sm text-gray-600 flex items-center">
+            <FaUser className="text-gray-500 mr-2" />
+            <span>
+              Welcome, <span className="font-medium">{customerName}</span>
+            </span>
+          </div>
         )}
+        <div
+          className={`text-xs flex items-center ${
+            isConnected ? "text-green-500" : "text-red-500"
+          }`}
+        >
+          {isConnected ? (
+            <>
+              <FaWifi className="mr-1" /> Connected
+            </>
+          ) : (
+            <>
+              <FaTimes className="mr-1" /> Disconnected
+            </>
+          )}
+        </div>
       </div>
 
       <main className="container mx-auto px-4 py-6 pb-24">
@@ -142,6 +161,7 @@ const MenuLayout = () => {
         onClose={handleCartClose}
         cart={cart}
         onQuantityChange={handleAddToCart}
+        onClearCart={clearCart}
       />
     </div>
   );

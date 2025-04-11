@@ -1,5 +1,5 @@
 // src/contexts/DiningContext.jsx
-import React, { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 import io from "socket.io-client";
 
 const DiningContext = createContext(undefined);
@@ -11,6 +11,7 @@ export function DiningProvider({ children }) {
   const [orders, setOrders] = useState([]);
   const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [showBookingModal, setShowBookingModal] = useState(false);
 
   // Function to get user's location
   const getUserLocation = () => {
@@ -107,15 +108,31 @@ export function DiningProvider({ children }) {
       tableName: window.location.pathname.split("/").pop(),
     });
 
-    // Update session if exists
+    // If session exists, update session details
     if (response.session) {
       console.log("Setting session details:", response.session.id);
       setSessionDetails({
         id: response.session.id,
         totalAmount: response.session.totalAmount,
         paymentRequested: response.session.paymentRequested,
+        customerName: response.session.customerName,
       });
       setOrders(response.session.orders || []);
+    } else {
+      // Show booking modal if no session exists
+      setShowBookingModal(true);
+    }
+  };
+  const handleSessionStarted = (session) => {
+    console.log("Session started:", session);
+    if (session) {
+      setSessionDetails({
+        id: session.id,
+        totalAmount: session.totalAmount || 0,
+        paymentRequested: session.paymentRequested || false,
+        customerName: session.customerName,
+      });
+      setShowBookingModal(false);
     }
   };
 
@@ -146,6 +163,9 @@ export function DiningProvider({ children }) {
     updateOrders,
     socket,
     isConnected,
+    showBookingModal,
+    setShowBookingModal,
+    handleSessionStarted,
   };
 
   return (

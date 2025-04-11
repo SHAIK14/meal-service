@@ -1,3 +1,4 @@
+// models/menu/session.js
 const mongoose = require("mongoose");
 
 const sessionSchema = new mongoose.Schema(
@@ -23,6 +24,19 @@ const sessionSchema = new mongoose.Schema(
     paymentRequested: {
       type: Boolean,
       default: false,
+    },
+    // New fields for customer information
+    customerName: {
+      type: String,
+      required: true,
+    },
+    customerPhone: {
+      type: String,
+      required: false, // Optional
+    },
+    customerDob: {
+      type: Date,
+      required: false, // Optional
     },
   },
   { timestamps: true }

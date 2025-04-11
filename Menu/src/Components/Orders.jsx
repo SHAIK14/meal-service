@@ -1,25 +1,67 @@
 // src/components/Orders.jsx
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useDining } from "../contexts/DiningContext";
 import { requestPayment } from "../utils/api";
 
 const Orders = () => {
-  const { sessionDetails, orders, socket, isConnected } = useDining();
+  const { sessionDetails, updateSessionDetails, orders, socket, isConnected } =
+    useDining();
+  const [isRequestingPayment, setIsRequestingPayment] = useState(false);
 
   // Log connection status changes for debugging
   useEffect(() => {
     console.log("Socket connection status in Orders:", isConnected);
   }, [isConnected]);
 
+  // Listen for payment confirmation from socket
+  useEffect(() => {
+    if (socket) {
+      const handlePaymentConfirmation = (data) => {
+        console.log("Payment request confirmation received:", data);
+        if (data.sessionId === sessionDetails?.id) {
+          // Update session details with payment requested status
+          updateSessionDetails({
+            ...sessionDetails,
+            paymentRequested: true,
+          });
+        }
+      };
+
+      socket.on("payment_request_confirmed", handlePaymentConfirmation);
+
+      return () => {
+        socket.off("payment_request_confirmed", handlePaymentConfirmation);
+      };
+    }
+  }, [socket, sessionDetails?.id, updateSessionDetails]);
+
   const handleRequestPayment = async () => {
     try {
       if (!sessionDetails?.id) return;
+
+      setIsRequestingPayment(true);
+
+      // First update the UI immediately (optimistic update)
+      updateSessionDetails({
+        ...sessionDetails,
+        paymentRequested: true,
+      });
+
+      // Then send the request to the server
       await requestPayment(sessionDetails.id);
       console.log("Payment request sent successfully");
-      alert("Payment request sent successfully!");
+
+      // Update will be confirmed by socket event
     } catch (error) {
       console.error("Error requesting payment:", error);
+      // Revert UI update if request fails
+      updateSessionDetails({
+        ...sessionDetails,
+        paymentRequested: false,
+      });
       alert("Failed to request payment. Please try again.");
+    } finally {
+      setIsRequestingPayment(false);
     }
   };
 
@@ -74,9 +116,12 @@ const Orders = () => {
           {!sessionDetails?.paymentRequested && (
             <button
               onClick={handleRequestPayment}
-              className="bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600"
+              disabled={isRequestingPayment}
+              className={`bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 ${
+                isRequestingPayment ? "opacity-70 cursor-not-allowed" : ""
+              }`}
             >
-              Request Payment
+              {isRequestingPayment ? "Processing..." : "Request Payment"}
             </button>
           )}
           {sessionDetails?.paymentRequested && (

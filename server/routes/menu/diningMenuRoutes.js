@@ -9,10 +9,12 @@ const {
   getBranchOrders,
   updateOrderStatus,
   requestPayment,
+  startSession,
 } = require("../../controllers/menu/diningMenuController");
 
 // Route to validate QR code access
 router.get("/validate/:pincode/:tableName", validateDiningAccess);
+router.post("/session/start", startSession);
 
 // Get all categories with their items for a branch
 router.get("/menu/:branchId", getDiningMenuItems);

@@ -5,7 +5,7 @@ import { FaTimes, FaShoppingCart } from "react-icons/fa";
 import { useDining } from "../contexts/DiningContext";
 import { createDiningOrder } from "../utils/api";
 
-const Cart = ({ isOpen, onClose, cart, onQuantityChange }) => {
+const Cart = ({ isOpen, onClose, cart, onQuantityChange, onClearCart }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const {
@@ -113,6 +113,10 @@ const Cart = ({ isOpen, onClose, cart, onQuantityChange }) => {
         updateOrders([newOrder, ...existingOrders]);
 
         alert("Order placed successfully!");
+
+        // Clear the cart after successful order
+        onClearCart();
+
         onClose(); // Close the cart modal
       } else {
         throw new Error(response.message || "Failed to create order");

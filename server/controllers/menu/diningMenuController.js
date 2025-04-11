@@ -35,52 +35,15 @@ const validateDiningAccess = async (req, res) => {
       });
     }
 
-    // Find or create active session
+    // Check for active session
     let session = await Session.findOne({
       branchId: branch._id,
       tableName,
       status: "active",
     });
 
-    if (!session) {
-      session = new Session({
-        branchId: branch._id,
-        tableName,
-      });
-      await session.save();
-
-      // NEW CODE: Update table status to occupied when a new session is created
-      // Find the table in the dining config
-      const tableIndex = diningConfig.tables.findIndex(
-        (t) => t.name === tableName
-      );
-      if (tableIndex !== -1) {
-        // Update table status to occupied if it's not already
-        if (diningConfig.tables[tableIndex].status !== "occupied") {
-          diningConfig.tables[tableIndex].status = "occupied";
-          await diningConfig.save();
-
-          // Emit socket event for table status update
-          const kitchenRoom = `kitchen:${branch._id}`;
-          const tableId = diningConfig.tables[tableIndex]._id;
-          socketService.emitToRoom(kitchenRoom, "table_status_updated", {
-            tableId,
-            tableName,
-            status: "occupied",
-          });
-          console.log(
-            `Table ${tableName} automatically marked as occupied and emitted to ${kitchenRoom}`
-          );
-        }
-      }
-    }
-
-    // Get orders for this session
-    const sessionOrders = await DiningOrder.find({
-      sessionId: session._id,
-    }).sort({ createdAt: -1 });
-
-    res.json({
+    // Prepare the response object with branch info
+    const responseObj = {
       success: true,
       branch: {
         id: branch._id,
@@ -89,18 +52,137 @@ const validateDiningAccess = async (req, res) => {
         coordinates: branch.address.coordinates,
         diningRadius: diningConfig.diningRadius,
       },
-      session: {
+      sessionExists: !!session,
+    };
+
+    // If session exists, fetch orders and include in response
+    if (session) {
+      const sessionOrders = await DiningOrder.find({
+        sessionId: session._id,
+      }).sort({ createdAt: -1 });
+
+      responseObj.session = {
         id: session._id,
         totalAmount: session.totalAmount,
         paymentRequested: session.paymentRequested,
+        customerName: session.customerName || "Guest", // Fallback for legacy sessions
         orders: sessionOrders,
-      },
-    });
+      };
+    }
+
+    // Send a single response with all the data
+    return res.json(responseObj);
   } catch (error) {
     console.error("Error in validateDiningAccess:", error);
     res.status(500).json({
       success: false,
       message: "Server error",
+    });
+  }
+};
+const startSession = async (req, res) => {
+  try {
+    const { pincode, tableName, customerName, customerPhone, customerDob } =
+      req.body;
+
+    // Validate required fields
+    if (!pincode || !tableName || !customerName) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields",
+      });
+    }
+
+    // Find branch by pincode
+    const branch = await Branch.findOne({ "address.pincode": pincode });
+    if (!branch) {
+      return res.status(404).json({
+        success: false,
+        message: "Invalid branch code",
+      });
+    }
+
+    // Find dining config to verify table
+    const diningConfig = await Dining.findOne({
+      branchId: branch._id,
+      "tables.name": tableName,
+      "tables.isEnabled": true,
+    });
+
+    if (!diningConfig) {
+      return res.status(404).json({
+        success: false,
+        message: "Table not found or disabled",
+      });
+    }
+
+    // Check if session already exists
+    let session = await Session.findOne({
+      branchId: branch._id,
+      tableName,
+      status: "active",
+    });
+
+    if (session) {
+      return res.json({
+        success: true,
+        message: "Session already exists",
+        session: {
+          id: session._id,
+          totalAmount: session.totalAmount,
+          paymentRequested: session.paymentRequested,
+          customerName: session.customerName,
+        },
+      });
+    }
+
+    // Create new session
+    session = new Session({
+      branchId: branch._id,
+      tableName,
+      customerName,
+      customerPhone: customerPhone || "",
+      customerDob: customerDob ? new Date(customerDob) : null,
+    });
+
+    await session.save();
+
+    // Update table status to occupied
+    const tableIndex = diningConfig.tables.findIndex(
+      (t) => t.name === tableName
+    );
+    if (tableIndex !== -1) {
+      diningConfig.tables[tableIndex].status = "occupied";
+      await diningConfig.save();
+
+      // Emit socket event for table status update
+      const kitchenRoom = `kitchen:${branch._id}`;
+      const tableId = diningConfig.tables[tableIndex]._id;
+      socketService.emitToRoom(kitchenRoom, "table_status_updated", {
+        tableId,
+        tableName,
+        status: "occupied",
+        customerName,
+      });
+      console.log(`Table ${tableName} marked as occupied by ${customerName}`);
+    }
+
+    res.status(201).json({
+      success: true,
+      message: "Session started successfully",
+      session: {
+        id: session._id,
+        totalAmount: session.totalAmount,
+        paymentRequested: session.paymentRequested,
+        customerName: session.customerName,
+      },
+    });
+  } catch (error) {
+    console.error("Error in startSession:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error starting session",
+      error: error.message,
     });
   }
 };
@@ -244,14 +326,26 @@ const requestPayment = async (req, res) => {
     const branchId = session.branchId;
     const tableName = session.tableName;
 
-    // Emit socket event for payment request
+    // Emit socket events for payment request
     const kitchenRoom = `kitchen:${branchId}`;
+    const tableRoom = `table:${branchId}:${tableName}`;
+
+    // Emit to kitchen staff
     socketService.emitToRoom(kitchenRoom, "payment_requested", {
       sessionId: session._id,
       tableName: tableName,
       totalAmount: session.totalAmount,
     });
-    console.log(`Payment requested and emitted to ${kitchenRoom}`);
+
+    // Emit to customer table for real-time UI update
+    socketService.emitToRoom(tableRoom, "payment_request_confirmed", {
+      sessionId: session._id,
+      totalAmount: session.totalAmount,
+    });
+
+    console.log(
+      `Payment requested for table ${tableName} and emitted to relevant rooms`
+    );
 
     res.json({
       success: true,
@@ -602,4 +696,5 @@ module.exports = {
   getBranchOrders,
   updateOrderStatus,
   requestPayment,
+  startSession,
 };
