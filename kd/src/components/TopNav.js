@@ -34,11 +34,11 @@ function TopNav() {
           <span className="notification-badge">{orderCount}</span>
         )}
       </NavLink>
-      <NavLink className="nav-item" to="/Alacarte">
-        A La Carte
+      <NavLink className="nav-item" to="/diningKitchen">
+        diningKitchen
       </NavLink>
       <NavLink className="nav-item" to="/tables">
-        TableManagement
+        DiningAdmin
       </NavLink>
       <NavLink className="nav-item" to="/catering">
         Catering

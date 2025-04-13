@@ -312,4 +312,76 @@ export const getAllMealOrders = async (filters) => {
 export const getMealOrderStats = async () => {
   return handleResponse(api.get("/kitchen/meal/stats"));
 };
+
+// Update order status (admin_approved, in_preparation, ready_for_pickup, etc.)
+export const updateKitchenOrderStatus = async (orderId, status) => {
+  try {
+    const response = await api.put(`/kitchen/dining/orders/${orderId}/status`, {
+      status,
+    });
+    return {
+      success: true,
+      data: response.data,
+      message: response.data.message,
+    };
+  } catch (error) {
+    console.error("Error updating kitchen order status:", error);
+    return {
+      success: false,
+      message: error.response?.data?.message || "Failed to update order status",
+    };
+  }
+};
+
+// Return/cancel items (admin only)// api.js - Add these new functions
+
+// Cancel items (before serving)
+export const cancelOrderItem = async (orderId, itemIndex, quantity, reason) => {
+  try {
+    const response = await api.post(
+      `/kitchen/dining/orders/${orderId}/items/${itemIndex}/process`,
+      {
+        quantity,
+        reason,
+        actionType: "cancel",
+      }
+    );
+    return {
+      success: true,
+      data: response.data,
+      message: response.data.message,
+    };
+  } catch (error) {
+    console.error("Error cancelling order item:", error);
+    return {
+      success: false,
+      message: error.response?.data?.message || "Failed to cancel item",
+    };
+  }
+};
+
+// Return items (after serving)
+export const returnOrderItem = async (orderId, itemIndex, quantity, reason) => {
+  try {
+    const response = await api.post(
+      `/kitchen/dining/orders/${orderId}/items/${itemIndex}/process`,
+      {
+        quantity,
+        reason,
+        actionType: "return",
+      }
+    );
+    return {
+      success: true,
+      data: response.data,
+      message: response.data.message,
+    };
+  } catch (error) {
+    console.error("Error returning order item:", error);
+    return {
+      success: false,
+      message: error.response?.data?.message || "Failed to return item",
+    };
+  }
+};
 export default api;

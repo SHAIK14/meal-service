@@ -365,7 +365,7 @@ const requestPayment = async (req, res) => {
 const getDiningMenuItems = async (req, res) => {
   try {
     const { branchId } = req.params;
-    console.log("Fetching menu items for branchId:", branchId);
+    // console.log("Fetching menu items for branchId:", branchId);
 
     // Get all active categories with their items
     const categories = await DiningCategory.find({ active: true }).populate({
@@ -373,7 +373,7 @@ const getDiningMenuItems = async (req, res) => {
       match: { available: true }, // Only get available items
     });
 
-    console.log("Categories found:", categories.length);
+    // console.log("Categories found:", categories.length);
 
     // Just format the basic data we need
     const formattedCategories = categories
@@ -393,10 +393,10 @@ const getDiningMenuItems = async (req, res) => {
       }))
       .filter((category) => category.items.length > 0); // Only return categories with items
 
-    console.log(
-      "Sending categories with items:",
-      formattedCategories.map((cat) => `${cat.name}: ${cat.items.length} items`)
-    );
+    // console.log(
+    //   "Sending categories with items:",
+    //   formattedCategories.map((cat) => `${cat.name}: ${cat.items.length} items`)
+    // );
 
     res.json({
       success: true,
@@ -585,6 +585,12 @@ const getBranchOrders = async (req, res) => {
         image: item.itemId.image,
         price: item.price,
         quantity: item.quantity,
+        cancelledQuantity: item.cancelledQuantity || 0, // Add this
+        returnedQuantity: item.returnedQuantity || 0, // Add this
+        cancelReason: item.cancelReason, // Optionally add these too
+        returnReason: item.returnReason,
+        cancelledAt: item.cancelledAt,
+        returnedAt: item.returnedAt,
       }));
       return orderObj;
     });

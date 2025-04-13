@@ -1,4 +1,4 @@
-// src/contexts/KitchenSocketContext.jsx
+// src/contexts/KitchenSocketContext.js
 import React, { createContext, useContext, useState, useEffect } from "react";
 import io from "socket.io-client";
 
@@ -54,6 +54,20 @@ export function KitchenSocketProvider({ children }) {
     newSocket.on("payment_requested", (data) => {
       console.log("Payment request received:", data);
       setPaymentRequestEvents((prev) => [...prev, data]);
+    });
+
+    // Add handler for order_updated event
+    newSocket.on("order_updated", (data) => {
+      console.log("Order updated event received:", data);
+
+      if (data.items) {
+        console.log("Updated order items:", data.items);
+      }
+
+      // Force refresh of orders
+      if (typeof window.fetchKitchenOrders === "function") {
+        window.fetchKitchenOrders();
+      }
     });
 
     setSocket(newSocket);

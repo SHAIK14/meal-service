@@ -32,6 +32,18 @@ const diningOrderSchema = new mongoose.Schema(
           type: Number,
           required: true,
         },
+        returnedQuantity: {
+          type: Number,
+          default: 0,
+        },
+        returnReason: String,
+        returnedAt: Date,
+        cancelledQuantity: {
+          type: Number,
+          default: 0,
+        },
+        cancelReason: String,
+        cancelledAt: Date,
       },
     ],
     totalAmount: {
@@ -40,8 +52,23 @@ const diningOrderSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["pending", "accepted", "served"],
+      enum: [
+        "pending",
+        "admin_approved",
+        "in_preparation",
+        "ready_for_pickup",
+        "served",
+        "canceled",
+      ],
       default: "pending",
+    },
+    statusTimestamps: {
+      pending: { type: Date, default: Date.now },
+      admin_approved: Date,
+      in_preparation: Date,
+      ready_for_pickup: Date,
+      served: Date,
+      canceled: Date,
     },
     notes: String,
   },

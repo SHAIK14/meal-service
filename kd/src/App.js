@@ -9,8 +9,8 @@ import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import Dashboard from "./pages/Dashboard";
 import CurrentOrder from "./components/CurrentOrder";
-import Alacarte from "./pages/Alacarte";
-import TableManagement from "./pages/TableManagement";
+import DiningKitchen from "./pages/DiningKitchen";
+import DiningAdmin from "./pages/DiningAdmin";
 import TopNav from "./components/TopNav";
 import Kot from "./pages/kot";
 import Login from "./components/Auth/Login";
@@ -57,8 +57,11 @@ const App = () => {
                     <Routes>
                       <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/orders" element={<CurrentOrder />} />
-                      <Route path="/alacarte" element={<Alacarte />} />
-                      <Route path="/tables" element={<TableManagement />} />
+                      <Route
+                        path="/diningKitchen"
+                        element={<DiningKitchen />}
+                      />
+                      <Route path="/tables" element={<DiningAdmin />} />
                       <Route path="/kot" element={<Kot />} />
                       <Route path="/catering" element={<CateringDashboard />} />
                       {/* Takeaway Routes */}
