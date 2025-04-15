@@ -18,6 +18,7 @@ const MenuLayout = () => {
   const [cart, setCart] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [showOrders, setShowOrders] = useState(false);
+  const [orderCounter, setOrderCounter] = useState(0); // Track successful orders
   const { sessionDetails, isConnected } = useDining();
 
   const handleAddToCart = (item, quantity) => {
@@ -37,6 +38,13 @@ const MenuLayout = () => {
   // Function to clear the cart
   const clearCart = () => {
     setCart([]);
+  };
+
+  // Function to handle successful order placement
+  const handleOrderSuccess = () => {
+    clearCart();
+    setOrderCounter((prev) => prev + 1); // Increment order counter to reset quantities
+    console.log("Order placed successfully, resetting quantities");
   };
 
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -122,6 +130,7 @@ const MenuLayout = () => {
           <Items
             activeCategory={activeCategory}
             onAddToCart={handleAddToCart}
+            orderPlaced={orderCounter} // Pass the order counter to reset quantities
           />
         </div>
         <div className={!showOrders ? "hidden" : "block"}>
@@ -162,6 +171,7 @@ const MenuLayout = () => {
         cart={cart}
         onQuantityChange={handleAddToCart}
         onClearCart={clearCart}
+        onOrderSuccess={handleOrderSuccess} // Pass the new callback
       />
     </div>
   );

@@ -3,6 +3,22 @@ const Session = require("../../models/menu/session");
 const DiningOrder = require("../../models/menu/DiningOrder");
 const Branch = require("../../models/admin/Branch");
 const socketService = require("../../services/socket/socketService");
+
+const hasActiveItems = (order) => {
+  // Check if order and order.items exist before calling .some()
+  if (!order || !order.items || !Array.isArray(order.items)) {
+    return false;
+  }
+
+  // Check if the order has at least one item with effective quantity > 0
+  return order.items.some((item) => {
+    const effectiveQty =
+      item.quantity -
+      (item.cancelledQuantity || 0) -
+      (item.returnedQuantity || 0);
+    return effectiveQty > 0;
+  });
+};
 exports.getBranchTables = async (req, res) => {
   try {
     const branchId = req.branch._id;
@@ -180,9 +196,10 @@ exports.completeSession = async (req, res) => {
     }
 
     // Check if all orders are served
+    // Check if all orders are served or canceled
     const pendingOrders = await DiningOrder.exists({
       sessionId,
-      status: { $ne: "served" },
+      status: { $nin: ["served", "canceled"] },
     });
 
     if (pendingOrders) {
@@ -329,6 +346,7 @@ exports.processOrderItemAction = async (req, res) => {
       `Processing ${actionType} action for order ${orderId}, item index ${itemIndex}`
     );
     console.log(`Quantity: ${quantity}, Reason: ${reason}`);
+
     // Validate input
     if (!quantity || quantity < 1) {
       return res.status(400).json({
@@ -381,7 +399,12 @@ exports.processOrderItemAction = async (req, res) => {
     const item = order.items[itemIndex];
 
     // Check if return/cancel quantity is valid
-    if (quantity > item.quantity - (item.returnedQuantity || 0)) {
+    if (
+      quantity >
+      item.quantity -
+        (item.returnedQuantity || 0) -
+        (item.cancelledQuantity || 0)
+    ) {
       return res.status(400).json({
         success: false,
         message: "Action quantity exceeds available quantity",
@@ -411,6 +434,23 @@ exports.processOrderItemAction = async (req, res) => {
     const actionAmount = item.price * quantity;
     order.totalAmount -= actionAmount;
     console.log("Order after changes (before save):", JSON.stringify(order));
+
+    // Check if there are any active items left after this change
+    const hadActiveItems = hasActiveItems(order);
+
+    // If no active items remain and order is not already canceled/served, mark as canceled
+    let wasStatusChanged = false;
+    if (!hadActiveItems && !["canceled", "served"].includes(order.status)) {
+      console.log(
+        `No active items left in order ${orderId}, marking as canceled`
+      );
+      order.status = "canceled";
+      order.statusTimestamps = {
+        ...order.statusTimestamps,
+        canceled: new Date(),
+      };
+      wasStatusChanged = true;
+    }
 
     await order.save();
 
@@ -443,11 +483,32 @@ exports.processOrderItemAction = async (req, res) => {
     // Notify kitchen
     socketService.emitToRoom(kitchenRoom, kitchenEventName, actionData);
 
+    // If the order status was changed to canceled, emit status update event
+    if (wasStatusChanged) {
+      // Emit to kitchen
+      socketService.emitToRoom(kitchenRoom, "order_status_updated", {
+        orderId: order._id,
+        tableName: order.tableName,
+        status: "canceled",
+        timestamp: order.statusTimestamps.canceled,
+      });
+
+      // Emit to customer - for customer, we use the same status
+      socketService.emitToRoom(tableRoom, "order_status_updated", {
+        orderId: order._id,
+        status: "canceled",
+      });
+
+      console.log(`Order ${orderId} auto-canceled and notified all parties`);
+    }
+
     // Add this additional event to refresh kitchen view completely
     // This is especially important for orders that are already in the kitchen view
     if (
       actionType === "cancel" &&
-      (order.status === "admin_approved" || order.status === "in_preparation")
+      ["admin_approved", "in_preparation", "ready_for_pickup"].includes(
+        order.status
+      )
     ) {
       socketService.emitToRoom(kitchenRoom, "order_updated", {
         orderId: order._id,

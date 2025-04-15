@@ -198,14 +198,18 @@ function DiningAdmin() {
                 if (actionType === "cancel") {
                   updatedItems[data.itemIndex] = {
                     ...updatedItems[data.itemIndex],
-                    cancelledQuantity: data.quantity,
+                    cancelledQuantity:
+                      (updatedItems[data.itemIndex].cancelledQuantity || 0) +
+                      data.quantity,
                     cancelReason: data.reason,
                     cancelledAt: new Date(),
                   };
                 } else {
                   updatedItems[data.itemIndex] = {
                     ...updatedItems[data.itemIndex],
-                    returnedQuantity: data.quantity,
+                    returnedQuantity:
+                      (updatedItems[data.itemIndex].returnedQuantity || 0) +
+                      data.quantity,
                     returnReason: data.reason,
                     returnedAt: new Date(),
                   };
@@ -229,6 +233,22 @@ function DiningAdmin() {
               totalAmount: data.newSessionTotal || prev.session.totalAmount,
             },
           }));
+
+          // Force refresh of the Orders modal to show changes immediately
+          if (showOrdersModal) {
+            setShowOrdersModal(false);
+            setTimeout(() => {
+              setShowOrdersModal(true);
+            }, 50);
+          }
+          setTimeout(() => {
+            const updatedOrder = updatedOrders.find(
+              (o) => o._id === data.orderId
+            );
+            if (updatedOrder && !hasActiveItems(updatedOrder)) {
+              autoUpdateEmptyOrder(data.orderId);
+            }
+          }, 100);
         }
       }
     };
@@ -247,7 +267,7 @@ function DiningAdmin() {
         socket.off("order_item_returned");
       };
     }
-  }, [socket, selectedTable, tableSession]);
+  }, [socket, selectedTable, tableSession, showOrdersModal]);
 
   // Handle table status updates
   useEffect(() => {
@@ -460,6 +480,52 @@ function DiningAdmin() {
       alert("Error updating order status");
     }
   };
+  // Add this function to auto-cancel orders when all items are cancelled
+  const autoUpdateEmptyOrder = async (orderId) => {
+    // Find the order in the current session
+    const order = tableSession.orders.find((o) => o._id === orderId);
+
+    // If no items are active and order is not already cancelled/served
+    if (
+      order &&
+      !hasActiveItems(order) &&
+      !["canceled", "served"].includes(order.status)
+    ) {
+      console.log("Auto-cancelling empty order:", orderId);
+
+      try {
+        // Call the existing API to update order status
+        const response = await updateKitchenOrderStatus(orderId, "canceled");
+
+        if (response.success) {
+          console.log("Order auto-cancelled successfully");
+
+          // Update local state immediately for better UX
+          setTableSession((prev) => {
+            if (!prev) return prev;
+
+            return {
+              ...prev,
+              orders: prev.orders.map((o) =>
+                o._id === orderId
+                  ? {
+                      ...o,
+                      status: "canceled",
+                      statusTimestamps: {
+                        ...o.statusTimestamps,
+                        canceled: new Date(),
+                      },
+                    }
+                  : o
+              ),
+            };
+          });
+        }
+      } catch (error) {
+        console.error("Failed to auto-cancel empty order:", error);
+      }
+    }
+  };
 
   const handleItemAction = (order, itemIndex, item) => {
     setSelectedOrder(order);
@@ -515,6 +581,17 @@ function DiningAdmin() {
             actionType === "return" ? "returned" : "cancelled"
           } successfully`
         );
+        // Add this code to check for auto-cancellation
+        setTimeout(() => {
+          if (tableSession) {
+            const updatedOrder = tableSession.orders.find(
+              (o) => o._id === selectedOrder._id
+            );
+            if (updatedOrder && !hasActiveItems(updatedOrder)) {
+              autoUpdateEmptyOrder(selectedOrder._id);
+            }
+          }
+        }, 100);
         setShowItemActionModal(false);
       } else {
         alert(response.message || `Failed to ${actionType} item`);
@@ -559,7 +636,34 @@ function DiningAdmin() {
       alert("Error generating invoice");
     }
   };
+  const cancelAllEmptyOrders = async () => {
+    let hasEmptyOrders = false;
 
+    if (!tableSession?.orders) return hasEmptyOrders;
+
+    // Find all orders that are pending but have no active items
+    const emptyOrders = tableSession.orders.filter(
+      (order) =>
+        !hasActiveItems(order) && !["canceled", "served"].includes(order.status)
+    );
+
+    if (emptyOrders.length > 0) {
+      hasEmptyOrders = true;
+      console.log(`Found ${emptyOrders.length} empty orders to cancel`);
+
+      // Cancel each empty order
+      for (const order of emptyOrders) {
+        try {
+          await updateKitchenOrderStatus(order._id, "canceled");
+          console.log(`Auto-cancelled empty order: ${order._id}`);
+        } catch (error) {
+          console.error(`Failed to cancel empty order ${order._id}:`, error);
+        }
+      }
+    }
+
+    return hasEmptyOrders;
+  };
   const handlePaymentConfirm = async () => {
     if (!tableSession?.session?._id) {
       alert("No active session found");
@@ -567,6 +671,15 @@ function DiningAdmin() {
     }
 
     try {
+      // First identify and cancel all empty orders
+      const hasEmptyOrders = await cancelAllEmptyOrders();
+
+      // Small delay to ensure server has processed cancellations
+      if (hasEmptyOrders) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+
+      // Then complete the session
       const response = await completeSession(tableSession.session._id);
       if (response.success) {
         // Close modals
@@ -589,8 +702,30 @@ function DiningAdmin() {
     return new Date(timestamp).toLocaleTimeString();
   };
 
-  const getNextAction = (status) => {
-    switch (status) {
+  const hasActiveItems = (order) => {
+    // Check if order and order.items exist before calling .some()
+    if (!order || !order.items || !Array.isArray(order.items)) {
+      return false;
+    }
+
+    // Check if the order has at least one item with quantity > 0
+    return order.items.some((item) => {
+      const effectiveQuantity =
+        item.quantity -
+        (item.cancelledQuantity || 0) -
+        (item.returnedQuantity || 0);
+      return effectiveQuantity > 0;
+    });
+  };
+
+  const getNextAction = (order) => {
+    // First check if the order has any active items
+    if (!order || !hasActiveItems(order) || order.status === "canceled") {
+      return null; // Don't show any action buttons for empty or canceled orders
+    }
+
+    // Original switch case for different statuses
+    switch (order.status) {
       case "pending":
         return {
           label: "Approve",
@@ -615,7 +750,6 @@ function DiningAdmin() {
         return null;
     }
   };
-
   const getStatusLabel = (status) => {
     switch (status) {
       case "pending":
@@ -826,20 +960,20 @@ function DiningAdmin() {
 
                       {/* Next action button based on current status */}
                       <div className="order-actions">
-                        {getNextAction(order.status) && (
+                        {getNextAction(order) && (
                           <button
                             className={`status-button ${
-                              getNextAction(order.status).color
+                              getNextAction(order).color
                             }`}
                             onClick={() =>
                               handleOrderStatusChange(
                                 order._id,
-                                getNextAction(order.status).action
+                                getNextAction(order).action
                               )
                             }
                           >
-                            {getNextAction(order.status).icon}
-                            {getNextAction(order.status).label}
+                            {getNextAction(order).icon}
+                            {getNextAction(order).label}
                           </button>
                         )}
                       </div>
@@ -859,67 +993,87 @@ function DiningAdmin() {
                             </tr>
                           </thead>
                           <tbody>
-                            {order.items.map((item, idx) => {
-                              const effectiveQuantity =
-                                getEffectiveQuantity(item);
-                              const isReturned =
-                                (item.returnedQuantity || 0) > 0;
-                              const isCancelled =
-                                (item.cancelledQuantity || 0) > 0;
+                            {order.items
+                              .filter((item) => {
+                                const effectiveQuantity =
+                                  getEffectiveQuantity(item);
+                                return effectiveQuantity > 0;
+                              })
+                              .map((item, idx) => {
+                                const effectiveQuantity =
+                                  getEffectiveQuantity(item);
+                                const isReturned =
+                                  (item.returnedQuantity || 0) > 0;
+                                const isCancelled =
+                                  (item.cancelledQuantity || 0) > 0;
 
-                              return (
-                                <tr
-                                  key={idx}
-                                  className={
-                                    isReturned || isCancelled
-                                      ? "returned-item"
-                                      : ""
-                                  }
-                                >
-                                  <td>{item.name}</td>
-                                  <td>
-                                    {effectiveQuantity}
-                                    {isReturned && (
-                                      <span className="returned-qty">
-                                        (-{item.returnedQuantity} returned)
-                                      </span>
-                                    )}
-                                    {isCancelled && (
-                                      <span className="returned-qty">
-                                        (-{item.cancelledQuantity} cancelled)
-                                      </span>
-                                    )}
-                                  </td>
-                                  <td>{item.price} SAR</td>
-                                  <td>
-                                    {(effectiveQuantity * item.price).toFixed(
-                                      2
-                                    )}{" "}
-                                    SAR
-                                  </td>
-                                  <td>
-                                    {effectiveQuantity > 0 && (
-                                      <button
-                                        className="return-item-btn"
-                                        onClick={() =>
-                                          handleItemAction(order, idx, item)
-                                        }
-                                      >
-                                        {order.status === "served" ? (
-                                          <>
-                                            <FaUndo /> Return
-                                          </>
-                                        ) : (
-                                          <>
-                                            <FaTrash /> Cancel
-                                          </>
+                                return (
+                                  <tr
+                                    key={idx}
+                                    className={
+                                      isReturned || isCancelled
+                                        ? "returned-item"
+                                        : ""
+                                    }
+                                  >
+                                    <td>{item.name}</td>
+                                    <td>
+                                      {effectiveQuantity}
+                                      {isReturned && (
+                                        <span className="returned-qty">
+                                          (-{item.returnedQuantity} returned)
+                                        </span>
+                                      )}
+                                      {isCancelled && (
+                                        <span className="returned-qty">
+                                          (-{item.cancelledQuantity} cancelled)
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td>{item.price} SAR</td>
+                                    <td>
+                                      {(effectiveQuantity * item.price).toFixed(
+                                        2
+                                      )}{" "}
+                                      SAR
+                                    </td>
+                                    <td>
+                                      {effectiveQuantity > 0 &&
+                                        order.status !== "canceled" && (
+                                          <button
+                                            className="return-item-btn"
+                                            onClick={() =>
+                                              handleItemAction(order, idx, item)
+                                            }
+                                          >
+                                            {order.status === "served" ? (
+                                              <>
+                                                <FaUndo /> Return
+                                              </>
+                                            ) : (
+                                              <>
+                                                <FaTrash /> Cancel
+                                              </>
+                                            )}
+                                          </button>
                                         )}
-                                      </button>
-                                    )}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+
+                            {!hasActiveItems(order) &&
+                              order.status !== "canceled" && (
+                                <tr>
+                                  <td
+                                    colSpan="5"
+                                    className="text-center text-gray-500 italic"
+                                  >
+                                    No active items in this order. It will be
+                                    automatically canceled.
                                   </td>
                                 </tr>
-                              );
-                            })}
+                              )}
                           </tbody>
                           <tfoot>
                             <tr>

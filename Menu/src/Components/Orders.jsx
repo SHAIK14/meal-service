@@ -1,5 +1,5 @@
 // src/components/Orders.jsx
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useDining } from "../contexts/DiningContext";
 import { requestPayment } from "../utils/api";
 
@@ -27,10 +27,35 @@ const Orders = () => {
         }
       };
 
+      // Listen for order status updates and map them to customer-friendly statuses
+      const handleOrderStatusUpdate = (data) => {
+        console.log("Order status update received:", data);
+
+        // Map backend status to customer-friendly status
+        let customerStatus = data.status;
+        if (data.status === "admin_approved") customerStatus = "accepted";
+        if (
+          data.status === "in_preparation" ||
+          data.status === "ready_for_pickup"
+        )
+          customerStatus = "preparing";
+
+        // Update the orders with the customer-friendly status
+        updateOrders((prevOrders) =>
+          prevOrders.map((order) =>
+            order._id === data.orderId
+              ? { ...order, status: customerStatus }
+              : order
+          )
+        );
+      };
+
       socket.on("payment_request_confirmed", handlePaymentConfirmation);
+      socket.on("order_status_updated", handleOrderStatusUpdate);
 
       return () => {
         socket.off("payment_request_confirmed", handlePaymentConfirmation);
+        socket.off("order_status_updated", handleOrderStatusUpdate);
       };
     }
   }, [socket, sessionDetails?.id, updateSessionDetails]);
@@ -65,14 +90,41 @@ const Orders = () => {
     }
   };
 
+  // Map backend statuses to customer-friendly display statuses
+  const getDisplayStatus = (status) => {
+    switch (status) {
+      case "pending":
+        return "Pending";
+      case "admin_approved":
+        return "Accepted";
+      case "in_preparation":
+      case "ready_for_pickup":
+        return "Preparing";
+      case "served":
+        return "Served";
+      case "canceled":
+        return "Canceled";
+      default:
+        return status.charAt(0).toUpperCase() + status.slice(1);
+    }
+  };
+
   const getStatusColor = (status) => {
+    // Map both backend and customer-friendly statuses
     switch (status) {
       case "pending":
         return "text-yellow-500";
       case "accepted":
+      case "admin_approved":
+        return "text-blue-500";
+      case "preparing":
+      case "in_preparation":
+      case "ready_for_pickup":
         return "text-blue-500";
       case "served":
         return "text-green-500";
+      case "canceled":
+        return "text-red-500";
       default:
         return "text-gray-500";
     }
@@ -139,28 +191,50 @@ const Orders = () => {
                 {formatTime(order.createdAt)}
               </span>
               <span className={`font-medium ${getStatusColor(order.status)}`}>
-                {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                {getDisplayStatus(order.status)}
               </span>
             </div>
 
             {/* Order Items */}
             <div className="space-y-3">
-              {order.items.map((item, index) => (
-                <div
-                  key={`${order._id}-${index}`}
-                  className="flex items-center justify-between py-2 border-b last:border-0"
-                >
-                  <div>
-                    <p className="font-medium">{item.name}</p>
-                    <p className="text-sm text-gray-500">
-                      {item.quantity} × {item.price} SAR
+              {order.items.map((item, index) => {
+                // Calculate effective quantity after cancellations
+                const effectiveQty =
+                  item.quantity -
+                  (item.cancelledQuantity || 0) -
+                  (item.returnedQuantity || 0);
+                const totalItemPrice = effectiveQty * item.price;
+
+                // If item is fully cancelled, don't display it
+                if (effectiveQty <= 0) return null;
+
+                return (
+                  <div
+                    key={`${order._id}-${index}`}
+                    className="flex items-center justify-between py-2 border-b last:border-0"
+                  >
+                    <div>
+                      <p className="font-medium">{item.name}</p>
+                      <p className="text-sm text-gray-500">
+                        {effectiveQty} × {item.price} SAR
+                      </p>
+                      {item.cancelledQuantity > 0 && (
+                        <p className="text-xs text-red-500">
+                          ({item.cancelledQuantity} cancelled)
+                        </p>
+                      )}
+                      {item.returnedQuantity > 0 && (
+                        <p className="text-xs text-red-500">
+                          ({item.returnedQuantity} returned)
+                        </p>
+                      )}
+                    </div>
+                    <p className="font-medium">
+                      {totalItemPrice.toFixed(2)} SAR
                     </p>
                   </div>
-                  <p className="font-medium">
-                    {(item.quantity * item.price).toFixed(2)} SAR
-                  </p>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Order Total */}

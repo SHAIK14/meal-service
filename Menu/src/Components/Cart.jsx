@@ -1,11 +1,17 @@
-/* eslint-disable react/prop-types */
 // src/components/Cart.jsx
 import { useState, useEffect } from "react";
 import { FaTimes, FaShoppingCart } from "react-icons/fa";
 import { useDining } from "../contexts/DiningContext";
 import { createDiningOrder } from "../utils/api";
 
-const Cart = ({ isOpen, onClose, cart, onQuantityChange, onClearCart }) => {
+const Cart = ({
+  isOpen,
+  onClose,
+  cart,
+  onQuantityChange,
+  onClearCart,
+  onOrderSuccess,
+}) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const {
@@ -99,23 +105,28 @@ const Cart = ({ isOpen, onClose, cart, onQuantityChange, onClearCart }) => {
         console.log("Order created successfully:", response.data);
         const newOrder = response.data.order;
 
-        // Update session details
+        // Update session details with new total
         updateSessionDetails({
           id: sessionDetails?.id,
           totalAmount: response.data.sessionTotal || 0,
           paymentRequested: sessionDetails?.paymentRequested || false,
         });
 
-        // Safely update orders array
-        const existingOrders = Array.isArray(sessionDetails?.orders)
-          ? sessionDetails.orders
-          : [];
+        // Get existing orders and add the new one at the beginning
+        const existingOrders = sessionDetails?.orders || [];
+
+        // Simple approach: Just add the new order to the beginning of the existing orders
         updateOrders([newOrder, ...existingOrders]);
 
         alert("Order placed successfully!");
 
         // Clear the cart after successful order
         onClearCart();
+
+        // Notify parent component about successful order
+        if (onOrderSuccess) {
+          onOrderSuccess();
+        }
 
         onClose(); // Close the cart modal
       } else {

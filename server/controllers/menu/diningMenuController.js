@@ -6,8 +6,6 @@ const Item = require("../../models/admin/Item");
 const Session = require("../../models/menu/session");
 const socketService = require("../../services/socket/socketService");
 
-// Validate QR code access
-// Modify validateDiningAccess function
 const validateDiningAccess = async (req, res) => {
   try {
     const { pincode, tableName } = req.params;

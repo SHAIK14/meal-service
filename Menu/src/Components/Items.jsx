@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from "react";
+/* eslint-disable react/prop-types */
+// src/components/Items.jsx
+import { useState, useEffect } from "react";
 import { getDiningMenuItems } from "../utils/api";
 import { useDining } from "../contexts/DiningContext";
 
-const Items = ({ activeCategory, onAddToCart }) => {
+const Items = ({ activeCategory, onAddToCart, orderPlaced = 0 }) => {
   const [categoryItems, setCategoryItems] = useState([]);
   const [quantities, setQuantities] = useState({});
   const { branchDetails } = useDining();
@@ -27,6 +29,14 @@ const Items = ({ activeCategory, onAddToCart }) => {
       isMounted = false;
     };
   }, [branchDetails?.id, activeCategory]);
+
+  // Reset quantities when an order is successfully placed
+  useEffect(() => {
+    if (orderPlaced > 0) {
+      console.log("Order was placed, resetting all item quantities");
+      setQuantities({});
+    }
+  }, [orderPlaced]);
 
   const handleQuantityChange = (itemId, newQuantity) => {
     setQuantities((prev) => ({
