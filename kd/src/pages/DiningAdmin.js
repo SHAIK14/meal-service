@@ -627,9 +627,23 @@ function DiningAdmin() {
 
     try {
       const response = await generateInvoice(tableSession.session._id);
+      console.log("Invoice response:", response);
+
       if (response.success) {
-        setInvoiceData(response.data);
+        // The data structure appears to be:
+        // response = { success: true, data: { success: true, data: {...actual invoice data...} } }
+        let processedData = response.data;
+
+        // Check if we need to drill down one more level
+        if (processedData.success && processedData.data) {
+          processedData = processedData.data;
+        }
+
+        console.log("Final processed invoice data:", processedData);
+        setInvoiceData(processedData);
         setShowInvoiceModal(true);
+      } else {
+        alert(response.message || "Failed to generate invoice");
       }
     } catch (error) {
       console.error("Invoice generation error:", error);
@@ -889,7 +903,8 @@ function DiningAdmin() {
               <div>
                 <h2>Orders for {selectedTable.name}</h2>
                 <p className="session-total">
-                  Session Total: {tableSession.session.totalAmount.toFixed(2)}{" "}
+                  Session Total:
+                  {tableSession?.session?.totalAmount?.toFixed(2) || "0.00"}
                   SAR
                 </p>
               </div>
@@ -1032,9 +1047,10 @@ function DiningAdmin() {
                                     </td>
                                     <td>{item.price} SAR</td>
                                     <td>
-                                      {(effectiveQuantity * item.price).toFixed(
-                                        2
-                                      )}{" "}
+                                      {(
+                                        effectiveQuantity *
+                                          (item?.price || 0) || 0
+                                      ).toFixed(2)}{" "}
                                       SAR
                                     </td>
                                     <td>
@@ -1082,7 +1098,7 @@ function DiningAdmin() {
                               </td>
                               <td colSpan="2">
                                 <strong>
-                                  {order.totalAmount.toFixed(2)} SAR
+                                  {(order?.totalAmount || 0).toFixed(2)} SAR
                                 </strong>
                               </td>
                             </tr>
@@ -1233,24 +1249,25 @@ function DiningAdmin() {
 
             <div className="invoice-content">
               <div className="invoice-header">
-                <h3>{invoiceData.branchName}</h3>
-                <p>{invoiceData.tableName}</p>
-                <p>VAT: {invoiceData.vatNumber}</p>
+                <h3>{invoiceData?.branchName || "Restaurant"}</h3>
+                <p>{invoiceData?.tableName || ""}</p>
+                <p>VAT: {invoiceData?.vatNumber || ""}</p>
               </div>
 
               <div className="invoice-info">
                 <p>
-                  <strong>Invoice No:</strong> {invoiceData.invoiceNo}
+                  <strong>Invoice No:</strong> {invoiceData?.invoiceNo || ""}
                 </p>
                 <p>
                   <strong>Date:</strong>{" "}
-                  {new Date(invoiceData.date).toLocaleString()}
+                  {invoiceData?.date
+                    ? new Date(invoiceData.date).toLocaleString()
+                    : "-"}
                 </p>
                 <p>
-                  <strong>Table:</strong> {invoiceData.tableName}
+                  <strong>Table:</strong> {invoiceData?.tableName || ""}
                 </p>
               </div>
-
               <table className="invoice-table">
                 <thead>
                   <tr>
@@ -1261,16 +1278,18 @@ function DiningAdmin() {
                   </tr>
                 </thead>
                 <tbody>
-                  {invoiceData.orders &&
-                    invoiceData.orders.map((order) =>
-                      order.items.map((item, idx) => (
-                        <tr key={`${order.orderId}-${idx}`}>
-                          <td>{item.name}</td>
-                          <td>{item.quantity}</td>
-                          <td>{item.price} SAR</td>
-                          <td>{item.total.toFixed(2)} SAR</td>
-                        </tr>
-                      ))
+                  {invoiceData?.orders &&
+                    invoiceData.orders.map(
+                      (order) =>
+                        order.items &&
+                        order.items.map((item, idx) => (
+                          <tr key={`${order.orderId}-${idx}`}>
+                            <td>{item.name}</td>
+                            <td>{item.quantity}</td>
+                            <td>{item.price} SAR</td>
+                            <td>{(item.total || 0).toFixed(2)} SAR</td>
+                          </tr>
+                        ))
                     )}
                 </tbody>
                 <tfoot>
@@ -1279,7 +1298,9 @@ function DiningAdmin() {
                       <strong>Total Amount:</strong>
                     </td>
                     <td>
-                      <strong>{invoiceData.totalAmount.toFixed(2)} SAR</strong>
+                      <strong>
+                        {(invoiceData?.totalAmount || 0).toFixed(2)} SAR
+                      </strong>
                     </td>
                   </tr>
                 </tfoot>

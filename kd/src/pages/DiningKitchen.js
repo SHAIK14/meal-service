@@ -14,6 +14,9 @@ import {
   FaUtensils,
   FaHourglass,
   FaBell,
+  FaFire,
+  FaChevronDown,
+  FaChevronUp,
 } from "react-icons/fa";
 
 function DiningKitchen() {
@@ -24,6 +27,7 @@ function DiningKitchen() {
   const [error, setError] = useState(null);
   const [orders, setOrders] = useState({});
   const [ordersToDisplay, setOrdersToDisplay] = useState([]);
+  const [expandedOrders, setExpandedOrders] = useState({}); // Track expanded state of orders
 
   // Get branchId from localStorage
   const branchId = localStorage.getItem("branchId");
@@ -582,25 +586,48 @@ function DiningKitchen() {
     setModalOpen(null);
   };
 
-  const handleStartPreparation = async (orderId) => {
-    try {
-      const response = await updateKitchenOrderStatus(
-        orderId,
-        "in_preparation"
-      );
-      if (response.success) {
-        // Socket will update the UI
-        console.log("Order moved to preparation:", orderId);
-      } else {
-        throw new Error(response.message);
+  // New handler for order expansion toggle
+  const handleOrderClick = async (orderId) => {
+    setExpandedOrders((prev) => {
+      const newState = { ...prev };
+      const isCurrentlyExpanded = !!prev[orderId];
+
+      // Toggle expansion state
+      newState[orderId] = !isCurrentlyExpanded;
+
+      return newState;
+    });
+
+    // Check the current order in the list
+    const order = ordersToDisplay.find((order) => order._id === orderId);
+
+    // If order is being expanded AND it's in admin_approved status, update to in_preparation
+    if (
+      !expandedOrders[orderId] &&
+      order &&
+      order.status === "admin_approved"
+    ) {
+      try {
+        const response = await updateKitchenOrderStatus(
+          orderId,
+          "in_preparation"
+        );
+        if (response.success) {
+          console.log("Order moved to preparation:", orderId);
+        } else {
+          throw new Error(response.message);
+        }
+      } catch (error) {
+        console.error("Error starting preparation:", error);
+        alert("Failed to update order status. Please try again.");
       }
-    } catch (error) {
-      console.error("Error starting preparation:", error);
-      alert("Failed to update order status. Please try again.");
     }
   };
 
-  const handleMarkAsReady = async (orderId) => {
+  const handleMarkAsReady = async (orderId, e) => {
+    // Stop propagation to prevent toggling expansion state
+    if (e) e.stopPropagation();
+
     try {
       const response = await updateKitchenOrderStatus(
         orderId,
@@ -666,29 +693,16 @@ function DiningKitchen() {
     return "Item #" + (item._id ? item._id.slice(-4) : "????");
   };
 
-  const renderOrderActions = (order) => {
-    if (order.status === "admin_approved") {
-      return (
-        <button
-          className="start-preparation-btn"
-          onClick={() => handleStartPreparation(order._id)}
-        >
-          <FaUtensils className="action-icon" />
-          Start Preparation
-        </button>
-      );
-    } else if (order.status === "in_preparation") {
-      return (
-        <button
-          className="ready-pickup-btn"
-          onClick={() => handleMarkAsReady(order._id)}
-        >
-          <FaBell className="action-icon" />
-          Ready for Pickup
-        </button>
-      );
+  // Function to render spice level as emoji
+  const renderSpiceLevel = (level) => {
+    if (!level || level === 0) return null;
+
+    const emojis = [];
+    for (let i = 0; i < level; i++) {
+      emojis.push(<FaFire key={i} className="text-red-500 spice-icon" />);
     }
-    return null;
+
+    return <span className="spice-level">{emojis}</span>;
   };
 
   const formatTime = (dateString) => {
@@ -760,7 +774,13 @@ function DiningKitchen() {
         {ordersToProcess.length > 0 ? (
           <div className="orders-grid">
             {ordersToProcess.map((order) => (
-              <div key={order._id} className={`order-card ${order.status}`}>
+              <div
+                key={order._id}
+                className={`order-card ${order.status} ${
+                  order.status === "admin_approved" ? "new-order" : ""
+                }`}
+                onClick={() => handleOrderClick(order._id)}
+              >
                 <div className="order-header">
                   <div className="order-title">
                     <span className="table-name">Table {order.tableName}</span>
@@ -781,58 +801,95 @@ function DiningKitchen() {
                           : order.statusTimestamps?.in_preparation
                       )}
                     </span>
+                    <span className="expand-indicator">
+                      {expandedOrders[order._id] ? (
+                        <FaChevronUp />
+                      ) : (
+                        <FaChevronDown />
+                      )}
+                    </span>
                   </div>
                 </div>
 
-                <div className="order-items-container">
-                  <h3>Items</h3>
-                  <ul className="order-items">
-                    {order.items
-                      .filter((item) => {
-                        // Verify we have a valid item to work with
-                        if (!item) {
-                          console.error(
-                            "Encountered null item in order:",
-                            order._id
+                {expandedOrders[order._id] && (
+                  <div className="order-items-container">
+                    <h3>Items</h3>
+                    <ul className="order-items">
+                      {order.items
+                        .filter((item) => {
+                          // Verify we have a valid item to work with
+                          if (!item) {
+                            console.error(
+                              "Encountered null item in order:",
+                              order._id
+                            );
+                            return false;
+                          }
+
+                          // Calculate effective quantity after cancellations
+                          const effectiveQty = getEffectiveQuantity(item);
+
+                          // Only show items with positive effective quantity
+                          return effectiveQty > 0;
+                        })
+                        .map((item, i) => {
+                          const effectiveQty = getEffectiveQuantity(item);
+                          const itemName = getItemName(item);
+                          console.log(
+                            `Rendering item: ${itemName}, qty=${
+                              item.quantity
+                            }, cancelled=${
+                              item.cancelledQuantity || 0
+                            }, effective=${effectiveQty}, spiceLevel=${
+                              item.spiceLevel || 0
+                            }`
                           );
-                          return false;
-                        }
 
-                        // Calculate effective quantity after cancellations
-                        const effectiveQty = getEffectiveQuantity(item);
-
-                        // Only show items with positive effective quantity
-                        return effectiveQty > 0;
-                      })
-                      .map((item, i) => {
-                        const effectiveQty = getEffectiveQuantity(item);
-                        const itemName = getItemName(item);
-                        console.log(
-                          `Rendering item: ${itemName}, qty=${
-                            item.quantity
-                          }, cancelled=${
-                            item.cancelledQuantity || 0
-                          }, effective=${effectiveQty}`
-                        );
-
-                        return (
-                          <li key={i} className="order-item">
-                            <span className="item-quantity">
-                              {effectiveQty}×
-                            </span>
-                            <span className="item-name">{itemName}</span>
-                            {item.cancelledQuantity > 0 && (
-                              <span className="item-cancelled-note">
-                                ({item.cancelledQuantity} cancelled)
+                          return (
+                            <li key={i} className="order-item">
+                              <span className="item-quantity">
+                                {effectiveQty}×
                               </span>
-                            )}
-                          </li>
-                        );
-                      })}
-                  </ul>
-                </div>
+                              <div className="item-details">
+                                <span className="item-name">{itemName}</span>
+                                {item.spiceLevel > 0 &&
+                                  renderSpiceLevel(item.spiceLevel)}
 
-                <div className="order-action">{renderOrderActions(order)}</div>
+                                {item.cancelledQuantity > 0 && (
+                                  <span className="item-cancelled-note">
+                                    ({item.cancelledQuantity} cancelled)
+                                  </span>
+                                )}
+
+                                {item.dietaryNotes && (
+                                  <div className="dietary-notes">
+                                    <span className="dietary-notes-label">
+                                      Notes:
+                                    </span>
+                                    <span className="dietary-notes-text">
+                                      {item.dietaryNotes}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </li>
+                          );
+                        })}
+                    </ul>
+
+                    <div className="order-action">
+                      {order.status === "in_preparation" && (
+                        <button
+                          className="ready-pickup-btn"
+                          onClick={(e) => handleMarkAsReady(order._id, e)}
+                        >
+                          <FaBell className="action-icon" />
+                          Ready for Pickup
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -886,6 +943,8 @@ function DiningKitchen() {
                             return (
                               <li key={itemIndex} className="order-item">
                                 <span className="item-name">{itemName}</span>
+                                {item.spiceLevel > 0 &&
+                                  renderSpiceLevel(item.spiceLevel)}
                                 <span className="item-quantity">
                                   ×{effectiveQty}
                                 </span>
@@ -894,11 +953,20 @@ function DiningKitchen() {
                                     ({item.cancelledQuantity} cancelled)
                                   </span>
                                 )}
+                                {item.dietaryNotes && (
+                                  <div className="dietary-notes">
+                                    <span className="dietary-notes-label">
+                                      Notes:
+                                    </span>
+                                    <span className="dietary-notes-text">
+                                      {item.dietaryNotes}
+                                    </span>
+                                  </div>
+                                )}
                               </li>
                             );
                           })}
                       </ul>
-                      {renderOrderActions(order)}
                     </div>
                   ))}
                 </div>
