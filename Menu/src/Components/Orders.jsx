@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useDining } from "../contexts/DiningContext";
 import { requestPayment } from "../utils/api";
+import { FaFire } from "react-icons/fa";
 
 const Orders = () => {
   const {
@@ -288,6 +289,19 @@ const Orders = () => {
     });
   };
 
+  // Helper function to render spice level
+  const renderSpiceLevel = (level) => {
+    if (!level || level === 0) return null;
+
+    return (
+      <div className="flex items-center">
+        {[...Array(level)].map((_, i) => (
+          <FaFire key={i} className="text-red-500 text-xs" />
+        ))}
+      </div>
+    );
+  };
+
   // Helper function to check for active items
   const hasActiveItems = (order) => {
     if (!order || !order.items || !Array.isArray(order.items)) {
@@ -379,29 +393,57 @@ const Orders = () => {
                 return (
                   <div
                     key={`${order._id}-${index}`}
-                    className={`flex items-center justify-between py-2 border-b last:border-0 ${
+                    className={`py-3 border-b last:border-0 ${
                       effectiveQty <= 0 ? "text-gray-400" : ""
                     }`}
                   >
-                    <div>
-                      <p className="font-medium">{item.name}</p>
-                      <p className="text-sm text-gray-500">
-                        {effectiveQty} × {item.price} SAR
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">{item.name}</p>
+                        <p className="text-sm text-gray-500">
+                          {effectiveQty} × {item.price} SAR
+                        </p>
+                        {(item.cancelledQuantity || 0) > 0 && (
+                          <p className="text-xs text-red-500">
+                            ({item.cancelledQuantity} cancelled)
+                          </p>
+                        )}
+                        {(item.returnedQuantity || 0) > 0 && (
+                          <p className="text-xs text-red-500">
+                            ({item.returnedQuantity} returned)
+                          </p>
+                        )}
+                      </div>
+                      <p className="font-medium">
+                        {totalItemPrice.toFixed(2)} SAR
                       </p>
-                      {(item.cancelledQuantity || 0) > 0 && (
-                        <p className="text-xs text-red-500">
-                          ({item.cancelledQuantity} cancelled)
-                        </p>
-                      )}
-                      {(item.returnedQuantity || 0) > 0 && (
-                        <p className="text-xs text-red-500">
-                          ({item.returnedQuantity} returned)
-                        </p>
-                      )}
                     </div>
-                    <p className="font-medium">
-                      {totalItemPrice.toFixed(2)} SAR
-                    </p>
+
+                    {/* Display spice level and dietary notes */}
+                    {effectiveQty > 0 &&
+                      (item.spiceLevel > 0 || item.dietaryNotes) && (
+                        <div className="mt-1 pl-2 border-l-2 border-gray-200">
+                          {item.spiceLevel > 0 && (
+                            <div className="flex items-center">
+                              <span className="text-xs text-gray-500 mr-1">
+                                Spice:
+                              </span>
+                              {renderSpiceLevel(item.spiceLevel)}
+                            </div>
+                          )}
+
+                          {item.dietaryNotes && (
+                            <div className="mt-1">
+                              <span className="text-xs text-gray-500">
+                                Notes:
+                              </span>
+                              <p className="text-xs text-gray-600 italic ml-2">
+                                "{item.dietaryNotes}"
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
                   </div>
                 );
               })}

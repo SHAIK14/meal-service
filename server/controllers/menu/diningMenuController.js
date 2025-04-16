@@ -185,6 +185,7 @@ const startSession = async (req, res) => {
   }
 };
 // Create new dining order
+// Create new dining order
 const createDiningOrder = async (req, res) => {
   try {
     const { branchId, tableName, items, totalAmount, userLocation, sessionId } =
@@ -256,12 +257,22 @@ const createDiningOrder = async (req, res) => {
       });
     }
 
+    // Process items to include spice level and dietary notes
+    const processedItems = items.map((item) => ({
+      itemId: item.itemId,
+      name: item.name,
+      quantity: item.quantity,
+      price: item.price,
+      spiceLevel: item.spiceLevel || 0,
+      dietaryNotes: item.dietaryNotes || "",
+    }));
+
     // Create order with session reference
     const diningOrder = new DiningOrder({
       sessionId,
       branchId,
       tableName,
-      items,
+      items: processedItems,
       totalAmount,
       status: "pending",
       userLocation,
@@ -583,9 +594,11 @@ const getBranchOrders = async (req, res) => {
         image: item.itemId.image,
         price: item.price,
         quantity: item.quantity,
-        cancelledQuantity: item.cancelledQuantity || 0, // Add this
-        returnedQuantity: item.returnedQuantity || 0, // Add this
-        cancelReason: item.cancelReason, // Optionally add these too
+        spiceLevel: item.spiceLevel || 0,
+        dietaryNotes: item.dietaryNotes || "",
+        cancelledQuantity: item.cancelledQuantity || 0,
+        returnedQuantity: item.returnedQuantity || 0,
+        cancelReason: item.cancelReason,
         returnReason: item.returnReason,
         cancelledAt: item.cancelledAt,
         returnedAt: item.returnedAt,

@@ -21,17 +21,26 @@ const MenuLayout = () => {
   const [orderCounter, setOrderCounter] = useState(0); // Track successful orders
   const { sessionDetails, isConnected } = useDining();
 
-  const handleAddToCart = (item, quantity) => {
-    console.log(`Adding to cart: ${item.nameEnglish}, quantity: ${quantity}`);
+  const handleAddToCart = (
+    item,
+    quantity,
+    spiceLevel = 0,
+    dietaryNotes = ""
+  ) => {
+    console.log(
+      `Adding to cart: ${item.nameEnglish}, quantity: ${quantity}, spice level: ${spiceLevel}, notes: ${dietaryNotes}`
+    );
     setCart((prevCart) => {
       if (quantity === 0) {
         return prevCart.filter((i) => i.id !== item.id);
       }
       const existingItem = prevCart.find((i) => i.id === item.id);
       if (existingItem) {
-        return prevCart.map((i) => (i.id === item.id ? { ...i, quantity } : i));
+        return prevCart.map((i) =>
+          i.id === item.id ? { ...i, quantity, spiceLevel, dietaryNotes } : i
+        );
       }
-      return [...prevCart, { ...item, quantity }];
+      return [...prevCart, { ...item, quantity, spiceLevel, dietaryNotes }];
     });
   };
 

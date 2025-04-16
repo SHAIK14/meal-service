@@ -32,6 +32,16 @@ const diningOrderSchema = new mongoose.Schema(
           type: Number,
           required: true,
         },
+        spiceLevel: {
+          type: Number,
+          default: 0,
+          min: 0,
+          max: 3,
+        },
+        dietaryNotes: {
+          type: String,
+          default: "",
+        },
         returnedQuantity: {
           type: Number,
           default: 0,
