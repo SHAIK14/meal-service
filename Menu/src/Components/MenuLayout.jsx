@@ -6,6 +6,7 @@ import {
   FaWifi,
   FaTimes,
   FaUser,
+  FaKey,
 } from "react-icons/fa";
 import Navbar from "./Navbar";
 import Items from "./Items";
@@ -20,6 +21,17 @@ const MenuLayout = () => {
   const [showOrders, setShowOrders] = useState(false);
   const [orderCounter, setOrderCounter] = useState(0); // Track successful orders
   const { sessionDetails, isConnected } = useDining();
+
+  // Debug logging for session details
+  useEffect(() => {
+    console.log("MenuLayout received sessionDetails:", sessionDetails);
+    // Check if PIN exists in session details
+    if (sessionDetails?.pin) {
+      console.log("PIN is available in MenuLayout:", sessionDetails.pin);
+    } else {
+      console.warn("PIN is missing in sessionDetails in MenuLayout");
+    }
+  }, [sessionDetails]);
 
   const handleAddToCart = (
     item,
@@ -84,16 +96,34 @@ const MenuLayout = () => {
         onCategoryChange={setActiveCategory}
       />
 
-      {/* Customer Name & Connection Status */}
-      <div className="px-4 py-2 flex justify-between items-center bg-white shadow-sm">
-        {customerName && (
-          <div className="text-sm text-gray-600 flex items-center">
-            <FaUser className="text-gray-500 mr-2" />
-            <span>
-              Welcome, <span className="font-medium">{customerName}</span>
-            </span>
-          </div>
-        )}
+      {/* Customer Name, PIN & Connection Status */}
+      <div className="px-4 py-2 flex flex-wrap justify-between items-center bg-white shadow-md">
+        <div className="flex flex-wrap items-center space-x-4">
+          {customerName && (
+            <div className="text-sm text-gray-600 flex items-center">
+              <FaUser className="text-gray-500 mr-2" />
+              <span>
+                Welcome, <span className="font-medium">{customerName}</span>
+              </span>
+            </div>
+          )}
+
+          {sessionDetails?.pin ? (
+            <div className="flex items-center bg-blue-50 px-3 py-1 rounded-full">
+              <FaKey className="text-blue-600 mr-1" />
+              <span className="text-xs text-gray-700 mr-1">Table PIN:</span>
+              <span className="font-bold text-blue-600 text-lg tracking-wider">
+                {sessionDetails.pin}
+              </span>
+              <div className="ml-1 text-xs text-gray-500">
+                (share with others)
+              </div>
+            </div>
+          ) : (
+            <div className="text-xs text-red-500">No PIN available</div>
+          )}
+        </div>
+
         <div
           className={`text-xs flex items-center ${
             isConnected ? "text-green-500" : "text-red-500"

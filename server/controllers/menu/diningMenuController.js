@@ -51,6 +51,7 @@ const validateDiningAccess = async (req, res) => {
         diningRadius: diningConfig.diningRadius,
       },
       sessionExists: !!session,
+      requiresAuthentication: !!session, // Add flag to indicate auth needed
     };
 
     // If session exists, fetch orders and include in response
@@ -65,6 +66,7 @@ const validateDiningAccess = async (req, res) => {
         paymentRequested: session.paymentRequested,
         customerName: session.customerName || "Guest", // Fallback for legacy sessions
         orders: sessionOrders,
+        // Don't include pin or phone in the initial response for security
       };
     }
 
@@ -78,16 +80,93 @@ const validateDiningAccess = async (req, res) => {
     });
   }
 };
+const validateSessionAccess = async (req, res) => {
+  try {
+    const { sessionId, pin, phoneNumber } = req.body;
+
+    if (!sessionId || (!pin && !phoneNumber)) {
+      return res.status(400).json({
+        success: false,
+        message: "Session ID and either PIN or phone number are required",
+      });
+    }
+
+    // Find the session
+    const session = await Session.findOne({ _id: sessionId, status: "active" });
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        message: "Active session not found",
+      });
+    }
+
+    // Validate with PIN or phone number
+    let isValid = false;
+
+    if (pin) {
+      isValid = session.pin === pin;
+    } else if (phoneNumber) {
+      // Remove any country code prefix if present before comparing
+      const cleanedInputPhone = phoneNumber.replace(/^\+[0-9]+/, "");
+      const cleanedStoredPhone = session.customerPhone.replace(/^\+[0-9]+/, "");
+      isValid = cleanedStoredPhone.endsWith(cleanedInputPhone);
+    }
+
+    if (!isValid) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid authentication details",
+      });
+    }
+
+    // If validation successful, fetch orders for this session
+    const sessionOrders = await DiningOrder.find({
+      sessionId: session._id,
+    }).sort({ createdAt: -1 });
+
+    // Return session details with orders
+    return res.json({
+      success: true,
+      message: "Session authenticated successfully",
+      session: {
+        id: session._id,
+        totalAmount: session.totalAmount,
+        paymentRequested: session.paymentRequested,
+        customerName: session.customerName,
+        pin: session.pin, // Include pin after successful authentication
+        orders: sessionOrders,
+      },
+    });
+  } catch (error) {
+    console.error("Error in validateSessionAccess:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error validating session access",
+      error: error.message,
+    });
+  }
+};
 const startSession = async (req, res) => {
   try {
     const { pincode, tableName, customerName, customerPhone, customerDob } =
       req.body;
 
     // Validate required fields
-    if (!pincode || !tableName || !customerName) {
+    if (!pincode || !tableName || !customerName || !customerPhone) {
       return res.status(400).json({
         success: false,
-        message: "Missing required fields",
+        message: "Missing required fields: name and phone number are required",
+      });
+    }
+
+    // Validate phone number format (9 digits for Saudi/UAE)
+    const phoneRegex = /^[0-9]{9}$/;
+    if (!phoneRegex.test(customerPhone.replace(/^\+[0-9]+/, ""))) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Invalid phone number format. Please enter a valid 9-digit number",
       });
     }
 
@@ -130,17 +209,22 @@ const startSession = async (req, res) => {
           totalAmount: session.totalAmount,
           paymentRequested: session.paymentRequested,
           customerName: session.customerName,
+          pin: session.pin, // Return the PIN code
         },
       });
     }
+
+    // Generate a random 4-digit PIN
+    const pin = Math.floor(1000 + Math.random() * 9000).toString();
 
     // Create new session
     session = new Session({
       branchId: branch._id,
       tableName,
       customerName,
-      customerPhone: customerPhone || "",
+      customerPhone,
       customerDob: customerDob ? new Date(customerDob) : null,
+      pin, // Add the PIN to the session
     });
 
     await session.save();
@@ -173,6 +257,7 @@ const startSession = async (req, res) => {
         totalAmount: session.totalAmount,
         paymentRequested: session.paymentRequested,
         customerName: session.customerName,
+        pin: session.pin, // Return the PIN in the response
       },
     });
   } catch (error) {
@@ -714,4 +799,5 @@ module.exports = {
   updateOrderStatus,
   requestPayment,
   startSession,
+  validateSessionAccess,
 };

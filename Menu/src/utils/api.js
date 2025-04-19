@@ -1,6 +1,7 @@
 // menu-project/src/utils/api.js
 const BASE_URL = "http://localhost:5000/api/dining-menu";
 
+// In api.js - update the validateQRAccess function
 export const validateQRAccess = async (pincode, tableName) => {
   try {
     console.log("Making validation request for:", { pincode, tableName });
@@ -9,6 +10,32 @@ export const validateQRAccess = async (pincode, tableName) => {
     );
     const data = await response.json();
     console.log("Validation API response:", data);
+
+    // If session exists, check for PIN and try to get from localStorage if missing
+    if (
+      data.success &&
+      data.sessionExists &&
+      data.session &&
+      !data.session.pin
+    ) {
+      console.log(
+        "Session found but PIN missing in response, checking localStorage"
+      );
+      try {
+        const savedAuth = localStorage.getItem(`session_${data.session.id}`);
+        if (savedAuth) {
+          const auth = JSON.parse(savedAuth);
+          if (auth.pin) {
+            console.log("Adding PIN from localStorage to response:", auth.pin);
+            // Add the PIN to the session data from localStorage
+            data.session.pin = auth.pin;
+          }
+        }
+      } catch (e) {
+        console.error("Error reading PIN from localStorage:", e);
+      }
+    }
+
     return data;
   } catch (error) {
     console.error("Error validating access:", error);
@@ -146,5 +173,29 @@ export const startSession = async (pincode, tableName, customerData) => {
   } catch (error) {
     console.error("Error starting session:", error);
     return { success: false, message: "Failed to start session" };
+  }
+};
+
+// In your api.js file - Update the validateSessionAccess function
+export const validateSessionAccess = async (sessionId, pin, phoneNumber) => {
+  try {
+    console.log("Validating session access:", { sessionId, pin, phoneNumber });
+    const response = await fetch(`${BASE_URL}/session/validate`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        sessionId,
+        pin,
+        phoneNumber, // This will be just the 9 digits without country code
+      }),
+    });
+    const data = await response.json();
+    console.log("Session validation response:", data);
+    return data;
+  } catch (error) {
+    console.error("Error validating session access:", error);
+    return { success: false, message: "Failed to validate session access" };
   }
 };

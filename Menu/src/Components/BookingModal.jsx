@@ -1,7 +1,6 @@
-/* eslint-disable react/prop-types */
-// src/components/BookingModal.jsx
+// src/components/BookingModal.jsx - Updated version with fixed phone validation
 import React, { useState } from "react";
-import { FaTimes } from "react-icons/fa";
+import { FaTimes, FaInfoCircle } from "react-icons/fa";
 import { startSession } from "../utils/api";
 
 const BookingModal = ({ isOpen, pincode, tableName, onSessionStarted }) => {
@@ -20,7 +19,7 @@ const BookingModal = ({ isOpen, pincode, tableName, onSessionStarted }) => {
 
   // Phone validation for local number
   const validatePhone = (phone) => {
-    if (!phone) return true; // Phone is optional
+    if (!phone) return false; // Phone is now required
 
     // Just validate the number has 9 digits (standard for Saudi/UAE mobile numbers)
     const regex = /^[0-9]{9}$/;
@@ -36,9 +35,18 @@ const BookingModal = ({ isOpen, pincode, tableName, onSessionStarted }) => {
       return;
     }
 
-    // Phone is optional but validate format if provided
-    if (phoneNumber && !validatePhone(phoneNumber)) {
-      setError("Please enter a valid 9-digit phone number");
+    // Phone is now required and validate format
+    if (!phoneNumber) {
+      setError("Phone number is required");
+      return;
+    }
+
+    // Make sure the phone number is exactly 9 digits
+    const cleanedPhoneNumber = phoneNumber.replace(/\D/g, "");
+    if (cleanedPhoneNumber.length !== 9) {
+      setError(
+        "Please enter a valid 9-digit phone number without leading zeros"
+      );
       return;
     }
 
@@ -46,16 +54,28 @@ const BookingModal = ({ isOpen, pincode, tableName, onSessionStarted }) => {
     setError(null);
 
     // Combine country code and phone for complete number
-    const fullPhoneNumber = phoneNumber ? `${countryCode}${phoneNumber}` : "";
+    const fullPhoneNumber = `${countryCode}${cleanedPhoneNumber}`;
 
     try {
       const response = await startSession(pincode, tableName, {
         customerName,
-        customerPhone: fullPhoneNumber,
+        customerPhone: cleanedPhoneNumber, // Send only the 9 digits without country code
         customerDob,
       });
 
       if (response.success) {
+        // Save PIN to localStorage for this device
+        if (response.session.pin) {
+          localStorage.setItem(
+            `session_${response.session.id}`,
+            JSON.stringify({
+              authenticated: true,
+              pin: response.session.pin,
+              phoneNumber: fullPhoneNumber,
+            })
+          );
+        }
+
         onSessionStarted(response.session);
       } else {
         setError(response.message || "Failed to book table");
@@ -67,6 +87,16 @@ const BookingModal = ({ isOpen, pincode, tableName, onSessionStarted }) => {
     }
   };
 
+  // Handle phone number input to ensure only digits are entered
+  const handlePhoneChange = (e) => {
+    const input = e.target.value;
+    // Only allow digits
+    const digits = input.replace(/\D/g, "");
+    // Limit to 9 digits
+    const limitedDigits = digits.slice(0, 9);
+    setPhoneNumber(limitedDigits);
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -76,6 +106,18 @@ const BookingModal = ({ isOpen, pincode, tableName, onSessionStarted }) => {
       <div className="bg-white rounded-lg w-full max-w-md p-6 z-10">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">Book Your Table</h2>
+        </div>
+
+        {/* Info box about authentication */}
+        <div className="bg-blue-50 p-4 rounded-lg mb-4 text-sm">
+          <div className="flex items-start">
+            <FaInfoCircle className="text-blue-500 mt-1 mr-2 flex-shrink-0" />
+            <p className="text-blue-800">
+              Your phone number will be used to authenticate this session. A
+              security PIN will be generated that you'll need if you reload the
+              page or share access with others at your table.
+            </p>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -92,9 +134,9 @@ const BookingModal = ({ isOpen, pincode, tableName, onSessionStarted }) => {
           </div>
 
           <div className="mb-4">
-            <label className="block text-gray-700 mb-2">Phone Number</label>
+            <label className="block text-gray-700 mb-2">Phone Number *</label>
             <div className="flex">
-              {/* Country code dropdown */}
+              {/* Country code dropdown - for display only */}
               <select
                 value={countryCode}
                 onChange={(e) => setCountryCode(e.target.value)}
@@ -111,13 +153,16 @@ const BookingModal = ({ isOpen, pincode, tableName, onSessionStarted }) => {
               <input
                 type="tel"
                 value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
+                onChange={handlePhoneChange}
                 className="flex-1 px-3 py-2 border border-l-0 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-red-500"
                 placeholder="9-digit number"
+                required
+                maxLength={9}
+                inputMode="numeric"
               />
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              Optional - enter 9 digits
+              Required - enter 9 digits without leading zeros or country code
             </p>
           </div>
 

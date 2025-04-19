@@ -255,7 +255,10 @@ export function DiningProvider({ children }) {
   };
 
   // Update branch and session details
+  // In DiningContext.jsx - update the updateBranchDetails function
+
   const updateBranchDetails = (response) => {
+    console.log("Full response from server:", response);
     console.log("Updating branch details:", response?.branch?.id);
     if (!response?.branch) return;
 
@@ -270,13 +273,45 @@ export function DiningProvider({ children }) {
 
     // If session exists, update session details
     if (response.session) {
-      console.log("Setting session details:", response.session.id);
+      console.log(
+        "Setting session details from server response:",
+        response.session
+      );
+
+      // Check if session PIN is missing and try to get it from localStorage
+      let sessionPin = response.session.pin;
+      if (!sessionPin) {
+        console.log("PIN not found in server response, checking localStorage");
+        try {
+          const savedAuth = localStorage.getItem(
+            `session_${response.session.id}`
+          );
+          if (savedAuth) {
+            const auth = JSON.parse(savedAuth);
+            if (auth.pin) {
+              console.log("Found PIN in localStorage:", auth.pin);
+              sessionPin = auth.pin;
+            }
+          }
+        } catch (e) {
+          console.error("Error reading PIN from localStorage:", e);
+        }
+      }
+
       setSessionDetails({
         id: response.session.id,
         totalAmount: response.session.totalAmount,
         paymentRequested: response.session.paymentRequested,
         customerName: response.session.customerName,
+        pin: sessionPin, // Now using PIN from localStorage if not in response
       });
+
+      // Log PIN status
+      if (sessionPin) {
+        console.log("PIN set in session details:", sessionPin);
+      } else {
+        console.warn("No PIN available for session");
+      }
 
       // Map order statuses to customer-friendly versions
       const mappedOrders = response.session.orders.map((order) => {
@@ -304,18 +339,19 @@ export function DiningProvider({ children }) {
   };
 
   const handleSessionStarted = (session) => {
-    console.log("Session started:", session);
+    console.log("Session started with details:", session); // Debug log
     if (session) {
       setSessionDetails({
         id: session.id,
         totalAmount: session.totalAmount || 0,
         paymentRequested: session.paymentRequested || false,
         customerName: session.customerName,
+        pin: session.pin, // Make sure PIN is included here!
       });
+      console.log("Session details set with PIN:", session.pin); // Debug log
       setShowBookingModal(false);
     }
   };
-
   // Function to update orders
   const updateOrders = (newOrders) => {
     console.log(

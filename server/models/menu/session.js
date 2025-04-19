@@ -12,10 +12,18 @@ const sessionSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    status: {
+    customerName: {
       type: String,
-      enum: ["active", "completed"],
-      default: "active",
+      required: true,
+    },
+    customerPhone: {
+      type: String,
+      required: true, // Changed from optional to required
+    },
+    customerDob: Date,
+    pin: {
+      type: String,
+      required: true,
     },
     totalAmount: {
       type: Number,
@@ -25,27 +33,13 @@ const sessionSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    // New fields for customer information
-    customerName: {
+    status: {
       type: String,
-      required: true,
-    },
-    customerPhone: {
-      type: String,
-      required: false, // Optional
-    },
-    customerDob: {
-      type: Date,
-      required: false, // Optional
+      enum: ["active", "completed", "cancelled"],
+      default: "active",
     },
   },
   { timestamps: true }
-);
-
-// Ensure only one active session per table
-sessionSchema.index(
-  { branchId: 1, tableName: 1, status: 1 },
-  { unique: true, partialFilterExpression: { status: "active" } }
 );
 
 module.exports = mongoose.model("Session", sessionSchema);
