@@ -42,5 +42,11 @@ router.delete(
   staffServiceAuth,
   diningCategoryController.deleteDiningCategory
 );
+router.put(
+  "/:id",
+  adminAuth,
+  staffServiceAuth,
+  diningCategoryController.updateDiningCategory
+);
 
 module.exports = router;

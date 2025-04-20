@@ -184,3 +184,49 @@ exports.getDiningCategoryById = async (req, res) => {
     });
   }
 };
+
+// Update dining category
+exports.updateDiningCategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, image } = req.body;
+
+    // Check if category exists
+    const category = await DiningCategory.findById(id);
+    if (!category) {
+      return res.status(404).json({
+        success: false,
+        message: "Dining category not found",
+      });
+    }
+
+    // Check if name exists and is different
+    if (name && name !== category.name) {
+      const existingCategory = await DiningCategory.findOne({ name });
+      if (existingCategory && existingCategory._id.toString() !== id) {
+        return res.status(400).json({
+          success: false,
+          message: "Category with this name already exists",
+        });
+      }
+    }
+
+    // Update fields
+    if (name) category.name = name;
+    if (image) category.image = image;
+
+    await category.save();
+
+    res.json({
+      success: true,
+      category,
+    });
+  } catch (error) {
+    console.error("Error in updateDiningCategory:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating dining category",
+      error: error.message,
+    });
+  }
+};
