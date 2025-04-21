@@ -685,3 +685,64 @@ export const deletePlanDuration = async (branchId, planId) => {
     };
   }
 };
+
+/**
+ * Sends a bulk upload request to the server
+ * @param {Array|Object} itemData - Array of items or single item object
+ * @returns {Promise<Object>} - Result of the bulk upload operation
+ */
+export const bulkUploadItems = async (itemData) => {
+  try {
+    const response = await fetch(`${API_URL}/items/bulk`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${getToken()}`,
+      },
+      body: JSON.stringify(itemData),
+    });
+
+    // Check if response is OK before parsing JSON
+    if (!response.ok) {
+      // Check if response is likely HTML (error page)
+      const text = await response.text();
+      if (
+        text.trim().startsWith("<!DOCTYPE") ||
+        text.trim().startsWith("<html")
+      ) {
+        console.error(
+          "Server returned HTML instead of JSON:",
+          text.substring(0, 100)
+        );
+        return {
+          success: false,
+          error: `Server error: ${response.status} ${response.statusText}`,
+        };
+      }
+
+      // Try to parse as JSON in case it's a structured error
+      try {
+        const errorData = JSON.parse(text);
+        return {
+          success: false,
+          error: errorData.message || errorData.error || "API error",
+        };
+      } catch (e) {
+        // Not JSON, return text as error
+        return {
+          success: false,
+          error: `Server error: ${response.status} ${response.statusText}`,
+        };
+      }
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error in bulkUploadItems:", error);
+    return {
+      success: false,
+      error: error.message || "Network error",
+    };
+  }
+};

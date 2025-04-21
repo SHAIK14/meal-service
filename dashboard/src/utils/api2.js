@@ -291,6 +291,11 @@ export const removeItemFromDiningCategory = async (categoryId, itemId) => {
 export const deleteDiningCategory = async (categoryId) => {
   return handleResponse(api.delete(`/admin/dining-categories/${categoryId}`));
 };
+export const updateDiningCategory = async (categoryId, categoryData) => {
+  return handleResponse(
+    api.put(`/admin/dining-categories/${categoryId}`, categoryData)
+  );
+};
 // in ../utils/api2.js
 export const getDiningCategoryById = async (categoryId) => {
   return handleResponse(api.get(`/admin/dining-categories/${categoryId}`));

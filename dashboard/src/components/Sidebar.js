@@ -72,6 +72,12 @@ const Sidebar = () => {
       access: "/catering",
     },
     {
+      path: "/cateringOrders",
+      icon: <FaShoppingCart />,
+      label: "Catering Orders",
+      access: "/cateringOrders",
+    },
+    {
       path: "/vouchers",
       icon: <FaTicketAlt />,
       label: "Vouchers",

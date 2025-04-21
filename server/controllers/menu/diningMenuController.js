@@ -4,8 +4,8 @@ const DiningOrder = require("../../models/menu/DiningOrder");
 const DiningCategory = require("../../models/admin/DiningCategory");
 const Item = require("../../models/admin/Item");
 const Session = require("../../models/menu/session");
+const socketService = require("../../services/socket/socketService");
 
-// Validate QR code access
 const validateDiningAccess = async (req, res) => {
   try {
     const { pincode, tableName } = req.params;
@@ -33,27 +33,15 @@ const validateDiningAccess = async (req, res) => {
       });
     }
 
-    // Find or create active session
+    // Check for active session
     let session = await Session.findOne({
       branchId: branch._id,
       tableName,
       status: "active",
     });
 
-    if (!session) {
-      session = new Session({
-        branchId: branch._id,
-        tableName,
-      });
-      await session.save();
-    }
-
-    // Get orders for this session
-    const sessionOrders = await DiningOrder.find({
-      sessionId: session._id,
-    }).sort({ createdAt: -1 });
-
-    res.json({
+    // Prepare the response object with branch info
+    const responseObj = {
       success: true,
       branch: {
         id: branch._id,
@@ -62,13 +50,28 @@ const validateDiningAccess = async (req, res) => {
         coordinates: branch.address.coordinates,
         diningRadius: diningConfig.diningRadius,
       },
-      session: {
+      sessionExists: !!session,
+      requiresAuthentication: !!session, // Add flag to indicate auth needed
+    };
+
+    // If session exists, fetch orders and include in response
+    if (session) {
+      const sessionOrders = await DiningOrder.find({
+        sessionId: session._id,
+      }).sort({ createdAt: -1 });
+
+      responseObj.session = {
         id: session._id,
         totalAmount: session.totalAmount,
         paymentRequested: session.paymentRequested,
+        customerName: session.customerName || "Guest", // Fallback for legacy sessions
         orders: sessionOrders,
-      },
-    });
+        // Don't include pin or phone in the initial response for security
+      };
+    }
+
+    // Send a single response with all the data
+    return res.json(responseObj);
   } catch (error) {
     console.error("Error in validateDiningAccess:", error);
     res.status(500).json({
@@ -77,7 +80,196 @@ const validateDiningAccess = async (req, res) => {
     });
   }
 };
+const validateSessionAccess = async (req, res) => {
+  try {
+    const { sessionId, pin, phoneNumber } = req.body;
 
+    if (!sessionId || (!pin && !phoneNumber)) {
+      return res.status(400).json({
+        success: false,
+        message: "Session ID and either PIN or phone number are required",
+      });
+    }
+
+    // Find the session
+    const session = await Session.findOne({ _id: sessionId, status: "active" });
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        message: "Active session not found",
+      });
+    }
+
+    // Validate with PIN or phone number
+    let isValid = false;
+
+    if (pin) {
+      isValid = session.pin === pin;
+    } else if (phoneNumber) {
+      // Remove any country code prefix if present before comparing
+      const cleanedInputPhone = phoneNumber.replace(/^\+[0-9]+/, "");
+      const cleanedStoredPhone = session.customerPhone.replace(/^\+[0-9]+/, "");
+      isValid = cleanedStoredPhone.endsWith(cleanedInputPhone);
+    }
+
+    if (!isValid) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid authentication details",
+      });
+    }
+
+    // If validation successful, fetch orders for this session
+    const sessionOrders = await DiningOrder.find({
+      sessionId: session._id,
+    }).sort({ createdAt: -1 });
+
+    // Return session details with orders
+    return res.json({
+      success: true,
+      message: "Session authenticated successfully",
+      session: {
+        id: session._id,
+        totalAmount: session.totalAmount,
+        paymentRequested: session.paymentRequested,
+        customerName: session.customerName,
+        pin: session.pin, // Include pin after successful authentication
+        orders: sessionOrders,
+      },
+    });
+  } catch (error) {
+    console.error("Error in validateSessionAccess:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error validating session access",
+      error: error.message,
+    });
+  }
+};
+const startSession = async (req, res) => {
+  try {
+    const { pincode, tableName, customerName, customerPhone, customerDob } =
+      req.body;
+
+    // Validate required fields
+    if (!pincode || !tableName || !customerName || !customerPhone) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields: name and phone number are required",
+      });
+    }
+
+    // Validate phone number format (9 digits for Saudi/UAE)
+    const phoneRegex = /^[0-9]{9}$/;
+    if (!phoneRegex.test(customerPhone.replace(/^\+[0-9]+/, ""))) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Invalid phone number format. Please enter a valid 9-digit number",
+      });
+    }
+
+    // Find branch by pincode
+    const branch = await Branch.findOne({ "address.pincode": pincode });
+    if (!branch) {
+      return res.status(404).json({
+        success: false,
+        message: "Invalid branch code",
+      });
+    }
+
+    // Find dining config to verify table
+    const diningConfig = await Dining.findOne({
+      branchId: branch._id,
+      "tables.name": tableName,
+      "tables.isEnabled": true,
+    });
+
+    if (!diningConfig) {
+      return res.status(404).json({
+        success: false,
+        message: "Table not found or disabled",
+      });
+    }
+
+    // Check if session already exists
+    let session = await Session.findOne({
+      branchId: branch._id,
+      tableName,
+      status: "active",
+    });
+
+    if (session) {
+      return res.json({
+        success: true,
+        message: "Session already exists",
+        session: {
+          id: session._id,
+          totalAmount: session.totalAmount,
+          paymentRequested: session.paymentRequested,
+          customerName: session.customerName,
+          pin: session.pin, // Return the PIN code
+        },
+      });
+    }
+
+    // Generate a random 4-digit PIN
+    const pin = Math.floor(1000 + Math.random() * 9000).toString();
+
+    // Create new session
+    session = new Session({
+      branchId: branch._id,
+      tableName,
+      customerName,
+      customerPhone,
+      customerDob: customerDob ? new Date(customerDob) : null,
+      pin, // Add the PIN to the session
+    });
+
+    await session.save();
+
+    // Update table status to occupied
+    const tableIndex = diningConfig.tables.findIndex(
+      (t) => t.name === tableName
+    );
+    if (tableIndex !== -1) {
+      diningConfig.tables[tableIndex].status = "occupied";
+      await diningConfig.save();
+
+      // Emit socket event for table status update
+      const kitchenRoom = `kitchen:${branch._id}`;
+      const tableId = diningConfig.tables[tableIndex]._id;
+      socketService.emitToRoom(kitchenRoom, "table_status_updated", {
+        tableId,
+        tableName,
+        status: "occupied",
+        customerName,
+      });
+      console.log(`Table ${tableName} marked as occupied by ${customerName}`);
+    }
+
+    res.status(201).json({
+      success: true,
+      message: "Session started successfully",
+      session: {
+        id: session._id,
+        totalAmount: session.totalAmount,
+        paymentRequested: session.paymentRequested,
+        customerName: session.customerName,
+        pin: session.pin, // Return the PIN in the response
+      },
+    });
+  } catch (error) {
+    console.error("Error in startSession:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error starting session",
+      error: error.message,
+    });
+  }
+};
+// Create new dining order
 // Create new dining order
 const createDiningOrder = async (req, res) => {
   try {
@@ -150,12 +342,22 @@ const createDiningOrder = async (req, res) => {
       });
     }
 
+    // Process items to include spice level and dietary notes
+    const processedItems = items.map((item) => ({
+      itemId: item.itemId,
+      name: item.name,
+      quantity: item.quantity,
+      price: item.price,
+      spiceLevel: item.spiceLevel || 0,
+      dietaryNotes: item.dietaryNotes || "",
+    }));
+
     // Create order with session reference
     const diningOrder = new DiningOrder({
       sessionId,
       branchId,
       tableName,
-      items,
+      items: processedItems,
       totalAmount,
       status: "pending",
       userLocation,
@@ -165,6 +367,17 @@ const createDiningOrder = async (req, res) => {
     await diningOrder.save();
     session.totalAmount += totalAmount;
     await session.save();
+    const kitchenRoom = `kitchen:${branchId}`;
+    socketService.emitToRoom(kitchenRoom, "new_order", {
+      orderId: diningOrder._id,
+      tableId: tableName,
+      tableName: tableName,
+      items: diningOrder.items,
+      totalAmount: diningOrder.totalAmount,
+      status: diningOrder.status,
+      createdAt: diningOrder.createdAt,
+    });
+    console.log(`New order created and emitted to ${kitchenRoom}`);
 
     res.status(201).json({
       success: true,
@@ -204,6 +417,29 @@ const requestPayment = async (req, res) => {
 
     session.paymentRequested = true;
     await session.save();
+    const branchId = session.branchId;
+    const tableName = session.tableName;
+
+    // Emit socket events for payment request
+    const kitchenRoom = `kitchen:${branchId}`;
+    const tableRoom = `table:${branchId}:${tableName}`;
+
+    // Emit to kitchen staff
+    socketService.emitToRoom(kitchenRoom, "payment_requested", {
+      sessionId: session._id,
+      tableName: tableName,
+      totalAmount: session.totalAmount,
+    });
+
+    // Emit to customer table for real-time UI update
+    socketService.emitToRoom(tableRoom, "payment_request_confirmed", {
+      sessionId: session._id,
+      totalAmount: session.totalAmount,
+    });
+
+    console.log(
+      `Payment requested for table ${tableName} and emitted to relevant rooms`
+    );
 
     res.json({
       success: true,
@@ -223,7 +459,7 @@ const requestPayment = async (req, res) => {
 const getDiningMenuItems = async (req, res) => {
   try {
     const { branchId } = req.params;
-    console.log("Fetching menu items for branchId:", branchId);
+    // console.log("Fetching menu items for branchId:", branchId);
 
     // Get all active categories with their items
     const categories = await DiningCategory.find({ active: true }).populate({
@@ -231,7 +467,7 @@ const getDiningMenuItems = async (req, res) => {
       match: { available: true }, // Only get available items
     });
 
-    console.log("Categories found:", categories.length);
+    // console.log("Categories found:", categories.length);
 
     // Just format the basic data we need
     const formattedCategories = categories
@@ -251,10 +487,10 @@ const getDiningMenuItems = async (req, res) => {
       }))
       .filter((category) => category.items.length > 0); // Only return categories with items
 
-    console.log(
-      "Sending categories with items:",
-      formattedCategories.map((cat) => `${cat.name}: ${cat.items.length} items`)
-    );
+    // console.log(
+    //   "Sending categories with items:",
+    //   formattedCategories.map((cat) => `${cat.name}: ${cat.items.length} items`)
+    // );
 
     res.json({
       success: true,
@@ -443,6 +679,14 @@ const getBranchOrders = async (req, res) => {
         image: item.itemId.image,
         price: item.price,
         quantity: item.quantity,
+        spiceLevel: item.spiceLevel || 0,
+        dietaryNotes: item.dietaryNotes || "",
+        cancelledQuantity: item.cancelledQuantity || 0,
+        returnedQuantity: item.returnedQuantity || 0,
+        cancelReason: item.cancelReason,
+        returnReason: item.returnReason,
+        cancelledAt: item.cancelledAt,
+        returnedAt: item.returnedAt,
       }));
       return orderObj;
     });
@@ -514,6 +758,22 @@ const updateOrderStatus = async (req, res) => {
         message: "Order not found",
       });
     }
+    // Emit socket event for order status update
+    const kitchenRoom = `kitchen:${order.branchId}`;
+    const tableRoom = `table:${order.branchId}:${order.tableName}`;
+    // Emit to kitchen staff
+    socketService.emitToRoom(kitchenRoom, "order_status_updated", {
+      orderId: order._id,
+      tableName: order.tableName,
+      status: status,
+    });
+    console.log(`Order status updated and emitted to ${kitchenRoom}`);
+    // Emit to customer table
+    socketService.emitToRoom(tableRoom, "order_status_updated", {
+      orderId: order._id,
+      status: status,
+    });
+    console.log(`Order status updated and emitted to ${tableRoom}`);
 
     res.json({
       success: true,
@@ -538,4 +798,6 @@ module.exports = {
   getBranchOrders,
   updateOrderStatus,
   requestPayment,
+  startSession,
+  validateSessionAccess,
 };

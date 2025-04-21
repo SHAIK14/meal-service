@@ -7,6 +7,8 @@ const {
   getTableSession,
   completeSession,
   generateInvoice,
+  processOrderItemAction,
+  updateOrderStatus,
 } = require("../../controllers/kitchen/diningController");
 
 router.get("/tables", kitchenAuth, getBranchTables);
@@ -15,4 +17,12 @@ router.put("/tables/:tableId/status", kitchenAuth, updateTableStatus);
 router.get("/tables/:tableName/session", kitchenAuth, getTableSession);
 router.post("/sessions/:sessionId/complete", kitchenAuth, completeSession);
 router.get("/sessions/:sessionId/invoice", kitchenAuth, generateInvoice);
+
+router.put("/orders/:orderId/status", kitchenAuth, updateOrderStatus);
+router.post(
+  "/orders/:orderId/items/:itemIndex/process",
+  kitchenAuth,
+  processOrderItemAction
+);
+
 module.exports = router;

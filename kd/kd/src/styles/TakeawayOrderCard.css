@@ -1,0 +1,98 @@
+.takeaway-order-card {
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.3s ease;
+}
+
+.takeaway-order-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.order-token-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.token-number {
+  font-weight: bold;
+}
+
+.status-chip {
+  font-weight: 500;
+}
+
+.order-time {
+  display: flex;
+  align-items: center;
+  color: #757575;
+}
+
+.customer-info {
+  margin-bottom: 15px;
+}
+
+.customer-info .icon,
+.order-time .icon,
+.order-summary .icon {
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.order-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.divider {
+  margin: 15px 0;
+}
+
+.item-list {
+  padding: 0;
+}
+
+.item-list-item {
+  padding: 8px 0;
+}
+
+.notes-section {
+  margin-top: 15px;
+  padding: 10px;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.action-button {
+  flex: 1;
+}
+
+@media (max-width: 600px) {
+  .order-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .order-token-container {
+    margin-bottom: 10px;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+}

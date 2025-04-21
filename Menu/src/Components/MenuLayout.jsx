@@ -1,6 +1,13 @@
 // src/Components/MenuLayout.jsx
-import { useState } from "react";
-import { FaShoppingCart, FaClipboardList } from "react-icons/fa";
+import { useState, useEffect } from "react";
+import {
+  FaShoppingCart,
+  FaClipboardList,
+  FaWifi,
+  FaTimes,
+  FaUser,
+  FaKey,
+} from "react-icons/fa";
 import Navbar from "./Navbar";
 import Items from "./Items";
 import Cart from "./Cart";
@@ -12,19 +19,53 @@ const MenuLayout = () => {
   const [cart, setCart] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [showOrders, setShowOrders] = useState(false);
-  const { sessionDetails } = useDining();
+  const [orderCounter, setOrderCounter] = useState(0); // Track successful orders
+  const { sessionDetails, isConnected } = useDining();
 
-  const handleAddToCart = (item, quantity) => {
+  // Debug logging for session details
+  useEffect(() => {
+    console.log("MenuLayout received sessionDetails:", sessionDetails);
+    // Check if PIN exists in session details
+    if (sessionDetails?.pin) {
+      console.log("PIN is available in MenuLayout:", sessionDetails.pin);
+    } else {
+      console.warn("PIN is missing in sessionDetails in MenuLayout");
+    }
+  }, [sessionDetails]);
+
+  const handleAddToCart = (
+    item,
+    quantity,
+    spiceLevel = 0,
+    dietaryNotes = ""
+  ) => {
+    console.log(
+      `Adding to cart: ${item.nameEnglish}, quantity: ${quantity}, spice level: ${spiceLevel}, notes: ${dietaryNotes}`
+    );
     setCart((prevCart) => {
       if (quantity === 0) {
         return prevCart.filter((i) => i.id !== item.id);
       }
       const existingItem = prevCart.find((i) => i.id === item.id);
       if (existingItem) {
-        return prevCart.map((i) => (i.id === item.id ? { ...i, quantity } : i));
+        return prevCart.map((i) =>
+          i.id === item.id ? { ...i, quantity, spiceLevel, dietaryNotes } : i
+        );
       }
-      return [...prevCart, { ...item, quantity }];
+      return [...prevCart, { ...item, quantity, spiceLevel, dietaryNotes }];
     });
+  };
+
+  // Function to clear the cart
+  const clearCart = () => {
+    setCart([]);
+  };
+
+  // Function to handle successful order placement
+  const handleOrderSuccess = () => {
+    clearCart();
+    setOrderCounter((prev) => prev + 1); // Increment order counter to reset quantities
+    console.log("Order placed successfully, resetting quantities");
   };
 
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -40,16 +81,70 @@ const MenuLayout = () => {
     }
   };
 
+  // Get customer name from session
+  const customerName = sessionDetails?.customerName;
+
+  // Show connection status
+  useEffect(() => {
+    console.log("Socket connection status in MenuLayout:", isConnected);
+  }, [isConnected]);
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-100">
       <Navbar
         activeCategory={activeCategory}
         onCategoryChange={setActiveCategory}
       />
 
-      <main className="container mx-auto px-4 py-6 pb-24">
+      {/* Customer Name, PIN & Connection Status */}
+      <div className="px-4 py-2 flex flex-wrap justify-between  items-center  ">
+        <div className="flex flex-col  justify-start ">
+          {customerName && (
+            <div className="text-sm text-gray-600 flex items-center">
+              <FaUser className="text-gray-500 mr-2" />
+              <span>
+                Welcome,{" "}
+                <span className="font-medium text-lg">{customerName}</span>
+              </span>
+            </div>
+          )}
+
+          {sessionDetails?.pin ? (
+            <div className="flex items-center justify-start   rounded-full">
+              <FaKey className="text-blue-600 mr-1" />
+              <span className="text-xs text-gray-700 mr-1">Table PIN:</span>
+              <span className="font-bold text-blue-600 text-lg tracking-wider">
+                {sessionDetails.pin}
+              </span>
+              <div className="ml-1 text-xs text-gray-500">
+                (Share Your Menu)
+              </div>
+            </div>
+          ) : (
+            <div className="text-xs text-red-500">No PIN available</div>
+          )}
+        </div>
+
+        <div
+          className={`text-xs flex items-center ${
+            isConnected ? "text-green-500" : "text-red-500"
+          }`}
+        >
+          {isConnected ? (
+            <>
+              <FaWifi className="mr-1" /> Connected
+            </>
+          ) : (
+            <>
+              <FaTimes className="mr-1" /> Disconnected
+            </>
+          )}
+        </div>
+      </div>
+
+      <main className="container mx-auto p-4 pb-24">
         {/* View Toggle Button */}
-        <div className="mb-4 flex justify-between items-center">
+        <div className="mb-4 flex  justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-800">
             {showOrders ? "Your Orders" : activeCategory}
           </h1>
@@ -75,6 +170,7 @@ const MenuLayout = () => {
           <Items
             activeCategory={activeCategory}
             onAddToCart={handleAddToCart}
+            orderPlaced={orderCounter} // Pass the order counter to reset quantities
           />
         </div>
         <div className={!showOrders ? "hidden" : "block"}>
@@ -114,6 +210,8 @@ const MenuLayout = () => {
         onClose={handleCartClose}
         cart={cart}
         onQuantityChange={handleAddToCart}
+        onClearCart={clearCart}
+        onOrderSuccess={handleOrderSuccess} // Pass the new callback
       />
     </div>
   );
