@@ -86,7 +86,16 @@ export const deleteCategory = (categoryId) =>
 // Item management functions
 export const createItem = (itemData) =>
   handleResponse(api.post("/admin/items", itemData));
-
+// In your api.js file
+export const getDashboardItems = async (params) => {
+  try {
+    const response = await api.get("/admin/items/dashboard", { params });
+    return { success: true, ...response.data };
+  } catch (error) {
+    console.error("Error in getDashboardItems:", error);
+    return { success: false, error: error.message };
+  }
+};
 export const getAllItems = async (params) => {
   try {
     const response = await api.get("/admin/items", { params });

@@ -23,6 +23,7 @@ import Users from "./components/users";
 import SelectItemPage from "./components/SelectItemPage";
 import AddItemPage from "./components/Additem";
 import ItemsEdit from "./components/itemsEdit";
+import ItemsDashboard from "./components/ItemsDashboard";
 import ItemsCategories from "./components/ItemsCategories";
 import Banners from "./components/Banners";
 import PaymentPage from "./components/payment";
@@ -193,6 +194,15 @@ const App = () => {
                     path="/add-item"
                     element={
                       <ProtectedRoute element={<AddItemPage />} path="/items" />
+                    }
+                  />
+                  <Route
+                    path="/items-dashboard"
+                    element={
+                      <ProtectedRoute
+                        element={<ItemsDashboard />}
+                        path="/items"
+                      />
                     }
                   />
                   <Route

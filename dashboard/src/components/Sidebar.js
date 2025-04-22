@@ -53,6 +53,13 @@ const Sidebar = () => {
       access: "/plans",
     },
     { path: "/items", icon: <FaBox />, label: "Items", access: "/items" },
+    // New dashboard entry to add
+    {
+      path: "/items-dashboard",
+      icon: <FaBox />,
+      label: "Items Dashboard",
+      access: "/items",
+    },
     {
       path: "/menuItems",
       icon: <FaBox />,

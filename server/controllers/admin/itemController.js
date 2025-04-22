@@ -64,7 +64,7 @@ exports.getAllItems = async (req, res) => {
 exports.getItemsByCategory = async (req, res) => {
   try {
     const { categoryName } = req.params;
-    const { page = 1, limit = 10 } = req.query;
+    // Remove limit to fetch all items
 
     const category = await Category.findOne({ name: categoryName });
     if (!category) {
@@ -75,17 +75,18 @@ exports.getItemsByCategory = async (req, res) => {
 
     const items = await Item.find({ category: category._id })
       .populate("category")
-      .skip((page - 1) * limit)
-      .limit(Number(limit))
       .sort({ createdAt: -1 });
 
     const totalItems = await Item.countDocuments({ category: category._id });
 
+    console.log(`Total items in category '${categoryName}': ${totalItems}`);
+    console.log(`All ${totalItems} items are being returned`);
+
     res.json({
+      success: true,
       items,
-      currentPage: Number(page),
-      totalPages: Math.ceil(totalItems / limit),
       totalItems,
+      message: `Found ${totalItems} items in category '${categoryName}'`,
     });
   } catch (error) {
     console.error("Error in getItemsByCategory:", error);
@@ -309,5 +310,70 @@ exports.bulkUploadItems = async (req, res) => {
       message: "Internal server error",
       error: error.message,
     });
+  }
+};
+// In your item controller file (where exports.getAllItems exists)
+
+exports.getDashboardItems = async (req, res) => {
+  try {
+    const { category, type, search, page = 1, limit = 10 } = req.query;
+
+    let query = {};
+
+    // Apply category filter if provided
+    if (category && category !== "all") {
+      const categoryDoc = await Category.findOne({
+        $or: [{ _id: category }, { name: category }],
+      });
+
+      if (categoryDoc) {
+        query.category = categoryDoc._id;
+      }
+    }
+
+    // Apply type filter if provided (Veg/Non Veg)
+    if (type && type !== "all") {
+      query.type = type;
+    }
+
+    // Apply search filter if provided
+    if (search) {
+      query.$or = [
+        { nameEnglish: { $regex: search, $options: "i" } },
+        { nameArabic: { $regex: search, $options: "i" } },
+        { descriptionEnglish: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    // Count total items matching the query
+    const totalItems = await Item.countDocuments(query);
+
+    console.log(`Total items found for dashboard: ${totalItems}`);
+    console.log(`Applying filters: ${JSON.stringify(query)}`);
+
+    // Fetch items with pagination and populate category information
+    const items = await Item.find(query)
+      .populate("category")
+      .skip((page - 1) * limit)
+      .limit(Number(limit))
+      .sort({ createdAt: -1 });
+
+    console.log(`Showing ${items.length} items on page ${page}`);
+
+    // Return results with pagination metadata
+    res.json({
+      success: true,
+      items,
+      pagination: {
+        currentPage: Number(page),
+        totalPages: Math.ceil(totalItems / limit),
+        totalItems,
+        limit: Number(limit),
+        visibleItems: items.length,
+      },
+    });
+  } catch (error) {
+    console.error("Error in getDashboardItems:", error);
+    res.status(500).json({ success: false, error: error.message });
   }
 };

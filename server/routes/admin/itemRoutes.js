@@ -11,6 +11,13 @@ router.post(
   staffServiceAuth,
   itemController.bulkUploadItems
 );
+// In the router file
+router.get(
+  "/dashboard",
+  adminAuth,
+  staffServiceAuth,
+  itemController.getDashboardItems
+);
 
 router.get("/", adminAuth, staffServiceAuth, itemController.getAllItems);
 router.get("/:id", adminAuth, staffServiceAuth, itemController.getItemById);
