@@ -691,58 +691,27 @@ export const deletePlanDuration = async (branchId, planId) => {
  * @param {Array|Object} itemData - Array of items or single item object
  * @returns {Promise<Object>} - Result of the bulk upload operation
  */
-export const bulkUploadItems = async (itemData) => {
-  try {
-    const response = await fetch(`${API_URL}/items/bulk`, {
-      method: "POST",
+
+// Bulk Upload API
+// Bulk upload items
+export const bulkUploadItems = async (itemsData) => {
+  return handleResponse(
+    api.post("/admin/items/bulk-upload", { items: itemsData })
+  );
+};
+
+// Process and upload Excel file for bulk item upload
+export const processBulkExcelUpload = async (file) => {
+  // Create form data if you're sending the file directly
+  const formData = new FormData();
+  formData.append("file", file);
+
+  // If you're sending the file for server-side processing
+  return handleResponse(
+    api.post("/admin/items/bulk-upload-file", formData, {
       headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${getToken()}`,
+        "Content-Type": "multipart/form-data",
       },
-      body: JSON.stringify(itemData),
-    });
-
-    // Check if response is OK before parsing JSON
-    if (!response.ok) {
-      // Check if response is likely HTML (error page)
-      const text = await response.text();
-      if (
-        text.trim().startsWith("<!DOCTYPE") ||
-        text.trim().startsWith("<html")
-      ) {
-        console.error(
-          "Server returned HTML instead of JSON:",
-          text.substring(0, 100)
-        );
-        return {
-          success: false,
-          error: `Server error: ${response.status} ${response.statusText}`,
-        };
-      }
-
-      // Try to parse as JSON in case it's a structured error
-      try {
-        const errorData = JSON.parse(text);
-        return {
-          success: false,
-          error: errorData.message || errorData.error || "API error",
-        };
-      } catch (e) {
-        // Not JSON, return text as error
-        return {
-          success: false,
-          error: `Server error: ${response.status} ${response.statusText}`,
-        };
-      }
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error("Error in bulkUploadItems:", error);
-    return {
-      success: false,
-      error: error.message || "Network error",
-    };
-  }
+    })
+  );
 };

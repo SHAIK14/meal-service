@@ -10,7 +10,13 @@ import {
 } from "lucide-react";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "../config/firebaseConfig";
-import { createItem, getAllCategories, bulkUploadItems } from "../utils/api";
+import {
+  createItem,
+  getAllCategories,
+  bulkUploadItems,
+  handleResponse,
+} from "../utils/api";
+import api from "../utils/api";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 
@@ -40,6 +46,7 @@ const AddItemPage = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [categories, setCategories] = useState([]);
+
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [showWarning, setShowWarning] = useState(false);
   const [uploadMode, setUploadMode] = useState("single"); // "single" or "bulk"
@@ -233,62 +240,111 @@ const AddItemPage = () => {
     }
   };
 
-  const generateExcelTemplate = () => {
-    const templateData = [
-      {
-        nameEnglish: "Example Item",
-        nameArabic: "مثال عنصر",
-        descriptionEnglish: "Description in English",
-        descriptionArabic: "الوصف بالعربية",
-        calories: 250,
-        protein: 15,
-        carbs: 30,
-        fat: 10,
-        type: "Non Veg", // or "Veg"
-        category: "Category ID or Name",
-        sellingPrice: 50,
-        currency: "SAR", // SAR, AED, BHD, QAR
-        discountPrice: 45,
-        subscription: true,
-        indoorCatering: true,
-        outdoorCatering: false,
-        dining: true,
-        imageUrl: "Optional: URL to image (leave empty if uploading later)",
-      },
-    ];
+  const generateExcelTemplate = async () => {
+    try {
+      const categoriesResponse = await fetchAllCategories();
+      const categories = categoriesResponse.success
+        ? categoriesResponse.data.data
+        : [];
 
-    // Create a worksheet
-    const ws = XLSX.utils.json_to_sheet(templateData);
+      // Create a "Categories" sheet first
+      const wb = XLSX.utils.book_new();
 
-    // Add column descriptions
-    ws["!cols"] = [
-      { wch: 20 }, // nameEnglish
-      { wch: 20 }, // nameArabic
-      { wch: 30 }, // descriptionEnglish
-      { wch: 30 }, // descriptionArabic
-      { wch: 10 }, // calories
-      { wch: 10 }, // protein
-      { wch: 10 }, // carbs
-      { wch: 10 }, // fat
-      { wch: 10 }, // type
-      { wch: 20 }, // category
-      { wch: 10 }, // sellingPrice
-      { wch: 10 }, // currency
-      { wch: 10 }, // discountPrice
-      { wch: 10 }, // subscription
-      { wch: 10 }, // indoorCatering
-      { wch: 10 }, // outdoorCatering
-      { wch: 10 }, // dining
-      { wch: 40 }, // imageUrl
-    ];
+      // Add Categories Reference sheet
+      if (categories.length > 0) {
+        const categoryData = categories.map((cat) => ({
+          categoryId: cat._id,
+          categoryName: cat.nameEnglish || cat.name,
+          description: cat.description || "",
+        }));
 
-    // Create a workbook
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Items Template");
+        const catWs = XLSX.utils.json_to_sheet(categoryData);
+        catWs["!cols"] = [{ wch: 24 }, { wch: 20 }, { wch: 30 }];
 
-    // Generate Excel file
-    XLSX.writeFile(wb, "item_upload_template.xlsx");
+        // Add the categories reference sheet first
+        XLSX.utils.book_append_sheet(wb, catWs, "Categories Reference");
+      }
+
+      // Template data with first category from the list
+      const exampleCategory = categories.length > 0 ? categories[0] : null;
+
+      const templateData = [
+        {
+          nameEnglish: "Example Item",
+          nameArabic: "مثال عنصر",
+          descriptionEnglish: "Description in English",
+          descriptionArabic: "الوصف بالعربية",
+          calories: 250,
+          protein: 15,
+          carbs: 30,
+          fat: 10,
+          type: "Non Veg", // or "Veg"
+          categoryName: exampleCategory
+            ? exampleCategory.nameEnglish || exampleCategory.name
+            : "Enter Category Name",
+          categoryId: exampleCategory ? exampleCategory._id : "",
+          sellingPrice: 50,
+          currency: "SAR",
+          discountPrice: 45,
+          subscription: "TRUE",
+          indoorCatering: "TRUE",
+          outdoorCatering: "FALSE",
+          dining: "TRUE",
+          image: "default-image.jpg",
+        },
+      ];
+
+      // Create Excel worksheet from the template data
+      const ws = XLSX.utils.json_to_sheet(templateData);
+
+      // Set column widths for better presentation
+      ws["!cols"] = [
+        { wch: 20 }, // nameEnglish
+        { wch: 20 }, // nameArabic
+        { wch: 30 }, // descriptionEnglish
+        { wch: 30 }, // descriptionArabic
+        { wch: 10 }, // calories
+        { wch: 10 }, // protein
+        { wch: 10 }, // carbs
+        { wch: 10 }, // fat
+        { wch: 10 }, // type
+        { wch: 20 }, // categoryName
+        { wch: 24 }, // categoryId
+        { wch: 10 }, // sellingPrice
+        { wch: 10 }, // currency
+        { wch: 10 }, // discountPrice
+        { wch: 10 }, // subscription
+        { wch: 10 }, // indoorCatering
+        { wch: 10 }, // outdoorCatering
+        { wch: 10 }, // dining
+        { wch: 20 }, // image
+      ];
+
+      // Add the template sheet
+      XLSX.utils.book_append_sheet(wb, ws, "Items Template");
+
+      // Write the Excel file
+      XLSX.writeFile(wb, "item_upload_template.xlsx");
+    } catch (error) {
+      console.error("Error generating template:", error);
+      setError("Failed to generate Excel template");
+    }
   };
+
+  // Function to fetch all categories
+  const fetchAllCategories = async () => {
+    try {
+      const response = await api.get("/admin/categories");
+      console.log("Categories API Response: ", response);
+      return response;
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      return { success: false, data: { data: [] } }; // Fallback to empty categories
+    }
+  };
+
+  // Function to process bulk upload
+  // Modify the processBulkUpload function to better handle the Excel data
 
   const processBulkUpload = async () => {
     if (!bulkFile) {
@@ -297,145 +353,158 @@ const AddItemPage = () => {
     }
 
     setLoading(true);
+    setBulkUploadProgress(10);
     setBulkUploadStatus("processing");
-    setBulkUploadProgress(0);
-    setError(null);
 
     try {
-      // Read the Excel file
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
-          const data = new Uint8Array(e.target.result);
+          const data = e.target.result;
           const workbook = XLSX.read(data, { type: "array" });
-          const firstSheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[firstSheetName];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet);
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
 
-          if (jsonData.length === 0) {
-            setError("The uploaded file contains no data.");
+          setBulkUploadProgress(40);
+
+          const parsedItemsData = XLSX.utils.sheet_to_json(worksheet);
+          console.log("Parsed Excel Data:", parsedItemsData); // Debug parsed data
+
+          setBulkUploadProgress(60);
+
+          const formattedItems = [];
+          const errors = [];
+
+          for (let i = 0; i < parsedItemsData.length; i++) {
+            const item = parsedItemsData[i];
+
+            // Skip example item
+            if (
+              item.nameEnglish === "Example Item" ||
+              !item.nameEnglish?.trim()
+            ) {
+              console.log("Skipping example or empty item");
+              continue;
+            }
+
+            // Make sure required fields exist
+            if (
+              !item.nameEnglish ||
+              !item.nameArabic ||
+              !item.descriptionEnglish ||
+              !item.descriptionArabic
+            ) {
+              errors.push({
+                row: i + 2,
+                nameEnglish: item.nameEnglish || "Unknown",
+                status: "error",
+                message: "Missing required fields",
+              });
+              continue;
+            }
+
+            // Convert string boolean values to actual booleans
+            const convertToBoolean = (value) => {
+              if (typeof value === "boolean") return value;
+              if (typeof value === "string") {
+                return value.toLowerCase() === "true";
+              }
+              return Boolean(value);
+            };
+
+            // Important: Send categoryName directly from Excel
+            formattedItems.push({
+              nameEnglish: item.nameEnglish,
+              nameArabic: item.nameArabic,
+              descriptionEnglish: item.descriptionEnglish,
+              descriptionArabic: item.descriptionArabic,
+              image: item.image || "default-image.jpg",
+              calories: Number(item.calories) || 0,
+              protein: Number(item.protein) || 0,
+              carbs: Number(item.carbs) || 0,
+              fat: Number(item.fat) || 0,
+              type: item.type === "Veg" ? "Veg" : "Non Veg",
+              categoryName: item.categoryName, // Send the category name directly
+              categoryId: item.categoryId, // Send the category ID as well
+              prices: [
+                {
+                  currency: item.currency || "SAR",
+                  sellingPrice: Number(item.sellingPrice) || 0,
+                  discountPrice: item.discountPrice
+                    ? Number(item.discountPrice)
+                    : null,
+                },
+              ],
+              available:
+                item.available === undefined ? true : Boolean(item.available),
+              subscription: convertToBoolean(item.subscription),
+              indoorCatering: convertToBoolean(item.indoorCatering),
+              outdoorCatering: convertToBoolean(item.outdoorCatering),
+              dining: convertToBoolean(item.dining),
+            });
+          }
+
+          setBulkUploadProgress(80);
+          console.log("Formatted items count:", formattedItems.length);
+
+          if (formattedItems.length === 0) {
+            setError("No valid items found in the Excel file");
+            setBulkUploadStatus({
+              total: parsedItemsData.length,
+              success: 0,
+              error: errors.length,
+              details: errors,
+            });
             setLoading(false);
-            setBulkUploadStatus("error");
             return;
           }
 
-          // Process each row
-          const totalItems = jsonData.length;
-          const results = [];
-          let successCount = 0;
-          let errorCount = 0;
+          const result = await bulkUploadItems(formattedItems);
+          setBulkUploadProgress(100);
 
-          for (let i = 0; i < totalItems; i++) {
-            const row = jsonData[i];
-
-            try {
-              // Create item object
-              const itemData = {
-                nameEnglish: row.nameEnglish,
-                nameArabic: row.nameArabic,
-                descriptionEnglish: row.descriptionEnglish || "",
-                descriptionArabic: row.descriptionArabic || "",
-                calories: parseFloat(row.calories) || 0,
-                protein: parseFloat(row.protein) || 0,
-                carbs: parseFloat(row.carbs) || 0,
-                fat: parseFloat(row.fat) || 0,
-                type: row.type || "Non Veg",
-                category: row.category || categories[0]?._id,
-                image: row.imageUrl || "",
-                prices: [
-                  {
-                    currency: row.currency || "SAR",
-                    sellingPrice: parseFloat(row.sellingPrice) || 0,
-                    discountPrice: row.discountPrice
-                      ? parseFloat(row.discountPrice)
-                      : null,
-                  },
-                ],
-                services: {
-                  subscription:
-                    row.subscription === "true" || row.subscription === true,
-                  indoorCatering:
-                    row.indoorCatering === "true" ||
-                    row.indoorCatering === true,
-                  outdoorCatering:
-                    row.outdoorCatering === "true" ||
-                    row.outdoorCatering === true,
-                  dining: row.dining === "true" || row.dining === true,
-                },
-              };
-
-              // Call API to create item
-              const result = await bulkUploadItems(itemData);
-
-              if (result.success) {
-                successCount++;
-                results.push({
-                  row: i + 1,
-                  status: "success",
-                  message: "Item added successfully",
-                });
-              } else {
-                errorCount++;
-                results.push({
-                  row: i + 1,
-                  status: "error",
-                  message: result.error || "Failed to add item",
-                });
-              }
-            } catch (err) {
-              errorCount++;
-              results.push({
-                row: i + 1,
-                status: "error",
-                message: err.message,
-              });
-            }
-
-            // Update progress
-            setBulkUploadProgress(Math.round(((i + 1) / totalItems) * 100));
+          const allErrors = [...errors];
+          if (result.data?.errors) {
+            allErrors.push(...result.data.errors);
           }
 
-          // Update status
           setBulkUploadStatus({
-            total: totalItems,
-            success: successCount,
-            error: errorCount,
-            details: results,
+            total: parsedItemsData.length,
+            success: result.success
+              ? result.data.insertedCount || formattedItems.length
+              : 0,
+            error: allErrors.length,
+            details: allErrors,
           });
 
-          if (errorCount === 0) {
+          if (result.success) {
             setSuccess(true);
           } else {
-            setError(
-              `${errorCount} items failed to upload. Check the details below.`
-            );
+            setError(result.error || "Failed to upload items");
           }
-        } catch (err) {
-          console.error("Error processing Excel file:", err);
-          setError(
-            "Failed to process the Excel file. Please check the format."
-          );
+        } catch (parseError) {
+          console.error("Parsing error:", parseError);
           setBulkUploadStatus("error");
+          setError("Failed to parse Excel file: " + parseError.message);
         } finally {
           setLoading(false);
         }
       };
 
-      reader.onerror = () => {
-        setError("Failed to read the file.");
-        setLoading(false);
+      reader.onerror = (error) => {
+        console.error("FileReader error:", error);
         setBulkUploadStatus("error");
+        setError("Failed to read file");
+        setLoading(false);
       };
 
       reader.readAsArrayBuffer(bulkFile);
-    } catch (err) {
-      console.error("Error in bulk upload:", err);
-      setError("An unexpected error occurred during upload.");
-      setLoading(false);
+    } catch (error) {
+      console.error("Bulk upload error:", error);
       setBulkUploadStatus("error");
+      setError("Failed to process bulk upload");
+      setLoading(false);
     }
   };
-
   if (categoriesLoading) {
     return (
       <div className="flex justify-center items-center h-64">
