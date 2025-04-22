@@ -23,7 +23,7 @@ import {
   cancelOrderItem,
   returnOrderItem,
 } from "../utils/api";
-import "../styles/DiningAdmin.css";
+// import "../styles/DiningAdmin.css";
 import { useKitchenSocket } from "../contexts/KitchenSocketContext";
 
 function DiningAdmin() {
@@ -783,113 +783,154 @@ function DiningAdmin() {
     }
   };
 
-  if (loading) return <div className="loading-message">Loading tables...</div>;
+  if (loading)
+    return (
+      <div className="loading-message flex flex-col  w-full h-screen items-center justify-center space-y-4">
+        <div className="loader w-12 h-12 border-4 border-t-4 border-gray-300 border-t-red-500 rounded-full animate-spin"></div>
+        <span className="text-lg font-semibold">
+          Loading Dining dashboard...
+        </span>
+      </div>
+    );
   if (error) return <div className="error-message">{error}</div>;
 
   return (
-    <div className="dining-admin-container">
+    <div className="bg-white h-screen">
       {/* Notification sound */}
       <audio id="notification-sound" src="/notification.mp3" />
 
       {/* Connection status indicator (can be hidden in production) */}
       <div
-        className={`connection-status ${
+        className={`connection-status hidden ${
           isConnected ? "connected" : "disconnected"
         }`}
       >
         {isConnected ? "Connected" : "Disconnected"}
       </div>
 
-      <div className="dining-admin-header">
+      <div className="text-2xl font-semibold mb-4">
         <h1>Dining Tables</h1>
       </div>
 
-      <div className="tables-grid">
+      <div className="p-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-6">
         {tables.map((table) => (
           <div
             key={table.id}
             onClick={() => handleTableClick(table)}
-            className={`table-card ${table.status}`}
+            className={`
+        flex flex-col items-center justify-center gap-4 w-40 h-40 
+        border-2 rounded-2xl p-4 cursor-pointer transition-colors duration-300
+        ${
+          table.status === "available"
+            ? "bg-green-100 border-green-300"
+            : "bg-red-100 border-red-300"
+        }
+      `}
           >
-            <div className="table-header">
-              <h3 className="table-title">{table.name}</h3>
-              <span className={`status-badge ${table.status}`}>
+            <FaUtensils
+              className={`text-4xl ${
+                table.status === "available" ? "text-green-600" : "text-red-600"
+              }`}
+            />
+            <div className="flex flex-col items-center gap-1">
+              <h3 className="text-2xl font-bold">{table.name}</h3>
+              <span
+                className={`text-white text-sm font-semibold px-3 py-1 rounded-full ${
+                  table.status === "available" ? "bg-green-500" : "bg-red-500"
+                }`}
+              >
                 {table.status.charAt(0).toUpperCase() + table.status.slice(1)}
               </span>
               {notifications[table.name] > 0 && (
-                <div className="notification-badge">
+                <div className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center mt-1">
                   {notifications[table.name]}
                 </div>
               )}
             </div>
-            <FaUtensils className={`table-icon ${table.status}`} />
           </div>
         ))}
       </div>
 
       {/* Table Actions Modal */}
       {showTableModal && selectedTable && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
+        <div className="fixed inset-0 bg-black/60  flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden transform transition-all">
+            {/* Modal Header */}
+            <div className="border-b px-6 py-4 flex justify-between items-center">
               <div>
-                <h2>{selectedTable.name}</h2>
+                <h2 className="text-xl font-semibold text-gray-800">
+                  {selectedTable.name}
+                </h2>
                 {tableSession?.session?.paymentRequested && (
-                  <div className="payment-requested-badge">
-                    <FaBell className="bell-icon" />
+                  <div className="flex items-center text-sm mt-1 text-yellow-600 bg-yellow-50 px-3 py-1 rounded-full">
+                    <FaBell className="mr-2" />
                     Payment Requested
                   </div>
                 )}
               </div>
               <button
-                className="close-button"
+                className="text-gray-400 hover:text-gray-600 cursor-pointer transition-colors p-1 rounded-full hover:bg-gray-100"
                 onClick={() => setShowTableModal(false)}
               >
-                <FaTimes />
+                <FaTimes size={20} />
               </button>
             </div>
 
-            <div className="modal-body">
-              {/* Show Mark as Available only when no active session */}
-              {selectedTable.status === "occupied" &&
-                !tableSession?.session && (
-                  <button
-                    className="action-button available"
-                    onClick={() =>
-                      handleTableStatusChange(selectedTable.id, "available")
-                    }
-                  >
-                    <FaCheck />
-                    Mark as Available
-                  </button>
-                )}
-
-              {selectedTable.status === "occupied" && (
-                <>
-                  <button
-                    className="action-button view-orders"
-                    onClick={() => {
-                      setShowOrdersModal(true);
-                      setShowTableModal(false);
-                    }}
-                  >
-                    <FaEye />
-                    View Orders
-                  </button>
-                  {tableSession?.session && (
+            {/* Modal Body */}
+            <div className="px-6 py-4">
+              <div className="space-y-3">
+                {/* Show Mark as Available only when no active session */}
+                {selectedTable.status === "occupied" &&
+                  !tableSession?.session && (
                     <button
-                      className="action-button payment"
+                      className="w-full flex items-center cursor-pointer justify-center gap-2 bg-green-100 hover:bg-green-200 text-green-700 px-4 py-3 rounded-lg font-medium transition-colors"
+                      onClick={() =>
+                        handleTableStatusChange(selectedTable.id, "available")
+                      }
+                    >
+                      <FaCheck />
+                      Mark as Available
+                    </button>
+                  )}
+
+                {selectedTable.status === "occupied" && (
+                  <>
+                    <button
+                      className="w-full flex items-center justify-center cursor-pointer gap-2 bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-3 rounded-lg font-medium transition-colors"
                       onClick={() => {
-                        setShowPaymentModal(true);
+                        setShowOrdersModal(true);
                         setShowTableModal(false);
                       }}
                     >
-                      <FaCreditCard />
-                      Payment Done
+                      <FaEye />
+                      View Orders
                     </button>
-                  )}
-                </>
-              )}
+
+                    {tableSession?.session && (
+                      <button
+                        className="w-full flex items-center justify-center gap-2 bg-green-50 hover:bg-green-100 cursor-pointer text-green-700 px-4 py-3 rounded-lg font-medium transition-colors"
+                        onClick={() => {
+                          setShowPaymentModal(true);
+                          setShowTableModal(false);
+                        }}
+                      >
+                        <FaCreditCard />
+                        Payment Done
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-gray-50 px-6 py-3">
+              <button
+                className="w-full text-red-500 hover:text-white hover:bg-red-500 active:bg-red-500 cursor-pointer px-4 py-2 rounded-lg font-medium border border-gray-200  transition-colors"
+                onClick={() => setShowTableModal(false)}
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
@@ -897,67 +938,145 @@ function DiningAdmin() {
 
       {/* Orders Modal */}
       {showOrdersModal && selectedTable && tableSession?.session && (
-        <div className="modal-overlay">
-          <div className="modal-content orders-modal">
-            <div className="modal-header">
-              <div>
-                <h2>Orders for {selectedTable.name}</h2>
-                <p className="session-total">
-                  Session Total:
-                  {tableSession?.session?.totalAmount?.toFixed(2) || "0.00"}
-                  SAR
-                </p>
+        <div className="fixed inset-0  bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden animate-fadeIn">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-gray-100">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-800">
+                    {selectedTable.name}
+                  </h2>
+                  <div className="flex items-center mt-1 text-sm text-gray-500">
+                    <span className="bg-emerald-50 text-emerald-700 px-2 py-1 rounded-md font-medium">
+                      Session Total:{" "}
+                      {tableSession?.session?.totalAmount?.toFixed(2) || "0.00"}{" "}
+                      SAR
+                    </span>
+                  </div>
+                </div>
+                <button
+                  className="bg-gray-100 cursor-pointer hover:bg-gray-200 rounded-full p-2 text-gray-500 transition-all duration-200"
+                  onClick={() => {
+                    setShowOrdersModal(false);
+                    setShowTableModal(true);
+                  }}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </button>
               </div>
-              <button
-                className="close-button"
-                onClick={() => {
-                  setShowOrdersModal(false);
-                  setShowTableModal(true);
-                }}
-              >
-                <FaTimes />
-              </button>
             </div>
 
-            <div className="orders-list">
+            {/* Orders List Container with Subtle Scrollbar */}
+            <div className="max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
               {tableSession.orders && tableSession.orders.length > 0 ? (
                 tableSession.orders.map((order) => (
-                  <div key={order._id} className={`order-card ${order.status}`}>
-                    <div className="order-header">
-                      <div className="order-info">
-                        <div className="order-title">
-                          <span className="order-number">
-                            Order #{order._id.slice(-4)}
+                  <div
+                    key={order._id}
+                    className="mb-4 border-b border-gray-100 last:border-b-0"
+                  >
+                    {/* Order Header */}
+                    <div className="p-4">
+                      <div className="flex justify-between items-center mb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-gray-800">
+                            #{order._id.slice(-4)}
                           </span>
-                          <span className={`status-badge ${order.status}`}>
+                          <span
+                            className={`px-2 py-1 text-xs font-medium rounded-md 
+                      ${
+                        order.status === "pending"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : ""
+                      }
+                      ${
+                        order.status === "admin_approved"
+                          ? "bg-blue-100 text-blue-800"
+                          : ""
+                      }
+                      ${
+                        order.status === "in_preparation"
+                          ? "bg-orange-100 text-orange-800"
+                          : ""
+                      }
+                      ${
+                        order.status === "ready_for_pickup"
+                          ? "bg-purple-100 text-purple-800"
+                          : ""
+                      }
+                      ${
+                        order.status === "served"
+                          ? "bg-green-100 text-green-800"
+                          : ""
+                      }
+                      ${
+                        order.status === "canceled"
+                          ? "bg-red-100 text-red-800"
+                          : ""
+                      }
+                    `}
+                          >
                             {getStatusLabel(order.status)}
                           </span>
                         </div>
 
-                        {/* Order timestamps */}
-                        <div className="order-timestamps">
-                          <span className="timestamp">
-                            <FaClock className="timestamp-icon" />
-                            Created: {formatTimestamp(order.createdAt)}
-                          </span>
-                          {order.statusTimestamps?.admin_approved && (
-                            <span className="timestamp">
-                              Approved:{" "}
-                              {formatTimestamp(
-                                order.statusTimestamps.admin_approved
-                              )}
-                            </span>
-                          )}
+                        <div className="text-xs text-gray-500 flex items-center gap-1">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-3 w-3"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                          {formatTimestamp(order.createdAt)}
+                        </div>
+                      </div>
+
+                      {/* Order Status Timeline */}
+                      {(order.statusTimestamps?.admin_approved ||
+                        order.statusTimestamps?.in_preparation ||
+                        order.statusTimestamps?.ready_for_pickup ||
+                        order.statusTimestamps?.served) && (
+                        <div className="flex items-center gap-2 text-xs text-gray-500 mb-3 overflow-x-auto pb-1">
+                          <div className="flex items-center whitespace-nowrap">
+                            {order.statusTimestamps?.admin_approved && (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded-md">
+                                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                Approved:{" "}
+                                {formatTimestamp(
+                                  order.statusTimestamps.admin_approved
+                                )}
+                              </span>
+                            )}
+                          </div>
                           {order.statusTimestamps?.in_preparation && (
-                            <span className="timestamp">
-                              Preparation:{" "}
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-50 text-orange-700 rounded-md whitespace-nowrap">
+                              <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
+                              Prep:{" "}
                               {formatTimestamp(
                                 order.statusTimestamps.in_preparation
                               )}
                             </span>
                           )}
                           {order.statusTimestamps?.ready_for_pickup && (
-                            <span className="timestamp">
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-50 text-purple-700 rounded-md whitespace-nowrap">
+                              <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
                               Ready:{" "}
                               {formatTimestamp(
                                 order.statusTimestamps.ready_for_pickup
@@ -965,46 +1084,76 @@ function DiningAdmin() {
                             </span>
                           )}
                           {order.statusTimestamps?.served && (
-                            <span className="timestamp">
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 rounded-md whitespace-nowrap">
+                              <span className="w-2 h-2 bg-green-500  rounded-full"></span>
                               Served:{" "}
                               {formatTimestamp(order.statusTimestamps.served)}
                             </span>
                           )}
                         </div>
-                      </div>
+                      )}
 
-                      {/* Next action button based on current status */}
-                      <div className="order-actions">
-                        {getNextAction(order) && (
-                          <button
-                            className={`status-button ${
-                              getNextAction(order).color
-                            }`}
-                            onClick={() =>
-                              handleOrderStatusChange(
-                                order._id,
-                                getNextAction(order).action
-                              )
-                            }
-                          >
-                            {getNextAction(order).icon}
-                            {getNextAction(order).label}
-                          </button>
-                        )}
-                      </div>
+                      {/* Next Action Button */}
+                      {getNextAction(order) && (
+                        <button
+                          className={`w-full mt-2 px-4 py-2 cursor-pointer rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-all
+                      ${
+                        getNextAction(order).color === "green"
+                          ? "bg-green-600 hover:bg-green-700 text-white"
+                          : ""
+                      }
+                      ${
+                        getNextAction(order).color === "blue"
+                          ? "bg-blue-600 hover:bg-blue-700 text-white"
+                          : ""
+                      }
+                      ${
+                        getNextAction(order).color === "orange"
+                          ? "bg-orange-600 hover:bg-orange-700 text-white"
+                          : ""
+                      }
+                      ${
+                        getNextAction(order).color === "purple"
+                          ? "bg-purple-600 hover:bg-purple-700 text-white"
+                          : ""
+                      }
+                      ${
+                        getNextAction(order).color === "red"
+                          ? "bg-red-600 hover:bg-red-700 text-white"
+                          : ""
+                      }
+                    `}
+                          onClick={() =>
+                            handleOrderStatusChange(
+                              order._id,
+                              getNextAction(order).action
+                            )
+                          }
+                        >
+                          {getNextAction(order).icon}
+                          {getNextAction(order).label}
+                        </button>
+                      )}
                     </div>
 
-                    {/* Order items */}
-                    <div className="order-items">
-                      <div className="order-items-wrapper">
-                        <table className="items-table">
+                    {/* Order Items */}
+                    <div className="px-4 pb-4">
+                      <div className="bg-gray-50 rounded-xl overflow-hidden">
+                        <table className="w-full text-sm">
                           <thead>
-                            <tr>
-                              <th>Item</th>
-                              <th>Qty</th>
-                              <th>Price</th>
-                              <th>Total</th>
-                              <th>Action</th>
+                            <tr className="bg-gray-100 text-gray-600">
+                              <th className="px-4 py-2 text-left font-medium">
+                                Item
+                              </th>
+                              <th className="px-4 py-2 text-center font-medium">
+                                Qty
+                              </th>
+                              <th className="px-4 py-2 text-right font-medium">
+                                Price
+                              </th>
+                              <th className="px-4 py-2 text-right font-medium">
+                                Action
+                              </th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1025,50 +1174,92 @@ function DiningAdmin() {
                                 return (
                                   <tr
                                     key={idx}
-                                    className={
+                                    className={`border-b border-gray-200 last:border-b-0 ${
                                       isReturned || isCancelled
-                                        ? "returned-item"
+                                        ? "bg-gray-50"
                                         : ""
-                                    }
+                                    }`}
                                   >
-                                    <td>{item.name}</td>
-                                    <td>
-                                      {effectiveQuantity}
-                                      {isReturned && (
-                                        <span className="returned-qty">
-                                          (-{item.returnedQuantity} returned)
-                                        </span>
-                                      )}
-                                      {isCancelled && (
-                                        <span className="returned-qty">
-                                          (-{item.cancelledQuantity} cancelled)
-                                        </span>
-                                      )}
+                                    <td className="px-4 py-3 text-gray-800 font-medium">
+                                      {item.name}
                                     </td>
-                                    <td>{item.price} SAR</td>
-                                    <td>
-                                      {(
-                                        effectiveQuantity *
-                                          (item?.price || 0) || 0
-                                      ).toFixed(2)}{" "}
-                                      SAR
+                                    <td className="px-4 py-3 text-center">
+                                      <div className="flex flex-col items-center">
+                                        <span className="font-medium">
+                                          {effectiveQuantity}
+                                        </span>
+                                        {isReturned && (
+                                          <span className="text-xs text-red-600">
+                                            (-{item.returnedQuantity} returned)
+                                          </span>
+                                        )}
+                                        {isCancelled && (
+                                          <span className="text-xs text-red-600">
+                                            (-{item.cancelledQuantity}{" "}
+                                            cancelled)
+                                          </span>
+                                        )}
+                                      </div>
                                     </td>
-                                    <td>
+                                    <td className="px-4 py-3 text-right">
+                                      <div>
+                                        <div className="font-medium">
+                                          {(
+                                            effectiveQuantity *
+                                              (item?.price || 0) || 0
+                                          ).toFixed(2)}{" "}
+                                          SAR
+                                        </div>
+                                        <div className="text-xs text-gray-500">
+                                          {item.price} SAR each
+                                        </div>
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-3 text-right">
                                       {effectiveQuantity > 0 &&
                                         order.status !== "canceled" && (
                                           <button
-                                            className="return-item-btn"
+                                            className={`cursor-pointer px-2 py-1 rounded-md text-xs font-medium flex items-center gap-1 
+                                      ${
+                                        order.status === "served"
+                                          ? "bg-amber-100 text-amber-700 hover:bg-amber-200"
+                                          : "bg-red-100 text-red-700 hover:bg-red-200"
+                                      }`}
                                             onClick={() =>
                                               handleItemAction(order, idx, item)
                                             }
                                           >
                                             {order.status === "served" ? (
                                               <>
-                                                <FaUndo /> Return
+                                                <svg
+                                                  xmlns="http://www.w3.org/2000/svg"
+                                                  className="h-3 w-3"
+                                                  viewBox="0 0 20 20"
+                                                  fill="currentColor"
+                                                >
+                                                  <path
+                                                    fillRule="evenodd"
+                                                    d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                                                    clipRule="evenodd"
+                                                  />
+                                                </svg>
+                                                Return
                                               </>
                                             ) : (
                                               <>
-                                                <FaTrash /> Cancel
+                                                <svg
+                                                  xmlns="http://www.w3.org/2000/svg"
+                                                  className="h-3 w-3"
+                                                  viewBox="0 0 20 20"
+                                                  fill="currentColor"
+                                                >
+                                                  <path
+                                                    fillRule="evenodd"
+                                                    d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                                                    clipRule="evenodd"
+                                                  />
+                                                </svg>
+                                                Cancel
                                               </>
                                             )}
                                           </button>
@@ -1082,8 +1273,8 @@ function DiningAdmin() {
                               order.status !== "canceled" && (
                                 <tr>
                                   <td
-                                    colSpan="5"
-                                    className="text-center text-gray-500 italic"
+                                    colSpan="4"
+                                    className="px-4 py-4 text-center text-gray-500 italic"
                                   >
                                     No active items in this order. It will be
                                     automatically canceled.
@@ -1092,14 +1283,18 @@ function DiningAdmin() {
                               )}
                           </tbody>
                           <tfoot>
-                            <tr>
-                              <td colSpan="3" className="text-right">
-                                <strong>Order Total:</strong>
+                            <tr className="bg-gray-100">
+                              <td
+                                colSpan="2"
+                                className="px-4 py-3 text-right font-bold text-gray-700"
+                              >
+                                Order Total:
                               </td>
-                              <td colSpan="2">
-                                <strong>
-                                  {(order?.totalAmount || 0).toFixed(2)} SAR
-                                </strong>
+                              <td
+                                colSpan="2"
+                                className="px-4 py-3 text-right font-bold text-gray-800"
+                              >
+                                {(order?.totalAmount || 0).toFixed(2)} SAR
                               </td>
                             </tr>
                           </tfoot>
@@ -1109,18 +1304,47 @@ function DiningAdmin() {
                   </div>
                 ))
               ) : (
-                <div className="no-orders-message">
-                  No orders found for this session
+                <div className="flex flex-col items-center justify-center py-12 px-4 text-gray-500">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-16 w-16 text-gray-300 mb-3"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                    />
+                  </svg>
+                  <p className="text-lg font-medium">No orders found</p>
+                  <p className="text-sm text-gray-400 mt-1">
+                    This table has no orders in the current session
+                  </p>
                 </div>
               )}
             </div>
 
-            <div className="modal-footer">
+            {/* Modal Footer */}
+            <div className="p-4 bg-gray-50 border-t border-gray-100">
               <button
-                className="invoice-button"
+                className="w-full cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-4 rounded-xl font-medium flex items-center justify-center gap-2 transition-all shadow-sm"
                 onClick={handleGenerateInvoice}
               >
-                <FaPrint />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a2 2 0 002 2h6a2 2 0 002-2v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z"
+                    clipRule="evenodd"
+                  />
+                </svg>
                 Generate Invoice
               </button>
             </div>
@@ -1130,35 +1354,63 @@ function DiningAdmin() {
 
       {/* Item Action Modal (for returns or cancellations) */}
       {showItemActionModal && selectedItem && (
-        <div className="modal-overlay">
-          <div className="modal-content return-modal">
-            <div className="modal-header">
-              <h2>{actionType === "return" ? "Return Item" : "Cancel Item"}</h2>
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-md overflow-hidden transform transition-all">
+            {/* Header */}
+            <div className="flex justify-between items-center p-6 border-b border-gray-100">
+              <h2 className="text-lg font-medium text-gray-900">
+                {actionType === "return" ? "Return Item" : "Cancel Item"}
+              </h2>
               <button
-                className="close-button"
+                className="text-gray-400 cursor-pointer hover:text-gray-500 transition-colors focus:outline-none"
                 onClick={() => setShowItemActionModal(false)}
               >
-                <FaTimes />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
               </button>
             </div>
-            <div className="modal-body">
-              <div className="return-item-details">
-                <p>
-                  <strong>Item:</strong> {selectedItem.name}
-                </p>
-                <p>
-                  <strong>Price:</strong> {selectedItem.price} SAR
-                </p>
-                <p>
-                  <strong>Current Quantity:</strong>{" "}
-                  {getEffectiveQuantity(selectedItem)}
-                </p>
+
+            {/* Body */}
+            <div className="px-6 py-4 space-y-6">
+              {/* Item details card */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-gray-500 mb-1">Item</p>
+                    <p className="font-medium text-gray-900">
+                      {selectedItem.name}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 mb-1">Price</p>
+                    <p className="font-medium text-gray-900">
+                      {selectedItem.price} SAR
+                    </p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-gray-500 mb-1">Current Quantity</p>
+                    <p className="font-medium text-gray-900">
+                      {getEffectiveQuantity(selectedItem)}
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              <div className="return-form">
-                <div className="form-group">
-                  <label>
-                    Quantity to {actionType === "return" ? "Return" : "Cancel"}:
+              {/* Form */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Quantity to {actionType === "return" ? "Return" : "Cancel"}
                   </label>
                   <input
                     type="number"
@@ -1168,16 +1420,18 @@ function DiningAdmin() {
                     onChange={(e) =>
                       setReturnQuantity(parseInt(e.target.value) || 1)
                     }
-                    className="quantity-input"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                   />
                 </div>
 
-                <div className="form-group">
-                  <label>Reason:</label>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Reason
+                  </label>
                   <select
                     value={returnReason}
                     onChange={(e) => setReturnReason(e.target.value)}
-                    className="reason-select"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors"
                   >
                     <option value="">Select a reason</option>
                     <option value="Customer changed mind">
@@ -1191,23 +1445,33 @@ function DiningAdmin() {
                 </div>
 
                 {returnReason === "Other" && (
-                  <div className="form-group">
-                    <label>Specify reason:</label>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Specify reason
+                    </label>
                     <input
                       type="text"
                       value={returnReason === "Other" ? "" : returnReason}
                       onChange={(e) => setReturnReason(e.target.value)}
-                      className="reason-input"
+                      className="w-full px-4 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       placeholder="Enter reason"
                     />
                   </div>
                 )}
               </div>
             </div>
-            <div className="modal-footer">
+
+            {/* Footer */}
+            <div className="px-6 py-4 bg-gray-50 flex justify-end space-x-3 border-t border-gray-100">
+              <button
+                className="px-4 py-2 bg-white border cursor-pointer border-gray-200 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 transition-colors"
+                onClick={() => setShowItemActionModal(false)}
+              >
+                Cancel
+              </button>
               <button
                 disabled={actionPending}
-                className="confirm-button"
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={submitItemAction}
               >
                 {actionPending
@@ -1216,12 +1480,6 @@ function DiningAdmin() {
                   ? "Confirm Return"
                   : "Confirm Cancellation"}
               </button>
-              <button
-                className="cancel-button"
-                onClick={() => setShowItemActionModal(false)}
-              >
-                Cancel
-              </button>
             </div>
           </div>
         </div>
@@ -1229,86 +1487,162 @@ function DiningAdmin() {
 
       {/* Invoice Modal */}
       {showInvoiceModal && invoiceData && (
-        <div className="modal-overlay">
-          <div className="modal-content invoice-modal">
-            <div className="modal-header">
-              <h2>Invoice</h2>
-              <div className="invoice-actions">
-                <button className="print-button" onClick={() => window.print()}>
-                  <FaPrint />
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4 ">
+          <div className="bg-white  rounded-lg shadow-xl w-full max-w-2xl ">
+            {/* Modal Header */}
+            <div className="flex justify-between items-center px-6  border-b border-gray-100">
+              <div className="flex items-center gap-4 mt-4">
+                <h2 className="text-xl font-medium text-gray-900">Invoice</h2>
+                <button
+                  className="flex items-center cursor-pointer px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300"
+                  onClick={() => window.print()}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4 mr-2"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a2 2 0 002 2h6a2 2 0 002-2v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
                   Print
                 </button>
+              </div>
+              <div className="flex items-center ">
                 <button
-                  className="close-button"
+                  className="text-gray-400 hover:text-gray-500 transition-colors focus:outline-none"
                   onClick={() => setShowInvoiceModal(false)}
                 >
-                  <FaTimes />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
                 </button>
               </div>
             </div>
 
-            <div className="invoice-content">
-              <div className="invoice-header">
-                <h3>{invoiceData?.branchName || "Restaurant"}</h3>
-                <p>{invoiceData?.tableName || ""}</p>
-                <p>VAT: {invoiceData?.vatNumber || ""}</p>
+            {/* Invoice Content */}
+            <div className="px-6  space-y-6">
+              <div className="flex justify-between items-center mt-4">
+                {/* Restaurant Info */}
+                <div className="text-center flex items-center gap-2">
+                  <h3 className="text-xl font-bold text-gray-900">
+                    {invoiceData?.branchName || "Restaurant"}
+                  </h3>
+                  {invoiceData?.tableName && (
+                    <p className="text-gray-600 mt-1">
+                      Table Name: {"  "} {invoiceData.tableName}
+                    </p>
+                  )}
+                </div>
+                {invoiceData?.vatNumber && (
+                  <p className="text-gray-600 text-sm mt-1">
+                    VAT: {invoiceData.vatNumber}
+                  </p>
+                )}
               </div>
 
-              <div className="invoice-info">
-                <p>
-                  <strong>Invoice No:</strong> {invoiceData?.invoiceNo || ""}
-                </p>
-                <p>
-                  <strong>Date:</strong>{" "}
-                  {invoiceData?.date
-                    ? new Date(invoiceData.date).toLocaleString()
-                    : "-"}
-                </p>
-                <p>
-                  <strong>Table:</strong> {invoiceData?.tableName || ""}
-                </p>
+              {/* Invoice Details */}
+              <div className="grid grid-cols-3 gap-4 bg-gray-50 p-4 rounded-lg text-sm">
+                <div>
+                  <p className="text-gray-500 mb-1">Invoice No</p>
+                  <p className="font-medium text-gray-900">
+                    {invoiceData?.invoiceNo || "-"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-500 mb-1">Date</p>
+                  <p className="font-medium text-gray-900">
+                    {invoiceData?.date
+                      ? new Date(invoiceData.date).toLocaleString()
+                      : "-"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-500 mb-1">Table</p>
+                  <p className="font-medium text-gray-900">
+                    {invoiceData?.tableName || "-"}
+                  </p>
+                </div>
               </div>
-              <table className="invoice-table">
-                <thead>
-                  <tr>
-                    <th>Item</th>
-                    <th>Quantity</th>
-                    <th>Price</th>
-                    <th>Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {invoiceData?.orders &&
-                    invoiceData.orders.map(
-                      (order) =>
-                        order.items &&
-                        order.items.map((item, idx) => (
-                          <tr key={`${order.orderId}-${idx}`}>
-                            <td>{item.name}</td>
-                            <td>{item.quantity}</td>
-                            <td>{item.price} SAR</td>
-                            <td>{(item.total || 0).toFixed(2)} SAR</td>
-                          </tr>
-                        ))
-                    )}
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <td colSpan="3" className="text-right">
-                      <strong>Total Amount:</strong>
-                    </td>
-                    <td>
-                      <strong>
+
+              {/* Items Table */}
+              <div className="overflow-hidden border border-gray-200 rounded-lg">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Item
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Qty
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Price
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Total
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {invoiceData?.orders &&
+                      invoiceData.orders.map(
+                        (order) =>
+                          order.items &&
+                          order.items.map((item, idx) => (
+                            <tr
+                              key={`${order.orderId}-${idx}`}
+                              className="hover:bg-gray-50"
+                            >
+                              <td className="px-4 py-3 text-sm text-gray-900">
+                                {item.name}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-900 text-center">
+                                {item.quantity}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-900 text-right">
+                                {item.price} SAR
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-900 text-right font-medium">
+                                {(item.total || 0).toFixed(2)} SAR
+                              </td>
+                            </tr>
+                          ))
+                      )}
+                  </tbody>
+                  <tfoot className="bg-gray-50">
+                    <tr>
+                      <td
+                        colSpan="3"
+                        className="px-4 py-3 text-sm font-medium text-gray-900 text-right"
+                      >
+                        Total Amount:
+                      </td>
+                      <td className="px-4 py-3 text-sm font-bold text-gray-900 text-right">
                         {(invoiceData?.totalAmount || 0).toFixed(2)} SAR
-                      </strong>
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
 
-              <div className="invoice-footer">
-                <p>Thank you for dining with us!</p>
-                <p className="small-text">
+              {/* Invoice Footer */}
+              <div className="text-center pt-4 border-t border-gray-100">
+                <p className="text-gray-600">Thank you for dining with us!</p>
+                <p className="text-xs text-gray-500 mt-2">
                   Customer: {tableSession?.session?.customerName || "Guest"}
                 </p>
               </div>
@@ -1319,19 +1653,22 @@ function DiningAdmin() {
 
       {/* Payment Confirmation Modal */}
       {showPaymentModal && selectedTable && (
-        <div className="modal-overlay">
-          <div className="modal-content payment-modal">
-            <h2>Confirm Payment</h2>
-            <p>
+        <div className="bg-black/50 w-full h-screen fixed flex items-center justify-center inset-0 z-40">
+          <div className="bg-white p-4 w-full max-w-xl">
+            <h2 className="font-semibold text-2xl py-2">Confirm Payment</h2>
+            <p className="">
               Are you sure payment is complete for {selectedTable.name}? This
               will end the current session.
             </p>
-            <div className="payment-actions">
-              <button className="confirm-button" onClick={handlePaymentConfirm}>
+            <div className="font-semibold flex flex-col gap-4 mt-4">
+              <button
+                className="bg-green-100 px-4 py-2 text-green-600 rounded-lg cursor-pointer hover:bg-green-500 hover:text-white transition-all ease-in-out w-full"
+                onClick={handlePaymentConfirm}
+              >
                 Yes, Complete
               </button>
               <button
-                className="cancel-button"
+                className="bg-red-100 px-4 py-2 text-red-600 rounded-lg cursor-pointer hover:bg-red-500 hover:text-white transition-all ease-in-out w-full"
                 onClick={() => {
                   setShowPaymentModal(false);
                   setShowTableModal(true);

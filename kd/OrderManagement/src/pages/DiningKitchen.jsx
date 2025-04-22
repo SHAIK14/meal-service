@@ -5,7 +5,7 @@ import {
   getBranchOrders,
   updateKitchenOrderStatus,
 } from "../utils/api";
-import "../styles/DiningKitchen.css";
+// import "../styles/DiningKitchen.css";
 import { useKitchenSocket } from "../contexts/KitchenSocketContext";
 import {
   FaClock,
@@ -18,6 +18,7 @@ import {
   FaChevronDown,
   FaChevronUp,
 } from "react-icons/fa";
+import { TbReload } from "react-icons/tb";
 
 function DiningKitchen() {
   const [modalOpen, setModalOpen] = useState(null);
@@ -289,6 +290,7 @@ function DiningKitchen() {
               [tableName]: true,
             }));
           }
+
           // If existing order is updated to in_preparation or ready_for_pickup
           else if (["in_preparation", "ready_for_pickup"].includes(status)) {
             // Find and update order
@@ -737,8 +739,20 @@ function DiningKitchen() {
   };
 
   if (loading)
-    return <div className="loading-message">Loading kitchen dashboard...</div>;
-  if (error) return <div className="error-message">{error}</div>;
+    return (
+      <div className="loading-message flex flex-col  w-full h-screen items-center justify-center space-y-4">
+        <div className="loader w-12 h-12 border-4 border-t-4 border-gray-300 border-t-red-500 rounded-full animate-spin"></div>
+        <span className="text-lg font-semibold">
+          Loading kitchen dashboard...
+        </span>
+      </div>
+    );
+  if (error)
+    return (
+      <div className="error-message text-red-500 text-lg font-semibold text-center mt-5">
+        {error}
+      </div>
+    );
 
   // Filter orders by status
   const ordersToProcess = ordersToDisplay.filter(
@@ -747,13 +761,13 @@ function DiningKitchen() {
   );
 
   return (
-    <div className="kitchen-dashboard-container">
+    <div className="bg-white w-full">
       {/* Optional notification sound */}
       <audio id="notification-sound" src="/notification.mp3" />
 
       {/* Connection status indicator (can be hidden in production) */}
       <div
-        className={`connection-status ${
+        className={`connection-status hidden ${
           isConnected ? "connected" : "disconnected"
         }`}
       >
@@ -761,63 +775,109 @@ function DiningKitchen() {
       </div>
 
       {/* Main dashboard header */}
-      <div className="dashboard-header">
-        <h1>Kitchen Dashboard</h1>
-        <button className="refresh-button" onClick={fetchOrders}>
-          Refresh Orders
+      <div className="flex gap-2 items-center">
+        <h1 className="font-semibold text-2xl">Kitchen Dashboard</h1>
+        <button
+          className="m-0 bg-gray-100 p-1 rounded-full hover:bg-gray-200 transition-colors text-xl font-bold"
+          onClick={fetchOrders}
+        >
+          <TbReload />
         </button>
       </div>
 
       {/* Dashboard Content - Orders to Prepare */}
-      <div className="dashboard-content">
-        <h2>Orders To Prepare</h2>
+      <div className="w-full  mx-auto px-4 py-6">
+        <h2 className="text-2xl font-semibold text-gray-800 mb-6">
+          Orders To Prepare
+        </h2>
+
         {ordersToProcess.length > 0 ? (
-          <div className="orders-grid">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {ordersToProcess.map((order) => (
               <div
                 key={order._id}
-                className={`order-card ${order.status} ${
-                  order.status === "admin_approved" ? "new-order" : ""
-                }`}
+                className={`bg-white rounded-lg shadow-sm border-l-4 ${
+                  order.status === "admin_approved"
+                    ? "border-l-blue-500 hover:shadow-md"
+                    : "border-l-amber-500 hover:shadow-md"
+                } transition-all duration-200 cursor-pointer`}
                 onClick={() => handleOrderClick(order._id)}
               >
-                <div className="order-header">
-                  <div className="order-title">
-                    <span className="table-name">Table {order.tableName}</span>
-                    <span className="order-id">
-                      Order #{order._id.slice(-4)}
-                    </span>
+                {/* Order Header */}
+                <div className="p-4 flex justify-between items-center">
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-1 bg-gray-100 rounded-md text-gray-700 font-medium text-sm">
+                        Table {order.tableName}
+                      </span>
+                      <span className="text-sm text-gray-500">
+                        #{order._id.slice(-4)}
+                      </span>
+                    </div>
+
+                    <div className="mt-2 flex items-center gap-2">
+                      <span
+                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          order.status === "admin_approved"
+                            ? "bg-blue-100 text-blue-800"
+                            : "bg-amber-100 text-amber-800"
+                        }`}
+                      >
+                        {order.status === "admin_approved"
+                          ? "New Order"
+                          : "In Preparation"}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {getTimeElapsed(
+                          order.status === "admin_approved"
+                            ? order.statusTimestamps?.admin_approved
+                            : order.statusTimestamps?.in_preparation
+                        )}
+                      </span>
+                    </div>
                   </div>
-                  <div className="order-status">
-                    <span className={`status-badge ${order.status}`}>
-                      {order.status === "admin_approved"
-                        ? "New Order"
-                        : "In Preparation"}
-                    </span>
-                    <span className="time-elapsed">
-                      {getTimeElapsed(
-                        order.status === "admin_approved"
-                          ? order.statusTimestamps?.admin_approved
-                          : order.statusTimestamps?.in_preparation
-                      )}
-                    </span>
-                    <span className="expand-indicator">
-                      {expandedOrders[order._id] ? (
-                        <FaChevronUp />
-                      ) : (
-                        <FaChevronDown />
-                      )}
-                    </span>
-                  </div>
+
+                  <button className="text-gray-400 hover:text-gray-600 transition-colors">
+                    {expandedOrders[order._id] ? (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    )}
+                  </button>
                 </div>
 
+                {/* Expanded Order Items */}
                 {expandedOrders[order._id] && (
-                  <div className="order-items-container">
-                    <h3>Items</h3>
-                    <ul className="order-items">
+                  <div className="border-t border-gray-100 p-4">
+                    <h3 className="text-sm font-medium text-gray-700 mb-3">
+                      Items
+                    </h3>
+
+                    <ul className="space-y-3">
                       {order.items
                         .filter((item) => {
-                          // Verify we have a valid item to work with
                           if (!item) {
                             console.error(
                               "Encountered null item in order:",
@@ -825,11 +885,7 @@ function DiningKitchen() {
                             );
                             return false;
                           }
-
-                          // Calculate effective quantity after cancellations
                           const effectiveQty = getEffectiveQuantity(item);
-
-                          // Only show items with positive effective quantity
                           return effectiveQty > 0;
                         })
                         .map((item, i) => {
@@ -846,29 +902,51 @@ function DiningKitchen() {
                           );
 
                           return (
-                            <li key={i} className="order-item">
-                              <span className="item-quantity">
-                                {effectiveQty}×
+                            <li key={i} className="flex items-start gap-3">
+                              <span className="h-6 w-6 flex items-center justify-center bg-gray-100 rounded-full text-sm font-medium">
+                                {effectiveQty}
                               </span>
-                              <div className="item-details">
-                                <span className="item-name">{itemName}</span>
-                                {item.spiceLevel > 0 &&
-                                  renderSpiceLevel(item.spiceLevel)}
 
-                                {item.cancelledQuantity > 0 && (
-                                  <span className="item-cancelled-note">
-                                    ({item.cancelledQuantity} cancelled)
+                              <div className="flex-1">
+                                <div className="flex items-center flex-wrap gap-2">
+                                  <span className="font-medium text-gray-800">
+                                    {itemName}
                                   </span>
-                                )}
+
+                                  {item.spiceLevel > 0 && (
+                                    <div className="flex">
+                                      {[...Array(item.spiceLevel)].map(
+                                        (_, i) => (
+                                          <svg
+                                            key={i}
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            className="h-4 w-4 text-red-500"
+                                            viewBox="0 0 20 20"
+                                            fill="currentColor"
+                                          >
+                                            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                            <path
+                                              fillRule="evenodd"
+                                              d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
+                                              clipRule="evenodd"
+                                            />
+                                          </svg>
+                                        )
+                                      )}
+                                    </div>
+                                  )}
+
+                                  {item.cancelledQuantity > 0 && (
+                                    <span className="text-xs bg-red-50 text-red-600 px-2 py-0.5 rounded">
+                                      {item.cancelledQuantity} cancelled
+                                    </span>
+                                  )}
+                                </div>
 
                                 {item.dietaryNotes && (
-                                  <div className="dietary-notes">
-                                    <span className="dietary-notes-label">
-                                      Notes:
-                                    </span>
-                                    <span className="dietary-notes-text">
-                                      {item.dietaryNotes}
-                                    </span>
+                                  <div className="mt-1 bg-gray-50 p-2 rounded text-sm text-gray-600">
+                                    <span className="font-medium">Notes: </span>
+                                    {item.dietaryNotes}
                                   </div>
                                 )}
                               </div>
@@ -877,53 +955,115 @@ function DiningKitchen() {
                         })}
                     </ul>
 
-                    <div className="order-action">
-                      {order.status === "in_preparation" && (
+                    {/* Action Button */}
+                    {order.status === "in_preparation" && (
+                      <div className="mt-4 flex justify-end">
                         <button
-                          className="ready-pickup-btn"
+                          className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
                           onClick={(e) => handleMarkAsReady(order._id, e)}
                         >
-                          <FaBell className="action-icon" />
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-4 w-4"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                          >
+                            <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+                          </svg>
                           Ready for Pickup
                         </button>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
             ))}
           </div>
         ) : (
-          <div className="no-orders-message">
-            <p>No orders to prepare</p>
+          <div className="bg-gray-50 border border-dashed border-gray-200 rounded-lg p-8 text-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-12 w-12 mx-auto text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              />
+            </svg>
+            <p className="mt-4 text-gray-600 font-medium">
+              No orders to prepare
+            </p>
+            <p className="mt-2 text-gray-500 text-sm">
+              New orders will appear here when they're ready
+            </p>
           </div>
         )}
       </div>
 
-      {/* Order Detail Modal (legacy but keep for reference) */}
+      {/* Order Detail Modal (preserved for reference but redesigned) */}
       {modalOpen && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <div className="modal-header">
-              <h4>Table {modalOpen}</h4>
-              <button className="close-btn" onClick={closeModal}>
-                ×
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-lg overflow-hidden">
+            <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100">
+              <h4 className="text-lg font-medium text-gray-900">
+                Table {modalOpen}
+              </h4>
+              <button
+                className="text-gray-400 hover:text-gray-500 transition-colors focus:outline-none"
+                onClick={closeModal}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
               </button>
             </div>
-            <div className="modal-content">
+
+            <div className="p-6 max-h-[70vh] overflow-y-auto">
               {orders[modalOpen]?.length > 0 ? (
-                <div className="orders-list">
+                <div className="space-y-6">
                   {orders[modalOpen].map((order, orderIndex) => (
                     <div
                       key={order._id}
-                      className={`order-section ${order.status}`}
+                      className={`border-l-4 ${
+                        order.status === "admin_approved"
+                          ? "border-l-blue-500"
+                          : order.status === "in_preparation"
+                          ? "border-l-amber-500"
+                          : "border-l-green-500"
+                      } bg-white rounded-md shadow-sm p-4`}
                     >
-                      <div className="order-header">
-                        <h5>Order #{orderIndex + 1}</h5>
-                        <span className="order-time">
-                          {formatTime(order.createdAt)}
-                        </span>
-                        <span className={`order-status ${order.status}`}>
+                      <div className="flex justify-between items-center mb-4">
+                        <div className="flex items-center gap-2">
+                          <h5 className="font-medium">
+                            Order #{orderIndex + 1}
+                          </h5>
+                          <span className="text-sm text-gray-500">
+                            {formatTime(order.createdAt)}
+                          </span>
+                        </div>
+                        <span
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            order.status === "admin_approved"
+                              ? "bg-blue-100 text-blue-800"
+                              : order.status === "in_preparation"
+                              ? "bg-amber-100 text-amber-800"
+                              : "bg-green-100 text-green-800"
+                          }`}
+                        >
                           {order.status === "admin_approved"
                             ? "Approved"
                             : order.status === "in_preparation"
@@ -931,7 +1071,8 @@ function DiningKitchen() {
                             : order.status}
                         </span>
                       </div>
-                      <ul className="order-items">
+
+                      <ul className="space-y-3">
                         {order.items
                           .filter((item) => getEffectiveQuantity(item) > 0)
                           .map((item, itemIndex) => {
@@ -941,28 +1082,59 @@ function DiningKitchen() {
                               item.cancelledQuantity > 0 && effectiveQty > 0;
 
                             return (
-                              <li key={itemIndex} className="order-item">
-                                <span className="item-name">{itemName}</span>
-                                {item.spiceLevel > 0 &&
-                                  renderSpiceLevel(item.spiceLevel)}
-                                <span className="item-quantity">
-                                  ×{effectiveQty}
+                              <li
+                                key={itemIndex}
+                                className="flex items-start gap-3"
+                              >
+                                <span className="h-6 w-6 flex items-center justify-center bg-gray-100 rounded-full text-sm font-medium">
+                                  {effectiveQty}
                                 </span>
-                                {partialCancelled && (
-                                  <span className="item-cancelled-note">
-                                    ({item.cancelledQuantity} cancelled)
-                                  </span>
-                                )}
-                                {item.dietaryNotes && (
-                                  <div className="dietary-notes">
-                                    <span className="dietary-notes-label">
-                                      Notes:
+
+                                <div className="flex-1">
+                                  <div className="flex items-center flex-wrap gap-2">
+                                    <span className="font-medium text-gray-800">
+                                      {itemName}
                                     </span>
-                                    <span className="dietary-notes-text">
-                                      {item.dietaryNotes}
-                                    </span>
+
+                                    {item.spiceLevel > 0 && (
+                                      <div className="flex">
+                                        {[...Array(item.spiceLevel)].map(
+                                          (_, i) => (
+                                            <svg
+                                              key={i}
+                                              xmlns="http://www.w3.org/2000/svg"
+                                              className="h-4 w-4 text-red-500"
+                                              viewBox="0 0 20 20"
+                                              fill="currentColor"
+                                            >
+                                              <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                              <path
+                                                fillRule="evenodd"
+                                                d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
+                                                clipRule="evenodd"
+                                              />
+                                            </svg>
+                                          )
+                                        )}
+                                      </div>
+                                    )}
+
+                                    {partialCancelled && (
+                                      <span className="text-xs bg-red-50 text-red-600 px-2 py-0.5 rounded">
+                                        {item.cancelledQuantity} cancelled
+                                      </span>
+                                    )}
                                   </div>
-                                )}
+
+                                  {item.dietaryNotes && (
+                                    <div className="mt-1 bg-gray-50 p-2 rounded text-sm text-gray-600">
+                                      <span className="font-medium">
+                                        Notes:{" "}
+                                      </span>
+                                      {item.dietaryNotes}
+                                    </div>
+                                  )}
+                                </div>
                               </li>
                             );
                           })}
@@ -971,7 +1143,25 @@ function DiningKitchen() {
                   ))}
                 </div>
               ) : (
-                <p className="no-orders">No active orders for this table</p>
+                <div className="py-8 text-center">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-12 w-12 mx-auto text-gray-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                    />
+                  </svg>
+                  <p className="mt-4 text-gray-600">
+                    No active orders for this table
+                  </p>
+                </div>
               )}
             </div>
           </div>

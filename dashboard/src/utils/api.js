@@ -685,3 +685,33 @@ export const deletePlanDuration = async (branchId, planId) => {
     };
   }
 };
+
+/**
+ * Sends a bulk upload request to the server
+ * @param {Array|Object} itemData - Array of items or single item object
+ * @returns {Promise<Object>} - Result of the bulk upload operation
+ */
+
+// Bulk Upload API
+// Bulk upload items
+export const bulkUploadItems = async (itemsData) => {
+  return handleResponse(
+    api.post("/admin/items/bulk-upload", { items: itemsData })
+  );
+};
+
+// Process and upload Excel file for bulk item upload
+export const processBulkExcelUpload = async (file) => {
+  // Create form data if you're sending the file directly
+  const formData = new FormData();
+  formData.append("file", file);
+
+  // If you're sending the file for server-side processing
+  return handleResponse(
+    api.post("/admin/items/bulk-upload-file", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    })
+  );
+};

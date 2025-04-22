@@ -7,7 +7,7 @@ import dayjs from "dayjs";
 import { getKitchenOrders } from "../utils/api";
 import CircularProgress from "@mui/material/CircularProgress";
 import Alert from "@mui/material/Alert";
-import "../styles/CurrentOrder.css";
+// import "../styles/CurrentOrder.css";
 
 const KitchenOrders = () => {
   const navigate = useNavigate();
@@ -62,7 +62,7 @@ const KitchenOrders = () => {
   };
 
   return (
-    <div className="kitchen-dashboard">
+    <div className="bg-red-500">
       <div className="dashboard-header">
         <LocalizationProvider dateAdapter={AdapterDayjs}>
           <DatePicker

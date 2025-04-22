@@ -42,6 +42,10 @@ import CateringConfig from "./components/CateringConfig";
 import TakeAwayConfig from "./components/TakeAwayConfig";
 import Catering from "./components/Catering/Catering";
 import AddSetup from "./components/Catering/AddSetup";
+import PerHeadCateringItems from "./components/Catering/PerHeadCateringItems";
+import FixedDishesCateringItems from "./components/Catering/fixedDishesCateringItems";
+import CateringOrders from "./components/Catering/CateringOrders";
+import CheckList from "./components/Catering/CheckList";
 
 const AuthenticatedLayout = ({ children }) => (
   <div style={{ display: "flex", minHeight: "100vh" }}>
@@ -348,6 +352,42 @@ const App = () => {
                       <ProtectedRoute
                         element={<AddSetup />}
                         path="/add-setup"
+                      />
+                    }
+                  />
+                  <Route
+                    path="/PerHeadCateringItems"
+                    element={
+                      <ProtectedRoute
+                        element={<PerHeadCateringItems />}
+                        path="/PerHeadCateringItems"
+                      />
+                    }
+                  />
+                  <Route
+                    path="/fixedDishesCateringItems"
+                    element={
+                      <ProtectedRoute
+                        element={<FixedDishesCateringItems />}
+                        path="/fixedDishesCateringItems"
+                      />
+                    }
+                  />
+                  <Route
+                    path="/cateringOrders"
+                    element={
+                      <ProtectedRoute
+                        element={<CateringOrders />}
+                        path="/cateringOrders"
+                      />
+                    }
+                  />
+                  <Route
+                    path="/checklist"
+                    element={
+                      <ProtectedRoute
+                        element={<CheckList />}
+                        path="/checklist"
                       />
                     }
                   />

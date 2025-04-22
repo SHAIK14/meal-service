@@ -90,33 +90,34 @@ const MenuLayout = () => {
   }, [isConnected]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-100">
       <Navbar
         activeCategory={activeCategory}
         onCategoryChange={setActiveCategory}
       />
 
       {/* Customer Name, PIN & Connection Status */}
-      <div className="px-4 py-2 flex flex-wrap justify-between items-center bg-white shadow-md">
-        <div className="flex flex-wrap items-center space-x-4">
+      <div className="px-4 py-2 flex flex-wrap justify-between  items-center  ">
+        <div className="flex flex-col  justify-start ">
           {customerName && (
             <div className="text-sm text-gray-600 flex items-center">
               <FaUser className="text-gray-500 mr-2" />
               <span>
-                Welcome, <span className="font-medium">{customerName}</span>
+                Welcome,{" "}
+                <span className="font-medium text-lg">{customerName}</span>
               </span>
             </div>
           )}
 
           {sessionDetails?.pin ? (
-            <div className="flex items-center bg-blue-50 px-3 py-1 rounded-full">
+            <div className="flex items-center justify-start   rounded-full">
               <FaKey className="text-blue-600 mr-1" />
               <span className="text-xs text-gray-700 mr-1">Table PIN:</span>
               <span className="font-bold text-blue-600 text-lg tracking-wider">
                 {sessionDetails.pin}
               </span>
               <div className="ml-1 text-xs text-gray-500">
-                (share with others)
+                (Share Your Menu)
               </div>
             </div>
           ) : (
@@ -141,9 +142,9 @@ const MenuLayout = () => {
         </div>
       </div>
 
-      <main className="container mx-auto px-4 py-6 pb-24">
+      <main className="container mx-auto p-4 pb-24">
         {/* View Toggle Button */}
-        <div className="mb-4 flex justify-between items-center">
+        <div className="mb-4 flex  justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-800">
             {showOrders ? "Your Orders" : activeCategory}
           </h1>

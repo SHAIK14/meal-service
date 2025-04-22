@@ -19,13 +19,19 @@ import TakeawayAdminDashboard from "./pages/TakeawayAdminDashboard";
 import TakeawayWorkerDashboard from "./pages/TakeawayWorkerDashboard";
 import MealAdminDashboard from "./pages/MealAdminDashboard";
 import MealStaffDashboard from "./pages/MealStaffDashboard";
-import { KitchenSocketProvider } from "./contexts/KitchenSocketContext"; // Import the context provider
+import { KitchenSocketProvider } from "./contexts/KitchenSocketContext";
 import "./App.css";
 
+// Add these styles to your App.css file
+// .content-container {
+//   margin-top: 64px; /* This should match the height of your navbar */
+//   padding: 16px;
+// }
+
 const AuthenticatedLayout = ({ children }) => (
-  <div>
+  <div className="flex flex-col min-h-screen">
     <TopNav />
-    <div className="content-container">{children}</div>
+    <div className="content-container mt-16 p-4 flex-grow">{children}</div>
   </div>
 );
 
@@ -51,12 +57,10 @@ const App = () => {
             path="/*"
             element={
               isLoggedIn ? (
-                // Wrap authenticated content with KitchenSocketProvider
                 <KitchenSocketProvider>
                   <AuthenticatedLayout>
                     <Routes>
                       <Route path="/dashboard" element={<Dashboard />} />
-                      <Route path="/orders" element={<CurrentOrder />} />
                       <Route
                         path="/diningKitchen"
                         element={<DiningKitchen />}
