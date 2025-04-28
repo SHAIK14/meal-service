@@ -1,0 +1,70 @@
+.catering-dashboard {
+  padding: 20px;
+  width: 100%;
+}
+
+.catering-dashboard h1 {
+  margin-bottom: 20px;
+  font-size: 1.8rem;
+}
+
+.dashboard-container {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+@media (min-width: 992px) {
+  .dashboard-container {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.dashboard-section {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+  height: calc(100vh - 150px);
+  overflow-y: auto;
+}
+
+.dashboard-section h2 {
+  font-size: 1.2rem;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eee;
+}
+
+.section-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
+.date-picker-container {
+  margin-bottom: 16px;
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100px;
+}
+
+.no-orders {
+  text-align: center;
+  color: #757575;
+  margin-top: 40px;
+}
+
+.order-cards-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.status-alert {
+  margin-bottom: 16px;
+}

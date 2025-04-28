@@ -1,0 +1,272 @@
+/* PlanItemSelection.css */
+.plan-item-selection-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 20px;
+}
+
+.days-nav,
+.package-nav {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  justify-content: space-evenly;
+  margin-bottom: 20px;
+  padding: 15px;
+  align-items: center;
+}
+
+.day-button,
+.package-button {
+  font-size: 14pt;
+  padding: 10px 20px;
+  background-color: transparent;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  position: relative;
+}
+
+.day-button.active,
+.package-button.active {
+  color: red;
+}
+
+.day-button.active::after,
+.package-button.active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -5px;
+  height: 3px;
+  background-color: red;
+}
+
+.content-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.available-meals,
+.selected-meals {
+  flex: 1 1 45%;
+  margin: 0 10px;
+  min-width: 300px;
+}
+
+.available-meals h2,
+.selected-meals h2 {
+  font-size: 16pt;
+  margin: 20px 0;
+  background-color: white;
+  padding: 15px;
+  border-radius: 50px;
+}
+
+.meals-list,
+.selected-meals-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 15px;
+  height: 45vh;
+  background-color: white;
+  padding: 50px;
+  border-radius: 50px 0 0 50px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.meal-card,
+.selected-meal-card {
+  position: relative;
+  width: 150px;
+  text-align: center;
+  margin: 10px;
+  cursor: pointer;
+  transition: transform 0.3s;
+}
+
+.meal-card:hover,
+.selected-meal-card:hover {
+  transform: scale(1.05);
+}
+
+.meal-image-container {
+  position: relative;
+  width: 100%;
+  height: 150px;
+  overflow: hidden;
+  border-radius: 25px;
+}
+
+.meal-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.meal-name {
+  margin-top: 8px;
+  font-size: 1.1em;
+}
+
+.remove-button {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background-color: red;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 25px;
+  height: 25px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  font-size: 1.2em;
+  transition: transform 0.3s;
+}
+
+.remove-button:hover {
+  transform: scale(1.1);
+}
+
+.service-info {
+  background-color: #f8f9fa;
+  padding: 10px 15px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #e9ecef;
+}
+
+.service-label {
+  font-weight: 600;
+  color: #495057;
+}
+
+.service-value {
+  color: #0d6efd;
+  font-weight: 500;
+}
+
+/* New Package Pricing Styles */
+.package-pricing-section {
+  width: 100%;
+  margin: 20px 0;
+  background-color: white;
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.package-pricing-section h2 {
+  font-size: 1.2em;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.package-prices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.package-price-input {
+  flex: 1;
+  min-width: 200px;
+}
+
+.package-price-input label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+}
+
+.package-price-input input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.package-price-input .currency {
+  color: #666;
+  font-size: 0.9rem;
+  margin-left: 5px;
+}
+
+.save-button {
+  width: auto;
+  margin-top: 20px;
+  padding: 12px 30px;
+  background-color: #32af0a;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1.1em;
+  transition: background-color 0.3s;
+}
+
+.save-button:hover {
+  background-color: #288c08;
+}
+
+/* Error and Loading States */
+.loading,
+.error {
+  text-align: center;
+  padding: 20px;
+  font-size: 1.2em;
+}
+
+.error {
+  color: red;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .content-wrapper {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .available-meals,
+  .selected-meals {
+    flex: 1 1 100%;
+    margin: 10px 0;
+  }
+
+  .day-button,
+  .package-button {
+    font-size: 12pt;
+    padding: 8px 15px;
+  }
+
+  .days-nav,
+  .package-nav {
+    flex-wrap: wrap;
+  }
+
+  .package-prices {
+    flex-direction: column;
+  }
+
+  .package-price-input {
+    width: 100%;
+  }
+
+  .save-button {
+    width: 100%;
+  }
+}

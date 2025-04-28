@@ -1,0 +1,411 @@
+.takeaway-dashboard {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.takeaway-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.takeaway-header h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.takeaway-branch-select {
+  min-width: 200px;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.takeaway-config-section {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 32px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Branch Info Styles */
+.takeaway-branch-info {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.takeaway-branch-info h3 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.takeaway-branch-info p {
+  margin: 8px 0;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.takeaway-config-inputs {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  flex-direction: column;
+}
+
+.takeaway-input-group {
+  flex: 1;
+  width: 100%;
+}
+
+.takeaway-input-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.takeaway-input-group input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.takeaway-url-preview {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.takeaway-update-btn {
+  padding: 8px 24px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  height: 38px;
+  align-self: flex-end;
+}
+
+.takeaway-update-btn:hover {
+  background: #1d4ed8;
+}
+
+.takeaway-view-section {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.takeaway-view-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.takeaway-view-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.takeaway-box {
+  display: flex;
+  flex-direction: column;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 0 auto;
+  max-width: 400px;
+  transition: all 0.2s;
+}
+
+.takeaway-box:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.takeaway-box-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 16px;
+}
+
+.takeaway-box-header h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.takeaway-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.takeaway-box .takeaway-actions button {
+  background: none;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s;
+}
+
+.takeaway-box .takeaway-actions .takeaway-url-btn {
+  color: #2563eb;
+}
+
+.takeaway-box .takeaway-actions .takeaway-url-btn:hover {
+  color: #1d4ed8;
+}
+
+.takeaway-box .takeaway-actions .takeaway-toggle-btn {
+  color: #9ca3af;
+}
+
+.takeaway-box .takeaway-actions .takeaway-toggle-btn.enabled {
+  color: #10b981;
+}
+
+.takeaway-box .takeaway-actions .takeaway-delete-btn {
+  color: #ef4444;
+}
+
+.takeaway-box .takeaway-actions .takeaway-delete-btn:hover {
+  color: #dc2626;
+}
+
+.takeaway-custom-url {
+  font-size: 14px;
+  color: #6b7280;
+  word-break: break-all;
+  margin: 12px 0;
+  padding: 8px;
+  background: #f3f4f6;
+  border-radius: 4px;
+}
+
+.takeaway-qr-container {
+  text-align: center;
+  margin: 20px 0;
+  cursor: pointer;
+}
+
+.takeaway-qr-container img {
+  max-width: 200px;
+  border: 1px solid #e5e7eb;
+  padding: 8px;
+  background: white;
+  border-radius: 4px;
+}
+
+.takeaway-status {
+  text-align: center;
+  font-size: 14px;
+  color: #6b7280;
+  margin: 12px 0;
+  padding: 8px;
+  background: #f3f4f6;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.takeaway-status.active {
+  color: #10b981;
+  background: #ecfdf5;
+}
+
+.takeaway-status.disabled {
+  color: #ef4444;
+  background: #fee2e2;
+}
+
+.takeaway-download-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin: 16px auto 0;
+  font-size: 14px;
+  width: 100%;
+  max-width: 250px;
+}
+
+.takeaway-download-btn:hover {
+  background: #1d4ed8;
+}
+
+.takeaway-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.takeaway-modal {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.takeaway-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 16px;
+}
+
+.takeaway-modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.takeaway-close-btn {
+  background: #ef4444;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.takeaway-close-btn:hover {
+  background: #dc2626;
+  transform: rotate(90deg);
+}
+
+.takeaway-modal-content {
+  text-align: center;
+}
+
+.takeaway-qr-modal img {
+  width: 250px;
+  height: 250px;
+  margin: 16px auto;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  background: white;
+}
+
+.takeaway-qr-url {
+  font-size: 14px;
+  color: #6b7280;
+  word-break: break-all;
+  margin: 16px 0;
+  padding: 12px;
+  background: #f3f4f6;
+  border-radius: 4px;
+}
+
+.takeaway-warning-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 20px 0;
+}
+
+.takeaway-warning-icon {
+  font-size: 48px;
+  margin-bottom: 15px;
+  color: #ef4444;
+}
+
+.takeaway-warning-message p {
+  margin: 8px 0;
+  text-align: center;
+  color: #4b5563;
+}
+
+.takeaway-warning-message p:first-of-type {
+  font-weight: 600;
+  color: #ef4444;
+}
+
+.takeaway-modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.takeaway-cancel-btn {
+  padding: 8px 24px;
+  background: #f3f4f6;
+  color: #4b5563;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  min-width: 100px;
+}
+
+.takeaway-delete-confirm-btn {
+  padding: 8px 24px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  min-width: 100px;
+}
+
+.takeaway-cancel-btn:hover {
+  background: #e5e7eb;
+}
+
+.takeaway-delete-confirm-btn:hover {
+  background: #dc2626;
+}
+
+.takeaway-error-message {
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  border-radius: 4px;
+  padding: 12px;
+  color: #dc2626;
+  margin-top: 16px;
+}

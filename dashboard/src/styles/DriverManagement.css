@@ -1,0 +1,316 @@
+.dm-container {
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.dm-title {
+  margin-bottom: 20px;
+  color: #333;
+  font-size: 24px;
+}
+
+.dm-loading {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+}
+
+.dm-error {
+  color: #dc3545;
+  text-align: center;
+  padding: 20px;
+}
+
+/* Table Styles */
+.dm-table-wrapper {
+  overflow-x: auto;
+  margin-top: 20px;
+}
+
+.dm-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+  background: white;
+}
+
+.dm-table th {
+  background: #f8f9fa;
+  padding: 15px;
+  text-align: left;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.dm-table td {
+  padding: 15px;
+  border-bottom: 1px solid #dee2e6;
+  vertical-align: middle;
+}
+
+/* Status Badge */
+.dm-status {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.dm-status.pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.dm-status.approved {
+  background: #d4edda;
+  color: #155724;
+}
+
+.dm-status.rejected {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.dm-status.suspended {
+  background: #cce5ff;
+  color: #004085;
+}
+
+/* Action buttons alignment */
+.dm-actions {
+  padding: 10px 5px;
+}
+
+.dm-actions-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.dm-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  min-width: 80px;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.dm-btn:hover {
+  opacity: 0.9;
+}
+
+.dm-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Specific button styles */
+.dm-approve {
+  background: #28a745;
+  color: white;
+}
+
+.dm-update {
+  background: #007bff;
+  color: white;
+}
+
+.dm-delete {
+  background: #dc3545;
+  color: white;
+}
+
+.dm-credentials {
+  background: #6c757d;
+  color: white;
+}
+
+/* Modal Styles */
+.dm-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.dm-modal-content {
+  background: white;
+  width: 400px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.dm-modal-header {
+  padding: 15px 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.dm-modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.dm-modal-body {
+  padding: 20px;
+}
+
+.dm-credential-row {
+  margin-bottom: 15px;
+}
+
+.dm-credential-row:last-child {
+  margin-bottom: 0;
+}
+
+.dm-credential-row label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #666;
+  font-size: 14px;
+}
+
+.dm-credential-value {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f8f9fa;
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+}
+
+.dm-credential-value span {
+  flex: 1;
+  font-family: monospace;
+  font-size: 14px;
+  color: #333;
+}
+
+.dm-credential-value button {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.dm-credential-value button:hover {
+  background: #5a6268;
+}
+
+.dm-modal-footer {
+  padding: 15px 20px;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Pagination */
+.dm-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  margin-top: 20px;
+  padding: 20px 0;
+}
+
+.dm-page-info {
+  font-size: 14px;
+  color: #666;
+  margin: 0 15px;
+}
+
+/* Delete Confirmation Modal */
+.dm-modal-content p {
+  margin: 0 0 20px 0;
+  color: #666;
+}
+
+.dm-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.dm-modal-actions .dm-btn {
+  min-width: 80px;
+}
+
+/* Copy tooltip */
+.dm-copy-success {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #28a745;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .dm-table td,
+  .dm-table th {
+    padding: 10px;
+  }
+
+  .dm-actions-group {
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .dm-btn {
+    width: 100%;
+    min-width: auto;
+  }
+
+  .dm-modal-content {
+    width: 90%;
+    margin: 20px;
+  }
+
+  .dm-credential-value {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dm-credential-value button {
+    width: 100%;
+  }
+
+  .dm-pagination {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .dm-modal-actions {
+    flex-direction: column;
+  }
+
+  .dm-modal-actions .dm-btn {
+    width: 100%;
+  }
+}
