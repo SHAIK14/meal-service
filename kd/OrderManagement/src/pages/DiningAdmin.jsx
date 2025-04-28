@@ -12,7 +12,9 @@ import {
   FaArrowRight,
   FaUndo,
   FaTrash,
+  FaMoneyBill,
 } from "react-icons/fa";
+
 import {
   getBranchTables,
   updateTableStatus,
@@ -46,6 +48,10 @@ function DiningAdmin() {
   const [invoiceData, setInvoiceData] = useState(null);
   const [notifications, setNotifications] = useState({});
   const [actionPending, setActionPending] = useState(false);
+
+  const [showPaymentMethodModal, setShowPaymentMethodModal] = useState(false);
+  const [showCardPaymentModal, setShowCardPaymentModal] = useState(false);
+  const [receiptNumber, setReceiptNumber] = useState("");
 
   // Socket context
   const {
@@ -678,6 +684,7 @@ function DiningAdmin() {
 
     return hasEmptyOrders;
   };
+
   const handlePaymentConfirm = async () => {
     if (!tableSession?.session?._id) {
       alert("No active session found");
@@ -693,12 +700,28 @@ function DiningAdmin() {
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
 
-      // Then complete the session
-      const response = await completeSession(tableSession.session._id);
+      // Include payment method data in the session completion
+      const paymentData = {
+        method: receiptNumber ? "card" : "cash",
+        // Only include receipt number if card payment was used
+        ...(receiptNumber && { receiptNumber }),
+      };
+
+      // Then complete the session with payment data
+      const response = await completeSession(
+        tableSession.session._id,
+        paymentData
+      );
+
       if (response.success) {
-        // Close modals
+        // Close all modals
         setShowPaymentModal(false);
         setShowTableModal(false);
+        setShowPaymentMethodModal(false);
+        setShowCardPaymentModal(false);
+
+        // Reset receipt number
+        setReceiptNumber("");
 
         // Session is completed - the socket will handle table status update
         setTableSession(null);
@@ -710,6 +733,28 @@ function DiningAdmin() {
       alert("Error completing session");
     }
   };
+
+  // const completeSession = async (sessionId, paymentData = {}) => {
+  //   try {
+  //     const response = await fetch(
+  //       `${API_URL}/sessions/${sessionId}/complete`,
+  //       {
+  //         method: "POST",
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //         body: JSON.stringify({ paymentData }),
+  //       }
+  //     );
+
+  //     const data = await response.json();
+  //     return data;
+  //   } catch (error) {
+  //     console.error("Error completing session:", error);
+  //     return { success: false, message: "Error completing session" };
+  //   }
+  // };
 
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return "N/A";
@@ -812,7 +857,7 @@ function DiningAdmin() {
         <h1>Dining Tables</h1>
       </div>
 
-      <div className="p-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-6">
+      <div className="p-4 grid grid-cols-2 md:grid-cols-4 place-items-center lg:grid-cols-6 xl:grid-cols-8 gap-6">
         {tables.map((table) => (
           <div
             key={table.id}
@@ -826,6 +871,7 @@ function DiningAdmin() {
             : "bg-red-100 border-red-300"
         }
       `}
+            h
           >
             <FaUtensils
               className={`text-4xl ${
@@ -853,7 +899,7 @@ function DiningAdmin() {
 
       {/* Table Actions Modal */}
       {showTableModal && selectedTable && (
-        <div className="fixed inset-0 bg-black/60  flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden transform transition-all">
             {/* Modal Header */}
             <div className="border-b px-6 py-4 flex justify-between items-center">
@@ -910,7 +956,7 @@ function DiningAdmin() {
                       <button
                         className="w-full flex items-center justify-center gap-2 bg-green-50 hover:bg-green-100 cursor-pointer text-green-700 px-4 py-3 rounded-lg font-medium transition-colors"
                         onClick={() => {
-                          setShowPaymentModal(true);
+                          setShowPaymentMethodModal(true);
                           setShowTableModal(false);
                         }}
                       >
@@ -926,10 +972,139 @@ function DiningAdmin() {
             {/* Modal Footer */}
             <div className="bg-gray-50 px-6 py-3">
               <button
-                className="w-full text-red-500 hover:text-white hover:bg-red-500 active:bg-red-500 cursor-pointer px-4 py-2 rounded-lg font-medium border border-gray-200  transition-colors"
+                className="w-full text-red-500 hover:text-white hover:bg-red-500 active:bg-red-500 cursor-pointer px-4 py-2 rounded-lg font-medium border border-gray-200 transition-colors"
                 onClick={() => setShowTableModal(false)}
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Method Selection Modal */}
+      {showPaymentMethodModal && selectedTable && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden transform transition-all">
+            <div className="border-b px-6 py-4 flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-gray-800">
+                Select Payment Method
+              </h2>
+              <button
+                className="text-gray-400 hover:text-gray-600 cursor-pointer transition-colors p-1 rounded-full hover:bg-gray-100"
+                onClick={() => {
+                  setShowPaymentMethodModal(false);
+                  setShowTableModal(true);
+                }}
+              >
+                <FaTimes size={20} />
+              </button>
+            </div>
+
+            <div className="px-6 py-4 space-y-4">
+              <button
+                className="w-full flex items-center justify-center gap-2 bg-green-50 hover:bg-green-100 text-green-700 px-4 py-4 rounded-lg font-medium transition-colors"
+                onClick={() => {
+                  setShowPaymentMethodModal(false);
+                  setShowPaymentModal(true);
+                }}
+              >
+                <FaMoneyBill />
+                Cash Payment
+              </button>
+
+              <button
+                className="w-full flex items-center justify-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-4 rounded-lg font-medium transition-colors"
+                onClick={() => {
+                  setShowPaymentMethodModal(false);
+                  setShowCardPaymentModal(true);
+                }}
+              >
+                <FaCreditCard />
+                Card Payment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Card Payment Modal */}
+      {showCardPaymentModal && selectedTable && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden transform transition-all">
+            <div className="border-b px-6 py-4 flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-gray-800">
+                Card Payment
+              </h2>
+              <button
+                className="text-gray-400 hover:text-gray-600 cursor-pointer transition-colors p-1 rounded-full hover:bg-gray-100"
+                onClick={() => {
+                  setShowCardPaymentModal(false);
+                  setShowPaymentMethodModal(true);
+                }}
+              >
+                <FaTimes size={20} />
+              </button>
+            </div>
+
+            <div className="px-6 py-4">
+              <div className="mb-4">
+                <label className="block text-gray-700 text-sm font-medium mb-2">
+                  Receipt Number
+                </label>
+                <input
+                  type="text"
+                  maxLength="4"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter 4-digit receipt number"
+                  value={receiptNumber}
+                  onChange={(e) =>
+                    setReceiptNumber(
+                      e.target.value.replace(/[^0-9]/g, "").slice(0, 4)
+                    )
+                  }
+                />
+              </div>
+
+              <button
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed"
+                disabled={receiptNumber.length !== 4}
+                onClick={() => {
+                  setShowCardPaymentModal(false);
+                  setShowPaymentModal(true);
+                }}
+              >
+                Save and Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Confirmation Modal */}
+      {showPaymentModal && selectedTable && (
+        <div className="bg-black/50 w-full h-screen fixed flex items-center justify-center inset-0 z-40">
+          <div className="bg-white p-4 w-full max-w-xl rounded-lg shadow-xl">
+            <h2 className="font-semibold text-2xl py-2">Confirm Payment</h2>
+            <p>
+              Are you sure payment is complete for {selectedTable.name}? This
+              will end the current session.
+            </p>
+            <div className="font-semibold flex flex-col gap-4 mt-4">
+              <button
+                className="bg-green-100 px-4 py-2 text-green-600 rounded-lg cursor-pointer hover:bg-green-500 hover:text-white transition-all ease-in-out w-full"
+                onClick={handlePaymentConfirm}
+              >
+                Yes, Complete
+              </button>
+              <button
+                className="bg-red-100 px-4 py-2 text-red-600 rounded-lg cursor-pointer hover:bg-red-500 hover:text-white transition-all ease-in-out w-full"
+                onClick={() => {
+                  setShowPaymentModal(false);
+                  setShowPaymentMethodModal(true);
+                }}
+              >
+                Cancel
               </button>
             </div>
           </div>
@@ -1646,36 +1821,6 @@ function DiningAdmin() {
                   Customer: {tableSession?.session?.customerName || "Guest"}
                 </p>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Payment Confirmation Modal */}
-      {showPaymentModal && selectedTable && (
-        <div className="bg-black/50 w-full h-screen fixed flex items-center justify-center inset-0 z-40">
-          <div className="bg-white p-4 w-full max-w-xl">
-            <h2 className="font-semibold text-2xl py-2">Confirm Payment</h2>
-            <p className="">
-              Are you sure payment is complete for {selectedTable.name}? This
-              will end the current session.
-            </p>
-            <div className="font-semibold flex flex-col gap-4 mt-4">
-              <button
-                className="bg-green-100 px-4 py-2 text-green-600 rounded-lg cursor-pointer hover:bg-green-500 hover:text-white transition-all ease-in-out w-full"
-                onClick={handlePaymentConfirm}
-              >
-                Yes, Complete
-              </button>
-              <button
-                className="bg-red-100 px-4 py-2 text-red-600 rounded-lg cursor-pointer hover:bg-red-500 hover:text-white transition-all ease-in-out w-full"
-                onClick={() => {
-                  setShowPaymentModal(false);
-                  setShowTableModal(true);
-                }}
-              >
-                Cancel
-              </button>
             </div>
           </div>
         </div>

@@ -668,26 +668,53 @@ const getBranchOrders = async (req, res) => {
       })
       .sort({ createdAt: -1 });
 
-    // Transform orders to include item details
+    // Transform orders to include item details with null checks
     const transformedOrders = orders.map((order) => {
       const orderObj = order.toObject();
-      orderObj.items = orderObj.items.map((item) => ({
-        _id: item._id,
-        itemId: item.itemId._id,
-        nameEnglish: item.itemId.nameEnglish,
-        nameArabic: item.itemId.nameArabic,
-        image: item.itemId.image,
-        price: item.price,
-        quantity: item.quantity,
-        spiceLevel: item.spiceLevel || 0,
-        dietaryNotes: item.dietaryNotes || "",
-        cancelledQuantity: item.cancelledQuantity || 0,
-        returnedQuantity: item.returnedQuantity || 0,
-        cancelReason: item.cancelReason,
-        returnReason: item.returnReason,
-        cancelledAt: item.cancelledAt,
-        returnedAt: item.returnedAt,
-      }));
+
+      // Add null check for items array
+      if (!orderObj.items || !Array.isArray(orderObj.items)) {
+        orderObj.items = [];
+        return orderObj;
+      }
+
+      orderObj.items = orderObj.items.map((item) => {
+        // Handle case where itemId might be null
+        if (!item || !item.itemId) {
+          return {
+            _id: item?._id || null,
+            itemId: null,
+            nameEnglish: "Unknown Item",
+            nameArabic: "عنصر غير معروف",
+            image: "",
+            price: item?.price || 0,
+            quantity: item?.quantity || 1,
+            spiceLevel: item?.spiceLevel || 0,
+            dietaryNotes: item?.dietaryNotes || "",
+            cancelledQuantity: item?.cancelledQuantity || 0,
+            returnedQuantity: item?.returnedQuantity || 0,
+          };
+        }
+
+        return {
+          _id: item._id,
+          itemId: item.itemId._id,
+          nameEnglish: item.itemId.nameEnglish || "Unknown Item",
+          nameArabic: item.itemId.nameArabic || "عنصر غير معروف",
+          image: item.itemId.image || "",
+          price: item.price || 0,
+          quantity: item.quantity || 1,
+          spiceLevel: item.spiceLevel || 0,
+          dietaryNotes: item.dietaryNotes || "",
+          cancelledQuantity: item.cancelledQuantity || 0,
+          returnedQuantity: item.returnedQuantity || 0,
+          cancelReason: item.cancelReason,
+          returnReason: item.returnReason,
+          cancelledAt: item.cancelledAt,
+          returnedAt: item.returnedAt,
+        };
+      });
+
       return orderObj;
     });
 

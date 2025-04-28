@@ -165,9 +165,13 @@ export const getTableSession = async (tableName) => {
   return handleResponse(api.get(`/kitchen/dining/tables/${tableName}/session`));
 };
 
-export const completeSession = async (sessionId) => {
+export const completeSession = async (sessionId, paymentData = {}) => {
+  console.log("Submitting session completion with data:", {
+    sessionId,
+    paymentData,
+  });
   return handleResponse(
-    api.post(`/kitchen/dining/sessions/${sessionId}/complete`)
+    api.post(`/kitchen/dining/sessions/${sessionId}/complete, { paymentData}`)
   );
 };
 
