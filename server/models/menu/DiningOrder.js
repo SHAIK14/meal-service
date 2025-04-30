@@ -81,6 +81,11 @@ const diningOrderSchema = new mongoose.Schema(
       canceled: Date,
     },
     notes: String,
+    orderNumber: {
+      type: String,
+      unique: true,
+      sparse: true, // Allows null/undefined values to not trigger uniqueness constraint
+    },
   },
   { timestamps: true }
 );

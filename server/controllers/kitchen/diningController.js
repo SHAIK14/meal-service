@@ -3,6 +3,10 @@ const Session = require("../../models/menu/session");
 const DiningOrder = require("../../models/menu/DiningOrder");
 const Branch = require("../../models/admin/Branch");
 const socketService = require("../../services/socket/socketService");
+const {
+  generateOrderNumber,
+  generateInvoiceNumber,
+} = require("../../utils/numberFormatUtils"); // Import the utility function
 
 const hasActiveItems = (order) => {
   // Check if order and order.items exist before calling .some()
@@ -19,6 +23,8 @@ const hasActiveItems = (order) => {
     return effectiveQty > 0;
   });
 };
+// In a utilities file or directly in the controller
+
 exports.getBranchTables = async (req, res) => {
   try {
     const branchId = req.branch._id;
@@ -179,9 +185,32 @@ exports.getTableSession = async (req, res) => {
 exports.completeSession = async (req, res) => {
   try {
     const { sessionId } = req.params;
+    const { paymentMethod, receiptNumber } = req.body;
     const branchId = req.branch._id;
 
-    // Find and update session
+    // Validate payment data
+    if (!paymentMethod || !["cash", "card"].includes(paymentMethod)) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid payment method (cash or card) is required",
+      });
+    }
+
+    // If card payment, validate receipt number
+    if (paymentMethod === "card") {
+      if (
+        !receiptNumber ||
+        receiptNumber.length !== 4 ||
+        !/^\d+$/.test(receiptNumber)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Valid 4-digit receipt number is required for card payments",
+        });
+      }
+    }
+
+    // Find and validate session
     const session = await Session.findOne({
       _id: sessionId,
       branchId,
@@ -195,7 +224,6 @@ exports.completeSession = async (req, res) => {
       });
     }
 
-    // Check if all orders are served
     // Check if all orders are served or canceled
     const pendingOrders = await DiningOrder.exists({
       sessionId,
@@ -209,26 +237,34 @@ exports.completeSession = async (req, res) => {
       });
     }
 
-    // Only update session status, don't change table status
+    // Update session with payment info and complete it
     session.status = "completed";
+    session.paymentMethod = paymentMethod;
+    if (paymentMethod === "card" && receiptNumber) {
+      session.receiptNumber = receiptNumber;
+    }
+    session.paymentTimestamp = new Date();
     await session.save();
-    // Emit socket event for session completion
+
+    // Emit socket events
     const kitchenRoom = `kitchen:${branchId}`;
     const tableRoom = `table:${branchId}:${session.tableName}`;
 
     socketService.emitToRoom(kitchenRoom, "session_completed", {
       sessionId: session._id,
       tableName: session.tableName,
+      paymentMethod: paymentMethod,
     });
-    console.log(`Session completed and emitted to ${kitchenRoom}`);
 
     socketService.emitToRoom(tableRoom, "session_completed", {
       sessionId: session._id,
+      paymentMethod: paymentMethod,
     });
 
     res.json({
       success: true,
       message: "Session completed successfully",
+      paymentMethod: paymentMethod,
     });
   } catch (error) {
     console.error("Error in completeSession:", error);
@@ -238,7 +274,6 @@ exports.completeSession = async (req, res) => {
     });
   }
 };
-
 exports.updateOrderStatus = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -591,10 +626,11 @@ exports.generateInvoice = async (req, res) => {
         message: "Branch not found",
       });
     }
+    const invoiceNumber = generateInvoiceNumber(sessionId);
 
     // Format invoice data accounting for returned items
     const invoiceData = {
-      invoiceNo: `INV-${Date.now()}-${sessionId.slice(-4)}`,
+      invoiceNo: invoiceNumber,
       branchName: branch.name,
       vatNumber: branch.vatNumber,
       tableName: session.tableName,
@@ -628,6 +664,253 @@ exports.generateInvoice = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error generating invoice",
+    });
+  }
+};
+// controllers/paymentController.js
+
+// Process payment for a session
+exports.processPayment = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const { payments, excessAllocation } = req.body;
+    const branchId = req.branch._id;
+
+    // Validate the session
+    const session = await Session.findOne({
+      _id: sessionId,
+      branchId,
+      status: "active",
+    });
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        message: "Active session not found",
+      });
+    }
+
+    // Validate all orders are served or canceled
+    const pendingOrders = await DiningOrder.exists({
+      sessionId,
+      status: { $nin: ["served", "canceled"] },
+    });
+
+    if (pendingOrders) {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot complete session with pending orders",
+      });
+    }
+
+    // Validate payments
+    if (!Array.isArray(payments) || payments.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "At least one payment is required",
+      });
+    }
+
+    // Validate each payment
+    for (const payment of payments) {
+      if (!payment.method || !["cash", "card"].includes(payment.method)) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Valid payment method (cash or card) required for all payments",
+        });
+      }
+
+      if (!payment.amount || payment.amount <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Valid amount greater than 0 required for all payments",
+        });
+      }
+
+      if (
+        payment.method === "card" &&
+        (!payment.receiptNumber ||
+          payment.receiptNumber.length !== 4 ||
+          !/^\d+$/.test(payment.receiptNumber))
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Valid 4-digit receipt number required for card payments",
+        });
+      }
+    }
+
+    // Calculate totals
+    const totalBill = session.totalAmount;
+    const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+    const excess = totalPaid - totalBill;
+
+    // Validate excess allocation if there's excess
+    if (excess > 0) {
+      if (!Array.isArray(excessAllocation) || excessAllocation.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Excess payment allocation is required",
+        });
+      }
+
+      // Validate each allocation
+      for (const allocation of excessAllocation) {
+        if (
+          !allocation.type ||
+          !["tip", "change", "advance", "custom"].includes(allocation.type)
+        ) {
+          return res.status(400).json({
+            success: false,
+            message:
+              "Valid allocation type required for all excess allocations",
+          });
+        }
+
+        if (!allocation.amount || allocation.amount <= 0) {
+          return res.status(400).json({
+            success: false,
+            message:
+              "Valid amount greater than 0 required for all excess allocations",
+          });
+        }
+      }
+
+      // Ensure all excess is allocated
+      const totalAllocated = excessAllocation.reduce(
+        (sum, a) => sum + a.amount,
+        0
+      );
+
+      // Allow small difference for floating point issues
+      if (Math.abs(totalAllocated - excess) > 0.01) {
+        return res.status(400).json({
+          success: false,
+          message: "Total excess allocation must equal excess payment",
+          excess,
+          totalAllocated,
+        });
+      }
+    }
+
+    // Update session with payment information
+    session.payments = payments;
+
+    // Only set excessAllocation if there's excess
+    if (excess > 0) {
+      session.excessAllocation = excessAllocation;
+    }
+
+    // Determine overall payment method
+    if (payments.length === 1) {
+      session.paymentMethod = payments[0].method;
+      if (payments[0].method === "card") {
+        session.receiptNumber = payments[0].receiptNumber;
+      }
+    } else {
+      session.paymentMethod = "mixed";
+    }
+
+    // Complete the session
+    session.status = "completed";
+    session.paymentTimestamp = new Date();
+    await session.save();
+
+    // Emit socket events
+    const kitchenRoom = `kitchen:${branchId}`;
+    const tableRoom = `table:${branchId}:${session.tableName}`;
+
+    socketService.emitToRoom(kitchenRoom, "session_completed", {
+      sessionId: session._id,
+      tableName: session.tableName,
+      paymentMethod: session.paymentMethod,
+    });
+
+    socketService.emitToRoom(tableRoom, "session_completed", {
+      sessionId: session._id,
+      paymentMethod: session.paymentMethod,
+    });
+
+    // Update table status
+    const tableStatusEvent = {
+      tableName: session.tableName,
+      status: "available",
+    };
+
+    socketService.emitToRoom(
+      kitchenRoom,
+      "table_status_updated",
+      tableStatusEvent
+    );
+
+    res.json({
+      success: true,
+      message: "Payment processed and session completed successfully",
+      data: {
+        sessionId: session._id,
+        paymentMethod: session.paymentMethod,
+        totalPaid,
+        excess,
+        payments: session.payments,
+        excessAllocation: session.excessAllocation,
+      },
+    });
+  } catch (error) {
+    console.error("Error processing payment:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error processing payment",
+      error: error.message,
+    });
+  }
+};
+
+// Get payment details for a session
+exports.getPaymentDetails = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const branchId = req.branch._id;
+
+    const session = await Session.findOne({
+      _id: sessionId,
+      branchId,
+    });
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        message: "Session not found",
+      });
+    }
+
+    // Calculate payment summary
+    const totalBill = session.totalAmount;
+    const totalPaid =
+      session.payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
+    const excess = totalPaid - totalBill;
+    const totalAllocated =
+      session.excessAllocation?.reduce((sum, a) => sum + a.amount, 0) || 0;
+
+    res.json({
+      success: true,
+      data: {
+        totalBill,
+        totalPaid,
+        excess,
+        totalAllocated,
+        remainingToAllocate: excess - totalAllocated,
+        payments: session.payments || [],
+        excessAllocation: session.excessAllocation || [],
+        status: session.status,
+      },
+    });
+  } catch (error) {
+    console.error("Error getting payment details:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error getting payment details",
+      error: error.message,
     });
   }
 };

@@ -5,6 +5,7 @@ const DiningCategory = require("../../models/admin/DiningCategory");
 const Item = require("../../models/admin/Item");
 const Session = require("../../models/menu/session");
 const socketService = require("../../services/socket/socketService");
+const { generateOrderNumber } = require("../../utils/numberFormatUtils"); // Import the utility function
 
 const validateDiningAccess = async (req, res) => {
   try {
@@ -291,6 +292,9 @@ const createDiningOrder = async (req, res) => {
       });
     }
 
+    // Generate order number
+    const orderNumber = await generateOrderNumber(branchId);
+
     // Validate session
     const session = await Session.findOne({
       _id: sessionId,
@@ -354,6 +358,7 @@ const createDiningOrder = async (req, res) => {
 
     // Create order with session reference
     const diningOrder = new DiningOrder({
+      orderNumber,
       sessionId,
       branchId,
       tableName,
