@@ -16,6 +16,7 @@ import {
   FaBuilding,
   FaUtensils,
   FaUsersCog,
+  FaChartBar,
 } from "react-icons/fa";
 import "../styles/Sidebar.css";
 
@@ -121,6 +122,13 @@ const Sidebar = () => {
       access: "/banners",
     },
     { path: "/users", icon: <FaUsers />, label: "Users", access: "/users" },
+    // Add this dining reports entry right after the "Dining Items" entry
+    {
+      path: "/dining-reports",
+      icon: <FaChartBar />, // Make sure to import FaChartBar from react-icons/fa
+      label: "Dining Reports",
+      access: "/dining-reports", // You'll need to set up the appropriate access control
+    },
     {
       path: "/configuration",
       icon: <FaBook />,

@@ -47,7 +47,7 @@ import PerHeadCateringItems from "./components/Catering/PerHeadCateringItems";
 import FixedDishesCateringItems from "./components/Catering/fixedDishesCateringItems";
 import CateringOrders from "./components/Catering/CateringOrders";
 import CheckList from "./components/Catering/CheckList";
-
+import DiningReports from "./components/DiningReports";
 const AuthenticatedLayout = ({ children }) => (
   <div style={{ display: "flex", minHeight: "100vh" }}>
     <Sidebar />
@@ -311,6 +311,15 @@ const App = () => {
                       <ProtectedRoute
                         element={<DiningConfig />}
                         path="/dining-config"
+                      />
+                    }
+                  />
+                  <Route
+                    path="/dining-reports"
+                    element={
+                      <ProtectedRoute
+                        element={<DiningReports />}
+                        path="/dining-reports"
                       />
                     }
                   />

@@ -418,3 +418,50 @@ export const toggleTakeAwayStatus = async (branchId, isEnabled) => {
 export const deleteTakeAwayConfig = async (branchId) => {
   return handleResponse(api.delete(`/admin/takeaway/${branchId}`));
 };
+// Dining Reports APIs
+export const getDiningReportSummary = async (
+  branchId,
+  startDate = null,
+  endDate = null
+) => {
+  const params = new URLSearchParams();
+  if (startDate) params.append("startDate", startDate);
+  if (endDate) params.append("endDate", endDate);
+
+  return handleResponse(
+    api.get(`/admin/dining-reports/summary/${branchId}?${params.toString()}`)
+  );
+};
+
+export const getDiningReportOrders = async (branchId, filters = {}) => {
+  const {
+    startDate,
+    endDate,
+    paymentMethod,
+    minAmount,
+    maxAmount,
+    status,
+    search,
+    page = 1,
+    limit = 10,
+  } = filters;
+
+  const params = new URLSearchParams();
+  if (startDate) params.append("startDate", startDate);
+  if (endDate) params.append("endDate", endDate);
+  if (paymentMethod) params.append("paymentMethod", paymentMethod);
+  if (minAmount) params.append("minAmount", minAmount);
+  if (maxAmount) params.append("maxAmount", maxAmount);
+  if (status) params.append("status", status);
+  if (search) params.append("search", search);
+  params.append("page", page);
+  params.append("limit", limit);
+
+  return handleResponse(
+    api.get(`/admin/dining-reports/orders/${branchId}?${params.toString()}`)
+  );
+};
+
+export const getDiningReportDetails = async (orderId) => {
+  return handleResponse(api.get(`/admin/dining-reports/details/${orderId}`));
+};

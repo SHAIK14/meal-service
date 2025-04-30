@@ -47,7 +47,7 @@ const mobileBranchRoutes = require("./routes/mobile/mobileBranchRoutes");
 const mobileOrderRoutes = require("./routes/mobile/orderRoutes");
 const mobileVoucherRoutes = require("./routes/mobile/voucherRoutes");
 const mobilePaymentRoutes = require("./routes/mobile/paymentRoutes");
-
+const diningReportRoutes = require("./routes/admin/diningReportRoutes");
 dotenv.config();
 const app = express();
 const server = http.createServer(app); // Create an HTTP server
@@ -118,6 +118,8 @@ app.use("/api/admin/roles", roleRoutes);
 app.use("/api/admin/services", serviceRoutes);
 app.use("/api/admin/staff", staffRoutes);
 app.use("/api/admin/catering", cateringRoutes);
+app.use("/api/admin/dining-reports", diningReportRoutes);
+
 app.use("/api/catering-menu", cateringMenuRoutes);
 app.use("/api/kitchen/catering", kitchenCateringRoutes);
 app.use("/api/admin/takeaway", takeAwayRoutes);

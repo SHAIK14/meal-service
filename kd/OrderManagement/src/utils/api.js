@@ -164,10 +164,32 @@ export const updateOrderStatus = async (orderId, status) => {
 export const getTableSession = async (tableName) => {
   return handleResponse(api.get(`/kitchen/dining/tables/${tableName}/session`));
 };
+// Add to api.js - New payment processing functions
 
-export const completeSession = async (sessionId) => {
+// Process payment for a session with multiple payment methods and excess allocation
+export const processPayment = async (sessionId, paymentData) => {
+  console.log("Processing payment with data:", paymentData);
   return handleResponse(
-    api.post(`/kitchen/dining/sessions/${sessionId}/complete`)
+    api.post(
+      `/kitchen/dining/sessions/${sessionId}/process-payment`,
+      paymentData
+    )
+  );
+};
+
+// Get payment details for a session
+export const getPaymentDetails = async (sessionId) => {
+  return handleResponse(
+    api.get(`/kitchen/dining/sessions/${sessionId}/payment-details`)
+  );
+};
+export const completeSession = async (sessionId, paymentData = {}) => {
+  console.log("Submitting session completion with data:", {
+    sessionId,
+    paymentData,
+  });
+  return handleResponse(
+    api.post(`/kitchen/dining/sessions/${sessionId}/complete`, paymentData)
   );
 };
 
