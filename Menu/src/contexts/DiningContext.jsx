@@ -41,7 +41,7 @@ export function DiningProvider({ children }) {
       console.log("Setting up socket connection for branch:", branchDetails.id);
 
       // Create socket connection
-      const newSocket = io("http://localhost:5000");
+      const newSocket = io("http://localhost:5001");
 
       // Set up event listeners
       newSocket.on("connect", () => {

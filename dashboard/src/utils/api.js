@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:5000/api";
+const API_URL = "http://localhost:5001/api";
 const api = axios.create({
   baseURL: API_URL,
 });
@@ -36,6 +36,7 @@ const handleResponse = async (apiCall) => {
 };
 
 // Authentication
+// In api.js, modify the login function:
 export const login = async (username, password) => {
   try {
     const response = await api.post("/admin/login", { username, password });
@@ -43,6 +44,19 @@ export const login = async (username, password) => {
 
     if (response.data.success && response.data.data.token) {
       setToken(response.data.data.token);
+
+      // Store user type and services in localStorage
+      if (response.data.data.type) {
+        localStorage.setItem("userType", response.data.data.type);
+      }
+
+      if (response.data.data.services) {
+        localStorage.setItem(
+          "userServices",
+          JSON.stringify(response.data.data.services)
+        );
+      }
+
       return {
         success: true,
         data: response.data.data,

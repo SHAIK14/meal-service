@@ -1,5 +1,5 @@
 // menu-project/src/utils/api.js
-const BASE_URL = "http://localhost:5000/api/dining-menu";
+const BASE_URL = "http://localhost:5001/api/dining-menu";
 
 // In api.js - update the validateQRAccess function
 export const validateQRAccess = async (pincode, tableName) => {
