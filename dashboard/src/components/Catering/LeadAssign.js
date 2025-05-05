@@ -150,9 +150,9 @@ const LeadAssign = () => {
   };
 
   // Sort tools alphabetically by name
-  const sortedTools = [...toolsList].sort((a, b) =>
-    a.name.toLowerCase().localeCompare(b.name.toLowerCase())
-  );
+  // const sortedTools = [...toolsList].sort((a, b) =>
+  //   a.name.toLowerCase().localeCompare(b.name.toLowerCase())
+  // );
 
   return (
     <div className="bg-gray-50 min-h-screen p-6">

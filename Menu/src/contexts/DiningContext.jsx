@@ -41,7 +41,9 @@ export function DiningProvider({ children }) {
       console.log("Setting up socket connection for branch:", branchDetails.id);
 
       // Create socket connection
-      const newSocket = io("http://localhost:5001");
+      const socketUrl =
+        import.meta.env.VITE_SOCKET_URL || "http://localhost:5001";
+      const newSocket = io(socketUrl);
 
       // Set up event listeners
       newSocket.on("connect", () => {

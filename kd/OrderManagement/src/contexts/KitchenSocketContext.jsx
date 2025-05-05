@@ -19,7 +19,9 @@ export function KitchenSocketProvider({ children }) {
     if (!branchId) return;
 
     console.log("Initializing kitchen socket connection for branch:", branchId);
-    const newSocket = io("http://localhost:5001");
+    const socketUrl =
+      import.meta.env.VITE_SOCKET_URL || "http://localhost:5001";
+    const newSocket = io(socketUrl);
 
     newSocket.on("connect", () => {
       console.log("Kitchen socket connected! Socket ID:", newSocket.id);

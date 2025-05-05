@@ -1,5 +1,9 @@
 // menu-project/src/utils/api.js
-const BASE_URL = "http://localhost:5001/api/dining-menu";
+// const BASE_URL = "http://localhost:5001/api/dining-menu";
+// menu-project/src/utils/api.js
+const BASE_URL = `${
+  import.meta.env.VITE_API_URL?.replace(/\/api$/, "") || "http://localhost:5001"
+}/api/dining-menu`;
 
 // In api.js - update the validateQRAccess function
 export const validateQRAccess = async (pincode, tableName) => {

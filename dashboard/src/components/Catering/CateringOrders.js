@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X, Check, Info, ExternalLink, AlertCircle } from "lucide-react";
+import { X, Check, ExternalLink, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Modal from "./OrderModal";
 import CateringOrderDetails from "./CateringOrderDetails";

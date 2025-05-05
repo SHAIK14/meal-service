@@ -14,7 +14,7 @@ import {
   createItem,
   getAllCategories,
   bulkUploadItems,
-  handleResponse,
+  // handleResponse,
 } from "../utils/api";
 import api from "../utils/api";
 import { useNavigate } from "react-router-dom";
