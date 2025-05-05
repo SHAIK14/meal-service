@@ -52,35 +52,22 @@ const diningReportRoutes = require("./routes/admin/diningReportRoutes");
 dotenv.config();
 const app = express();
 
-// Check if running on Vercel
-const isVercel = process.env.VERCEL === "1";
+// Create HTTP server
+const server = http.createServer(app);
 
-let server;
-let io;
+// Initialize Socket.io
+const io = socketIo(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  },
+});
 
-if (!isVercel) {
-  // For local development - create a standard HTTP server
-  server = http.createServer(app);
-
-  // Initialize Socket.io for local dev
-  io = socketIo(server, {
-    cors: {
-      origin: "*",
-      methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-      allowedHeaders: ["Content-Type", "Authorization"],
-      credentials: true,
-    },
-  });
-
-  // Initialize socket service for local development
-  const socketService = require("./services/socket/socketService");
-  socketService.initialize(io);
-} else {
-  // For Vercel deployment - we'll handle Socket.io differently
-  console.log(
-    "Running on Vercel - Socket.io will be initialized via API route"
-  );
-}
+// Initialize socket service
+const socketService = require("./services/socket/socketService");
+socketService.initialize(io);
 
 // Configure CORS
 const corsOptions = {
@@ -150,56 +137,52 @@ app.use("/api/mobile/orders", mobileOrderRoutes);
 app.use("/api/mobile/voucher", mobileVoucherRoutes);
 app.use("/api/mobile/payment", mobilePaymentRoutes);
 
-// Health check endpoint for Vercel
+// Health check endpoint
 app.get("/api/health", (req, res) => {
-  res
-    .status(200)
-    .json({ status: "ok", environment: isVercel ? "vercel" : "local" });
+  res.status(200).json({ status: "ok" });
 });
-// Add this near the end of your server.js file, before the error handler
+
+// Test endpoint
 app.get("/test", (req, res) => {
   res.status(200).send("Test endpoint is working!");
 });
 
+// Root endpoint
 app.get("/", (req, res) => {
   res.status(200).send("Server is running. Use /api routes to access the API.");
 });
-// For local development server
-if (!isVercel) {
-  const PORT = process.env.PORT || 5001;
-  const HOST = "0.0.0.0";
 
-  server.listen(PORT, HOST, () => {
-    console.log(`Server running on http://${HOST}:${PORT}`);
-    console.log(`API available at http://${HOST}:${PORT}/api`);
-    console.log(`WebSocket server initialized`);
-  });
+// Start the server
+const PORT = process.env.PORT || 5001;
+const HOST = "0.0.0.0";
 
-  server.on("error", (error) => {
-    if (error.syscall !== "listen") {
+server.listen(PORT, HOST, () => {
+  console.log(`Server running on http://${HOST}:${PORT}`);
+  console.log(`API available at http://${HOST}:${PORT}/api`);
+  console.log(`WebSocket server initialized`);
+});
+
+server.on("error", (error) => {
+  if (error.syscall !== "listen") {
+    throw error;
+  }
+
+  switch (error.code) {
+    case "EACCES":
+      console.error(`Port ${PORT} requires elevated privileges`);
+      process.exit(1);
+      break;
+    case "EADDRINUSE":
+      console.error(`Port ${PORT} is already in use`);
+      process.exit(1);
+      break;
+    default:
       throw error;
-    }
-
-    switch (error.code) {
-      case "EACCES":
-        console.error(`Port ${PORT} requires elevated privileges`);
-        process.exit(1);
-        break;
-      case "EADDRINUSE":
-        console.error(`Port ${PORT} is already in use`);
-        process.exit(1);
-        break;
-      default:
-        throw error;
-    }
-  });
-}
+  }
+});
 
 // Global error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).send("Something broke!");
 });
-
-// Export app for Vercel
-module.exports = app;
