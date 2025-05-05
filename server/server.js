@@ -156,8 +156,13 @@ app.get("/api/health", (req, res) => {
     .status(200)
     .json({ status: "ok", environment: isVercel ? "vercel" : "local" });
 });
+// Add this near the end of your server.js file, before the error handler
 app.get("/test", (req, res) => {
-  res.status(200).send("Server is working!");
+  res.status(200).send("Test endpoint is working!");
+});
+
+app.get("/", (req, res) => {
+  res.status(200).send("Server is running. Use /api routes to access the API.");
 });
 // For local development server
 if (!isVercel) {
