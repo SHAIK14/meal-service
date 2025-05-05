@@ -156,7 +156,9 @@ app.get("/api/health", (req, res) => {
     .status(200)
     .json({ status: "ok", environment: isVercel ? "vercel" : "local" });
 });
-
+app.get("/test", (req, res) => {
+  res.status(200).send("Server is working!");
+});
 // For local development server
 if (!isVercel) {
   const PORT = process.env.PORT || 5001;
