@@ -48,23 +48,39 @@ const mobileOrderRoutes = require("./routes/mobile/orderRoutes");
 const mobileVoucherRoutes = require("./routes/mobile/voucherRoutes");
 const mobilePaymentRoutes = require("./routes/mobile/paymentRoutes");
 const diningReportRoutes = require("./routes/admin/diningReportRoutes");
+
 dotenv.config();
 const app = express();
-const server = http.createServer(app); // Create an HTTP server
 
-// Initialize Socket.io with CORS settings
-const io = socketIo(server, {
-  cors: {
-    origin: "*", // Allow all origins
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
-  },
-});
+// Check if running on Vercel
+const isVercel = process.env.VERCEL === "1";
 
-// We'll require the socket service after defining the io instance
-const socketService = require("./services/socket/socketService");
-socketService.initialize(io);
+let server;
+let io;
+
+if (!isVercel) {
+  // For local development - create a standard HTTP server
+  server = http.createServer(app);
+
+  // Initialize Socket.io for local dev
+  io = socketIo(server, {
+    cors: {
+      origin: "*",
+      methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+      allowedHeaders: ["Content-Type", "Authorization"],
+      credentials: true,
+    },
+  });
+
+  // Initialize socket service for local development
+  const socketService = require("./services/socket/socketService");
+  socketService.initialize(io);
+} else {
+  // For Vercel deployment - we'll handle Socket.io differently
+  console.log(
+    "Running on Vercel - Socket.io will be initialized via API route"
+  );
+}
 
 // Configure CORS
 const corsOptions = {
@@ -76,6 +92,7 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
+// Connect to MongoDB
 connectDB().catch((err) =>
   console.error("Failed to connect to database:", err)
 );
@@ -119,7 +136,6 @@ app.use("/api/admin/services", serviceRoutes);
 app.use("/api/admin/staff", staffRoutes);
 app.use("/api/admin/catering", cateringRoutes);
 app.use("/api/admin/dining-reports", diningReportRoutes);
-
 app.use("/api/catering-menu", cateringMenuRoutes);
 app.use("/api/kitchen/catering", kitchenCateringRoutes);
 app.use("/api/admin/takeaway", takeAwayRoutes);
@@ -134,36 +150,49 @@ app.use("/api/mobile/orders", mobileOrderRoutes);
 app.use("/api/mobile/voucher", mobileVoucherRoutes);
 app.use("/api/mobile/payment", mobilePaymentRoutes);
 
-const PORT = process.env.PORT || 5001;
-const HOST = "0.0.0.0";
-
-server.listen(PORT, HOST, () => {
-  console.log(`Server running on http://${HOST}:${PORT}`);
-  console.log(`API available at http://${HOST}:${PORT}/api`);
-  console.log(`WebSocket server initialized`);
+// Health check endpoint for Vercel
+app.get("/api/health", (req, res) => {
+  res
+    .status(200)
+    .json({ status: "ok", environment: isVercel ? "vercel" : "local" });
 });
 
-server.on("error", (error) => {
-  if (error.syscall !== "listen") {
-    throw error;
-  }
+// For local development server
+if (!isVercel) {
+  const PORT = process.env.PORT || 5001;
+  const HOST = "0.0.0.0";
 
-  switch (error.code) {
-    case "EACCES":
-      console.error(`Port ${PORT} requires elevated privileges`);
-      process.exit(1);
-      break;
-    case "EADDRINUSE":
-      console.error(`Port ${PORT} is already in use`);
-      process.exit(1);
-      break;
-    default:
+  server.listen(PORT, HOST, () => {
+    console.log(`Server running on http://${HOST}:${PORT}`);
+    console.log(`API available at http://${HOST}:${PORT}/api`);
+    console.log(`WebSocket server initialized`);
+  });
+
+  server.on("error", (error) => {
+    if (error.syscall !== "listen") {
       throw error;
-  }
-});
+    }
+
+    switch (error.code) {
+      case "EACCES":
+        console.error(`Port ${PORT} requires elevated privileges`);
+        process.exit(1);
+        break;
+      case "EADDRINUSE":
+        console.error(`Port ${PORT} is already in use`);
+        process.exit(1);
+        break;
+      default:
+        throw error;
+    }
+  });
+}
 
 // Global error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).send("Something broke!");
 });
+
+// Export app for Vercel
+module.exports = app;
