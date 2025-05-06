@@ -6,7 +6,7 @@ import {
   addTable,
   deleteTable,
   toggleTableStatus,
-  getBranchById, // Add this import
+  getBranchById,
 } from "../utils/api2";
 import {
   FaPlus,
@@ -16,16 +16,20 @@ import {
   FaTrash,
   FaToggleOn,
   FaToggleOff,
-  FaLink, // Add this for URL display
+  FaLink,
 } from "react-icons/fa";
 import "../styles/DiningConfig.css";
+
+// Get the default base URL from environment variables
+const DEFAULT_BASE_URL =
+  process.env.REACT_APP_MENU_URL || "http://localhost:5173/menu";
 
 const DiningConfig = () => {
   const [branches, setBranches] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState("");
-  const [selectedBranchDetails, setSelectedBranchDetails] = useState(null); // Add this state
+  const [selectedBranchDetails, setSelectedBranchDetails] = useState(null);
   const [diningRadius, setDiningRadius] = useState("");
-  const [baseUrl, setBaseUrl] = useState("");
+  const [baseUrl, setBaseUrl] = useState(DEFAULT_BASE_URL);
   const [tables, setTables] = useState([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
@@ -73,7 +77,8 @@ const DiningConfig = () => {
       } = response.data.data;
 
       setDiningRadius(radius || "");
-      setBaseUrl(url || "");
+      // Use stored URL if available, otherwise fall back to environment variable
+      setBaseUrl(url || DEFAULT_BASE_URL);
       setTables(existingTables || []);
     }
   };
