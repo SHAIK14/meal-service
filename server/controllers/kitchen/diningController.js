@@ -1,3 +1,5 @@
+// server/controllers/kitchen/diningController.js
+
 const Dining = require("../../models/admin/DiningConfig");
 const Session = require("../../models/menu/session");
 const DiningOrder = require("../../models/menu/DiningOrder");
@@ -313,32 +315,13 @@ exports.updateOrderStatus = async (req, res) => {
     };
     await order.save();
 
-    // Emit to kitchen staff - INCLUDE FULL ORDER DETAILS
+    // Emit to kitchen staff
     const kitchenRoom = `kitchen:${branchId}`;
 
-    // For admin_approved, we need to send both events
-    if (status === "admin_approved") {
-      // Send the full order data for new_order event
-      const orderData = {
-        orderId: order._id,
-        tableName: order.tableName,
-        status: status,
-        items: order.items, // Include complete items array with cancelled quantities
-        totalAmount: order.totalAmount,
-        createdAt: order.createdAt,
-      };
-      console.log(
-        "Emitting new_order event to kitchen with data:",
-        JSON.stringify(orderData)
-      );
-      console.log(
-        "Items details for kitchen:",
-        JSON.stringify(orderData.items)
-      );
-      socketService.emitToRoom(kitchenRoom, "new_order", orderData);
-    }
+    // REMOVED: Don't emit new_order event for admin_approved
+    // This is what was causing the double notification
 
-    // Standard status update event
+    // Standard status update event - only emit this
     socketService.emitToRoom(kitchenRoom, "order_status_updated", {
       orderId: order._id,
       tableName: order.tableName,
@@ -371,6 +354,103 @@ exports.updateOrderStatus = async (req, res) => {
     });
   }
 };
+// exports.updateOrderStatus = async (req, res) => {
+//   try {
+//     const { orderId } = req.params;
+//     const { status } = req.body;
+//     const branchId = req.branch._id;
+
+//     // Validate status
+//     if (
+//       ![
+//         "admin_approved",
+//         "in_preparation",
+//         "ready_for_pickup",
+//         "served",
+//         "canceled",
+//       ].includes(status)
+//     ) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid status",
+//       });
+//     }
+
+//     // Find order
+//     const order = await DiningOrder.findById(orderId);
+//     if (!order) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Order not found",
+//       });
+//     }
+
+//     // Update status and add timestamp
+//     order.status = status;
+//     order.statusTimestamps = {
+//       ...order.statusTimestamps,
+//       [status]: new Date(),
+//     };
+//     await order.save();
+
+//     // Emit to kitchen staff - INCLUDE FULL ORDER DETAILS
+//     const kitchenRoom = `kitchen:${branchId}`;
+
+//     // For admin_approved, we need to send both events
+//     if (status === "admin_approved") {
+//       // Send the full order data for new_order event
+//       const orderData = {
+//         orderId: order._id,
+//         tableName: order.tableName,
+//         status: status,
+//         items: order.items, // Include complete items array with cancelled quantities
+//         totalAmount: order.totalAmount,
+//         createdAt: order.createdAt,
+//       };
+//       console.log(
+//         "Emitting new_order event to kitchen with data:",
+//         JSON.stringify(orderData)
+//       );
+//       console.log(
+//         "Items details for kitchen:",
+//         JSON.stringify(orderData.items)
+//       );
+//       socketService.emitToRoom(kitchenRoom, "new_order", orderData);
+//     }
+
+//     // Standard status update event
+//     socketService.emitToRoom(kitchenRoom, "order_status_updated", {
+//       orderId: order._id,
+//       tableName: order.tableName,
+//       status: status,
+//       timestamp: order.statusTimestamps[status],
+//     });
+
+//     // If status is seen by customer, map it correctly and notify customer
+//     if (["admin_approved", "served", "canceled"].includes(status)) {
+//       const tableRoom = `table:${branchId}:${order.tableName}`;
+//       // Map admin_approved to accepted for customer
+//       const customerStatus = status === "admin_approved" ? "accepted" : status;
+
+//       socketService.emitToRoom(tableRoom, "order_status_updated", {
+//         orderId: order._id,
+//         status: customerStatus,
+//       });
+//     }
+
+//     res.json({
+//       success: true,
+//       message: `Order ${status} successfully`,
+//       data: order,
+//     });
+//   } catch (error) {
+//     console.error("Error updating order status:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Error updating order status",
+//     });
+//   }
+// };
 
 exports.processOrderItemAction = async (req, res) => {
   try {
@@ -911,6 +991,30 @@ exports.getPaymentDetails = async (req, res) => {
       success: false,
       message: "Error getting payment details",
       error: error.message,
+    });
+  }
+};
+// Add to server/controllers/kitchen/diningController.js
+
+exports.getPendingOrders = async (req, res) => {
+  try {
+    const branchId = req.branch._id;
+
+    // Find all pending orders for this branch
+    const pendingOrders = await DiningOrder.find({
+      branchId,
+      status: "pending"
+    }).sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      data: pendingOrders
+    });
+  } catch (error) {
+    console.error("Error fetching pending orders:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching pending orders"
     });
   }
 };

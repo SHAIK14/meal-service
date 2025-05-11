@@ -1,3 +1,5 @@
+// Path: server/controllers/menu/diningMenuController.js
+
 const Branch = require("../../models/admin/Branch");
 const Dining = require("../../models/admin/DiningConfig");
 const DiningOrder = require("../../models/menu/DiningOrder");

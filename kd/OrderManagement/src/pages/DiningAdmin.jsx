@@ -28,6 +28,7 @@ import {
   getPaymentDetails,
 } from "../utils/api";
 import { useKitchenSocket } from "../contexts/KitchenSocketContext";
+import NotificationCenter from "../components/notification/NotificationCenter";
 
 // Import new components
 import TableGrid from "./TableGrid";
@@ -54,6 +55,16 @@ function DiningAdmin() {
   const [invoiceData, setInvoiceData] = useState(null);
   const [notifications, setNotifications] = useState({});
   const [actionPending, setActionPending] = useState(false);
+  const [receiptNumber, setReceiptNumber] = useState("");
+  const { fetchPendingOrders } = useKitchenSocket();
+  // Function to handle table selection from notification
+  const handleTableSelectFromNotification = (tableName) => {
+    // Find the table by name
+    const selectedTable = tables.find(table => table.name === tableName);
+    if (selectedTable) {
+      handleTableClick(selectedTable);
+    }
+  };
 
   // Socket context
   const {
@@ -67,51 +78,145 @@ function DiningAdmin() {
     clearTableStatusEvents,
     clearPaymentRequestEvents,
     socket,
+    joinKitchenRoom, // New function to manually join room
   } = useKitchenSocket();
 
-  // Log connection status
+  // Verify socket connection with current branch
   useEffect(() => {
-    console.log("Dining Admin socket connection status:", isConnected);
-  }, [isConnected]);
+    // Check if we have a branchId in localStorage
+    const storedBranchId = localStorage.getItem("branchId");
+    
+    console.log("🔍 Current branchId in localStorage:", storedBranchId);
+    
+    // If branchId is missing, warn but don't hard-code anything
+    if (!storedBranchId) {
+      console.warn("⚠️ No branchId found in localStorage - this may affect socket connections");
+    }
+    
+    // Handle manual socket connection if needed
+    if (socket && !isConnected && storedBranchId) {
+      console.log("🔌 Attempting manual socket connection for branch:", storedBranchId);
+      
+      // Ensure socket is connected
+      if (!socket.connected) {
+        socket.connect();
+      }
+      
+      // Join the kitchen room for this branch
+      socket.emit("joinKitchen", { branchId: storedBranchId }, (response) => {
+        console.log("JoinKitchen response:", response);
+        
+        if (response && response.success) {
+          console.log(`✅ Successfully joined kitchen room for branch: ${storedBranchId}`);
+        } else {
+          console.error(`❌ Failed to join kitchen room: ${response?.message || 'Unknown error'}`);
+        }
+      });
+    }
+  }, [socket, isConnected]);
+
+  // Manual reconnect function
+  const reconnectSocket = () => {
+    if (socket) {
+      const branchId = localStorage.getItem("branchId");
+      if (!branchId) {
+        console.error("Cannot reconnect - no branchId in localStorage");
+        return;
+      }
+      
+      console.log("Manually reconnecting socket for branch:", branchId);
+      
+      // Ensure socket is connected
+      if (!socket.connected) {
+        socket.connect();
+      }
+      
+      // Join kitchen room
+      socket.emit("joinKitchen", { branchId }, (response) => {
+        console.log("Manual reconnection response:", response);
+      });
+    }
+  };
+
+  // Log connection status changes
+  useEffect(() => {
+    console.log("Socket connection status:", isConnected ? "Connected" : "Disconnected");
+    
+    // If disconnected and we were previously connected, try to reconnect
+    if (!isConnected && socket) {
+      // Wait a bit before trying to reconnect to avoid reconnection loops
+      const reconnectTimer = setTimeout(() => {
+        reconnectSocket();
+      }, 3000);
+      
+      return () => clearTimeout(reconnectTimer);
+    }
+  }, [isConnected, socket]);
 
   // Initial data load
   useEffect(() => {
     fetchTables();
   }, []);
 
-  // Handle new order events
+  // Handle new order events with better deduplication
   useEffect(() => {
     if (newOrderEvents.length > 0) {
-      console.log("New order events received:", newOrderEvents);
-
+      console.log("🔔 New orders received:", newOrderEvents.length);
+      
+      // Safe copy to avoid mutation during processing
+      const eventsToProcess = [...newOrderEvents];
+      
+      // Keep track of processed order IDs in this batch
+      const processedIds = new Set();
+      
       // Update notifications for tables with new orders
       setNotifications((prev) => {
         const updated = { ...prev };
-        newOrderEvents.forEach((event) => {
-          updated[event.tableName] = (updated[event.tableName] || 0) + 1;
+        
+        eventsToProcess.forEach((event) => {
+          const tableName = event.tableName;
+          const orderId = event.orderId;
+          
+          // Skip if missing critical data
+          if (!tableName || !orderId) {
+            console.warn("⚠️ Event missing tableName or orderId:", event);
+            return;
+          }
+          
+          // Skip if already processed in this batch
+          if (processedIds.has(orderId)) {
+            return;
+          }
+          
+          // Mark as processed and add notification
+          processedIds.add(orderId);
+          updated[tableName] = (updated[tableName] || 0) + 1;
+          
+          console.log(`🔔 Added notification for ${tableName}, order ${orderId}`);
         });
+        
         return updated;
       });
-
+      
       // If we have a selected table with session, update orders if needed
       if (selectedTable && tableSession) {
-        const tableNewOrders = newOrderEvents.filter(
+        const tableNewOrders = eventsToProcess.filter(
           (order) => order.tableName === selectedTable.name
         );
 
         if (tableNewOrders.length > 0) {
+          console.log(`🔄 Refreshing orders for table ${selectedTable.name}`);
+          
           // Reload the selected table's session to get updated orders
           getTableSession(selectedTable.name)
             .then((response) => {
               if (response.success && response.data) {
                 setTableSession(response.data);
+                console.log("🔄 Table session refreshed with new data");
               }
             })
             .catch((error) => {
-              console.error(
-                "Error refreshing table session after new order:",
-                error
-              );
+              console.error("Error refreshing table session:", error);
             });
         }
       }
@@ -119,13 +224,30 @@ function DiningAdmin() {
       // Play notification sound if available
       const audio = document.getElementById("notification-sound");
       if (audio) {
-        audio.play().catch((e) => console.log("Error playing sound:", e));
+        // Reset the audio to the beginning before playing
+        audio.currentTime = 0;
+        
+        // Use a better error handling approach
+        audio.play().catch((e) => {
+          if (e.name === "NotSupportedError") {
+            console.error("🔊 Audio format not supported. Make sure notification.mp3 exists in public folder");
+          } else if (e.name === "NotAllowedError") {
+            console.warn("🔊 User interaction required before audio can play");
+          } else {
+            console.error("🔊 Error playing sound:", e);
+          }
+        });
+      } else {
+        console.warn("🔊 Notification sound element not found - make sure your App.jsx has the audio element");
       }
 
-      // Clear processed events
-      clearNewOrderEvents();
+      // Clear processed events after a delay to avoid race conditions
+      setTimeout(() => {
+        clearNewOrderEvents();
+        console.log("🔔 Cleared newOrderEvents in DiningAdmin");
+      }, 500);
     }
-  }, [newOrderEvents, selectedTable]);
+  }, [newOrderEvents, selectedTable, tableSession, clearNewOrderEvents]);
 
   // Handle order status update events
   useEffect(() => {
@@ -184,6 +306,7 @@ function DiningAdmin() {
         // Play notification sound for pickup-ready orders
         const audio = document.getElementById("notification-sound");
         if (audio) {
+          audio.currentTime = 0;
           audio.play().catch((e) => console.log("Error playing sound:", e));
         }
       }
@@ -191,7 +314,7 @@ function DiningAdmin() {
       // Clear processed events
       clearOrderStatusEvents();
     }
-  }, [orderStatusEvents, selectedTable]);
+  }, [orderStatusEvents, selectedTable, tableSession, clearOrderStatusEvents]);
 
   // Handle item cancellation/return events
   useEffect(() => {
@@ -302,7 +425,7 @@ function DiningAdmin() {
       // Clear processed events
       clearTableStatusEvents();
     }
-  }, [tableStatusEvents]);
+  }, [tableStatusEvents, clearTableStatusEvents]);
 
   // Handle payment request events
   useEffect(() => {
@@ -339,13 +462,14 @@ function DiningAdmin() {
       // Play notification sound
       const audio = document.getElementById("notification-sound");
       if (audio) {
+        audio.currentTime = 0;
         audio.play().catch((e) => console.log("Error playing sound:", e));
       }
 
       // Clear processed events
       clearPaymentRequestEvents();
     }
-  }, [paymentRequestEvents, selectedTable]);
+  }, [paymentRequestEvents, selectedTable, tableSession, clearPaymentRequestEvents]);
 
   const fetchTables = async () => {
     try {
@@ -771,6 +895,28 @@ function DiningAdmin() {
     });
   };
 
+  // Connection indicator component (optional - for debugging)
+  const ConnectionIndicator = () => (
+    <div className="fixed top-2 right-20 z-50 flex items-center">
+      <div 
+        className={`h-2 w-2 rounded-full mr-2 ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}
+      ></div>
+      <span className="text-xs text-gray-500">
+        {isConnected ? 'Connected' : 'Disconnected'}
+      </span>
+    </div>
+  );
+
+  // Reconnect button component (optional - for debugging)
+  const ReconnectButton = () => (
+    <button
+      onClick={reconnectSocket}
+      className="fixed bottom-4 right-4 z-50 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-blue-600 transition-colors"
+    >
+      Reconnect Socket
+    </button>
+  );
+
   if (loading)
     return (
       <div className="loading-message flex flex-col w-full h-screen items-center justify-center space-y-4">
@@ -788,17 +934,31 @@ function DiningAdmin() {
       {/* Notification sound */}
       <audio id="notification-sound" src="/notification.mp3" />
 
+      {/* Add connection indicator (uncomment for debugging) */}
+      {/* <ConnectionIndicator /> */}
+
+      {/* Add reconnect button when disconnected (uncomment for debugging) */}
+      {/* {!isConnected && <ReconnectButton />} */}
+
       {/* Connection status indicator (can be hidden in production) */}
       <div
         className={`connection-status hidden ${
           isConnected ? "connected" : "disconnected"
         }`}
-      >
+        >
         {isConnected ? "Connected" : "Disconnected"}
       </div>
 
-      <div className="text-2xl font-semibold mb-4">
-        <h1>Dining Tables</h1>
+      {/* Add a flex container in the header section */}
+      <div className="flex justify-between items-center mb-4">
+        <div className="text-2xl font-semibold">
+          <h1>Dining Tables</h1>
+        </div>
+ 
+        {/* Add the notification center here */}
+        <NotificationCenter 
+          onTableSelect={handleTableSelectFromNotification} 
+        />
       </div>
 
       {/* Use the TableGrid component for displaying tables */}
@@ -932,7 +1092,7 @@ function DiningAdmin() {
             <div className="flex justify-between items-center p-6 border-b border-gray-100">
               <h2 className="text-lg font-medium text-gray-900">
                 {actionType === "return" ? "Return Item" : "Cancel Item"}
-              </h2>
+                </h2>
               <button
                 className="text-gray-400 cursor-pointer hover:text-gray-500 transition-colors focus:outline-none"
                 onClick={() => setShowItemActionModal(false)}

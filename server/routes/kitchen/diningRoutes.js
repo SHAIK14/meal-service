@@ -11,6 +11,7 @@ const {
   updateOrderStatus,
   processPayment,
   getPaymentDetails,
+  getPendingOrders,
 } = require("../../controllers/kitchen/diningController");
 
 router.get("/tables", kitchenAuth, getBranchTables);
@@ -38,5 +39,7 @@ router.post(
   kitchenAuth,
   processOrderItemAction
 );
+// In your routes file where kitchen routes are defined
+router.get('/pending-orders',kitchenAuth,getPendingOrders);
 
 module.exports = router;

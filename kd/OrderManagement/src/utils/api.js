@@ -407,4 +407,9 @@ export const returnOrderItem = async (orderId, itemIndex, quantity, reason) => {
     };
   }
 };
+
+
+export const getPendingOrders = async () => {
+  return handleResponse(api.get("/kitchen/dining/pending-orders"));
+};
 export default api;
