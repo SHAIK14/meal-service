@@ -132,14 +132,33 @@ export function NotificationProvider({ children }) {
   }, [newOrderEvents, clearNewOrderEvents, processedOrderIds]);
   
   // Handle order status change notifications with deduplication
-  useEffect(() => {
-    if (orderStatusEvents.length > 0) {
-      console.log("🟢 Processing order status events:", orderStatusEvents);
+// Handle order status change notifications with deduplication
+useEffect(() => {
+  if (orderStatusEvents.length > 0) {
+    console.log("🟢 Processing order status events:", orderStatusEvents);
+    
+    // Process status updates and mark notifications as processed accordingly
+    orderStatusEvents.forEach(event => {
+      // If this is an order that was approved or served, find and mark its notification as processed
+      if (event.status === "admin_approved" || event.status === "served") {
+        setNotifications(prev => {
+          return prev.map(notification => {
+            // If this notification is for the same order and hasn't been processed yet
+            if (notification.orderId === event.orderId && !notification.processed) {
+              return {
+                ...notification,
+                processed: true,
+                read: true
+              };
+            }
+            return notification;
+          });
+        });
+      }
       
-      // Only create notifications for "ready_for_pickup" status
-      const statusNotifications = orderStatusEvents
-        .filter(event => event.status === "ready_for_pickup")
-        .map(event => ({
+      // Only create new notifications for "ready_for_pickup" status
+      if (event.status === "ready_for_pickup") {
+        const readyNotification = {
           id: `status-${event.orderId}-${Date.now()}`,
           type: 'ready_for_pickup',
           title: `Order Ready at Table ${event.tableName}`,
@@ -149,16 +168,15 @@ export function NotificationProvider({ children }) {
           read: false,
           processed: false,
           data: event
-        }));
-      
-      if (statusNotifications.length > 0) {
-        console.log("🟢 Adding status notifications:", statusNotifications);
-        addNotifications(statusNotifications);
+        };
+        
+        addNotifications([readyNotification]);
       }
-      
-      clearOrderStatusEvents(); // Clear processed events
-    }
-  }, [orderStatusEvents, clearOrderStatusEvents]);
+    });
+    
+    clearOrderStatusEvents(); // Clear processed events
+  }
+}, [orderStatusEvents, clearOrderStatusEvents]);
   
   // Handle payment request notifications
   useEffect(() => {
