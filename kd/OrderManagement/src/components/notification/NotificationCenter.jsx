@@ -1,20 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FaBell, FaCheck, FaEye, FaUtensils, FaCreditCard, FaHistory, FaTimes } from 'react-icons/fa';
+import { FaBell, FaCheck, FaEye, FaUtensils, FaCreditCard, FaHistory, FaTimes, FaTrash } from 'react-icons/fa';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { updateKitchenOrderStatus } from '../../utils/api';
 
 function NotificationCenter({ onTableSelect }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('all');
+  const [activeTab, setActiveTab] = useState('new_order'); // Default to new orders
+  const [historySubTab, setHistorySubTab] = useState('all'); // Default to all history
   const dropdownRef = useRef(null);
   
   const { 
     notifications, 
     unreadCount, 
     markAsRead, 
+    markAsProcessed,
     markAllAsRead,
     removeNotification,
-    getNotificationsByType 
+    clearNotificationsByType,
+    getNotificationsByType,
+    getProcessedNotifications,
+    removeNotificationsByType
   } = useNotifications();
   
   // Close dropdown when clicking outside
@@ -31,26 +36,49 @@ function NotificationCenter({ onTableSelect }) {
     };
   }, []);
   
-  // Get filtered notifications based on active tab
-  const filteredNotifications = getNotificationsByType(activeTab);
+  // Get filtered notifications based on active tab and history sub-tab
+  const getFilteredNotifications = () => {
+    if (activeTab === 'all') {
+      // Get processed notifications for history
+      const processedNotifications = getProcessedNotifications();
+      
+      // Filter history by sub-tab
+      if (historySubTab === 'new_order') {
+        return processedNotifications.filter(n => n.type === 'new_order');
+      } else if (historySubTab === 'ready_for_pickup') {
+        return processedNotifications.filter(n => n.type === 'ready_for_pickup');
+      } else if (historySubTab === 'payment_request') {
+        return processedNotifications.filter(n => n.type === 'payment_request');
+      } else {
+        return processedNotifications; // All history
+      }
+    } else {
+      // For other tabs, get unprocessed notifications by type
+      return getNotificationsByType(activeTab).filter(n => !n.processed);
+    }
+  };
   
-  // Count notifications by type
-  const newOrderCount = getNotificationsByType('new_order').length;
-  const readyForPickupCount = getNotificationsByType('ready_for_pickup').length;
-  const paymentRequestCount = getNotificationsByType('payment_request').length;
+  const filteredNotifications = getFilteredNotifications();
+  
+  // Count notifications by type (only unprocessed)
+  const newOrderCount = getNotificationsByType('new_order').filter(n => !n.processed).length;
+  const readyForPickupCount = getNotificationsByType('ready_for_pickup').filter(n => !n.processed).length;
+  const paymentRequestCount = getNotificationsByType('payment_request').filter(n => !n.processed).length;
+  
+  // Get history counts for sub-tabs
+  const historyAllCount = getProcessedNotifications().length;
+  const historyOrderCount = getProcessedNotifications().filter(n => n.type === 'new_order').length;
+  const historyReadyCount = getProcessedNotifications().filter(n => n.type === 'ready_for_pickup').length;
+  const historyPaymentCount = getProcessedNotifications().filter(n => n.type === 'payment_request').length;
   
   // Handle approve order
   const handleApproveOrder = async (orderId, notificationId) => {
     try {
       const response = await updateKitchenOrderStatus(orderId, "admin_approved");
       if (response.success) {
-        // Instead of just marking as read, we need to completely remove this notification
-        // We'll need to add a removeNotification function to NotificationContext
-        removeNotification(notificationId);
-        // Or, alternatively, markAsRead and then refresh the list
-        // markAsRead(notificationId);
-        // Close dropdown after action (optional)
-        // setIsOpen(false);
+        // Mark as read AND processed
+        markAsRead(notificationId);
+        markAsProcessed(notificationId);
       } else {
         alert("Failed to approve order. Please try again.");
       }
@@ -66,8 +94,7 @@ function NotificationCenter({ onTableSelect }) {
       const response = await updateKitchenOrderStatus(orderId, "served");
       if (response.success) {
         markAsRead(notificationId);
-        // Close dropdown after action (optional)
-        // setIsOpen(false);
+        markAsProcessed(notificationId);
       } else {
         alert("Failed to serve order. Please try again.");
       }
@@ -83,6 +110,22 @@ function NotificationCenter({ onTableSelect }) {
     setIsOpen(false);
     // Call the parent component's callback to select this table
     onTableSelect(tableName);
+  };
+  
+  // Handle clear button click
+  const handleClear = () => {
+    if (activeTab === 'all') {
+      if (historySubTab === 'all') {
+        // Clear all processed notifications
+        removeNotificationsByType('all', true);
+      } else {
+        // Clear specific type of processed notifications
+        removeNotificationsByType(historySubTab, true);
+      }
+    } else {
+      // Remove unprocessed notifications of active tab type
+      removeNotificationsByType(activeTab, false);
+    }
   };
   
   // Format time elapsed
@@ -118,17 +161,25 @@ function NotificationCenter({ onTableSelect }) {
 
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* Bell Icon */}
+      {/* Bell Icon with Badge */}
       <button 
-        className="relative p-2 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors focus:outline-none"
+        className="relative p-2 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors focus:outline-none group"
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Notifications"
       >
         <FaBell className="h-6 w-6" />
         {unreadCount > 0 && (
-          <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 rounded-full bg-red-600">
-            {unreadCount > 99 ? '99+' : unreadCount}
-          </span>
+          <div className="absolute top-0 right-0 flex flex-col items-center">
+            <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 rounded-full bg-red-600">
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+            {/* Tooltip for breakdown - shows on hover */}
+            <div className="notification-tooltip hidden group-hover:block absolute top-6 right-0 bg-white shadow-md rounded p-2 text-xs z-50 w-28">
+              {newOrderCount > 0 && <div className="flex justify-between"><span>New Orders:</span> <span>{newOrderCount}</span></div>}
+              {readyForPickupCount > 0 && <div className="flex justify-between"><span>Ready:</span> <span>{readyForPickupCount}</span></div>}
+              {paymentRequestCount > 0 && <div className="flex justify-between"><span>Payments:</span> <span>{paymentRequestCount}</span></div>}
+            </div>
+          </div>
         )}
       </button>
       
@@ -141,9 +192,9 @@ function NotificationCenter({ onTableSelect }) {
             <div className="flex gap-3">
               <button 
                 className="text-sm text-blue-600 hover:text-blue-800" 
-                onClick={markAllAsRead}
+                onClick={handleClear}
               >
-                Mark all read
+                {filteredNotifications.length > 0 ? 'Clear' : ''}
               </button>
               <button 
                 className="text-gray-500 hover:text-gray-700" 
@@ -154,14 +205,8 @@ function NotificationCenter({ onTableSelect }) {
             </div>
           </div>
           
-          {/* Navigation Tabs */}
+          {/* Navigation Tabs - Reordered with Payment Requests */}
           <div className="flex border-b border-gray-200">
-            <button 
-              className={`flex-1 py-2 px-4 text-sm font-medium ${activeTab === 'all' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-800'}`}
-              onClick={() => setActiveTab('all')}
-            >
-              All ({notifications.length})
-            </button>
             <button 
               className={`flex-1 py-2 px-4 text-sm font-medium ${activeTab === 'new_order' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-800'}`}
               onClick={() => setActiveTab('new_order')}
@@ -174,7 +219,49 @@ function NotificationCenter({ onTableSelect }) {
             >
               Ready ({readyForPickupCount})
             </button>
+            <button 
+              className={`flex-1 py-2 px-4 text-sm font-medium ${activeTab === 'payment_request' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-800'}`}
+              onClick={() => setActiveTab('payment_request')}
+            >
+              Payments ({paymentRequestCount})
+            </button>
+            <button 
+              className={`flex-1 py-2 px-4 text-sm font-medium ${activeTab === 'all' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-800'}`}
+              onClick={() => setActiveTab('all')}
+            >
+              All ({historyAllCount})
+            </button>
           </div>
+          
+          {/* History Sub-tabs - Only shown when All tab is active */}
+          {activeTab === 'all' && (
+            <div className="flex bg-gray-50 border-b border-gray-200 text-xs">
+              <button 
+                className={`flex-1 py-1 px-2 font-medium ${historySubTab === 'all' ? 'text-blue-600 bg-blue-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`}
+                onClick={() => setHistorySubTab('all')}
+              >
+                All ({historyAllCount})
+              </button>
+              <button 
+                className={`flex-1 py-1 px-2 font-medium ${historySubTab === 'new_order' ? 'text-blue-600 bg-blue-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`}
+                onClick={() => setHistorySubTab('new_order')}
+              >
+                Orders ({historyOrderCount})
+              </button>
+              <button 
+                className={`flex-1 py-1 px-2 font-medium ${historySubTab === 'ready_for_pickup' ? 'text-blue-600 bg-blue-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`}
+                onClick={() => setHistorySubTab('ready_for_pickup')}
+              >
+                Ready ({historyReadyCount})
+              </button>
+              <button 
+                className={`flex-1 py-1 px-2 font-medium ${historySubTab === 'payment_request' ? 'text-blue-600 bg-blue-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`}
+                onClick={() => setHistorySubTab('payment_request')}
+              >
+                Payments ({historyPaymentCount})
+              </button>
+            </div>
+          )}
           
           {/* Notification List */}
           <div className="max-h-96 overflow-y-auto">
@@ -193,36 +280,89 @@ function NotificationCenter({ onTableSelect }) {
                       {/* Content */}
                       <div className="flex-1">
                         <div className="flex justify-between">
-                          <h4 className="font-medium text-gray-900">{notification.title}</h4>
+                          <h4 className="font-medium text-gray-900">
+                            {notification.title}
+                            {notification.orderId && ` - Order #${notification.orderId.slice(-4)}`}
+                          </h4>
                           <span className="text-xs text-gray-500">{formatTimeElapsed(notification.timestamp)}</span>
                         </div>
                         
-                        {/* Details based on notification type */}
-                        {notification.type === 'new_order' && (
+                        {/* Item Details */}
+                        {notification.type === 'new_order' && notification.itemsSummary && (
                           <p className="text-sm text-gray-600 mt-1">
-                            {notification.items} item{notification.items !== 1 ? 's' : ''}
+                            {notification.itemsSummary}
                           </p>
                         )}
                         
+                        {/* Payment Details */}
                         {notification.type === 'payment_request' && (
                           <p className="text-sm text-gray-600 mt-1">
                             Amount: {notification.totalAmount?.toFixed(2) || '0.00'} SAR
                           </p>
                         )}
                         
-                        {/* Action Buttons */}
-                        <div className="mt-2 flex gap-2">
-                          {notification.type === 'new_order' && (
-                            <>
-                              <button 
-                                className="px-3 py-1 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleApproveOrder(notification.orderId, notification.id);
-                                }}
-                              >
-                                Approve
-                              </button>
+                        {/* Action Buttons - Only shown for unprocessed notifications */}
+                        {!activeTab.includes('all') && (
+                          <div className="mt-2 flex gap-2">
+                            {notification.type === 'new_order' && (
+                              <>
+                                {!notification.processed ? (
+                                  <button 
+                                    className="px-3 py-1 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleApproveOrder(notification.orderId, notification.id);
+                                    }}
+                                  >
+                                    Approve
+                                  </button>
+                                ) : (
+                                  <div className="px-3 py-1 text-xs font-medium bg-gray-100 text-gray-500 rounded">
+                                    Approved
+                                  </div>
+                                )}
+                                <button 
+                                  className="px-3 py-1 text-xs font-medium bg-gray-200 hover:bg-gray-300 text-gray-800 rounded transition-colors"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleViewTable(notification.tableName, notification.id);
+                                  }}
+                                >
+                                  View
+                                </button>
+                              </>
+                            )}
+                            
+                            {notification.type === 'ready_for_pickup' && (
+                              <>
+                                {!notification.processed ? (
+                                  <button 
+                                    className="px-3 py-1 text-xs font-medium bg-green-600 hover:bg-green-700 text-white rounded transition-colors"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleServeOrder(notification.orderId, notification.id);
+                                    }}
+                                  >
+                                    Serve
+                                  </button>
+                                ) : (
+                                  <div className="px-3 py-1 text-xs font-medium bg-gray-100 text-gray-500 rounded">
+                                    Served
+                                  </div>
+                                )}
+                                <button 
+                                  className="px-3 py-1 text-xs font-medium bg-gray-200 hover:bg-gray-300 text-gray-800 rounded transition-colors"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleViewTable(notification.tableName, notification.id);
+                                  }}
+                                >
+                                  View
+                                </button>
+                              </>
+                            )}
+                            
+                            {notification.type === 'payment_request' && (
                               <button 
                                 className="px-3 py-1 text-xs font-medium bg-gray-200 hover:bg-gray-300 text-gray-800 rounded transition-colors"
                                 onClick={(e) => {
@@ -230,35 +370,15 @@ function NotificationCenter({ onTableSelect }) {
                                   handleViewTable(notification.tableName, notification.id);
                                 }}
                               >
-                                View
+                                Process Payment
                               </button>
-                            </>
-                          )}
-                          
-                          {notification.type === 'ready_for_pickup' && (
-                            <>
-                              <button 
-                                className="px-3 py-1 text-xs font-medium bg-green-600 hover:bg-green-700 text-white rounded transition-colors"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleServeOrder(notification.orderId, notification.id);
-                                }}
-                              >
-                                Serve
-                              </button>
-                              <button 
-                                className="px-3 py-1 text-xs font-medium bg-gray-200 hover:bg-gray-300 text-gray-800 rounded transition-colors"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleViewTable(notification.tableName, notification.id);
-                                }}
-                              >
-                                View
-                              </button>
-                            </>
-                          )}
-                          
-                          {notification.type === 'payment_request' && (
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* View button for history items */}
+                        {activeTab === 'all' && (
+                          <div className="mt-2 flex justify-end">
                             <button 
                               className="px-3 py-1 text-xs font-medium bg-gray-200 hover:bg-gray-300 text-gray-800 rounded transition-colors"
                               onClick={(e) => {
@@ -266,10 +386,10 @@ function NotificationCenter({ onTableSelect }) {
                                 handleViewTable(notification.tableName, notification.id);
                               }}
                             >
-                              Process Payment
+                              View Details
                             </button>
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -283,7 +403,7 @@ function NotificationCenter({ onTableSelect }) {
                 <p className="text-gray-600 font-medium">No notifications</p>
                 <p className="text-sm text-gray-500 mt-1">
                   {activeTab === 'all' 
-                    ? 'You have no notifications at the moment' 
+                    ? `You have no ${historySubTab === 'all' ? 'history' : historySubTab.replace('_', ' ')} notifications` 
                     : `You have no ${activeTab.replace('_', ' ')} notifications`}
                 </p>
               </div>
@@ -296,12 +416,11 @@ function NotificationCenter({ onTableSelect }) {
               <button 
                 className="text-sm text-blue-600 hover:text-blue-800 flex items-center justify-center w-full gap-1" 
                 onClick={() => {
-                  // Here you could navigate to a full history page
-                  // For now, we'll just toggle between all notifications and a "history" view
                   setActiveTab('all');
+                  setHistorySubTab('all');
                 }}
               >
-                <FaHistory className="h-3 w-3" /> View all notifications
+                <FaHistory className="h-3 w-3" /> View all history
               </button>
             </div>
           )}

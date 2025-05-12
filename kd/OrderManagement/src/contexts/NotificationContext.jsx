@@ -9,7 +9,16 @@ export function NotificationProvider({ children }) {
     // Load from localStorage on init
     try {
       const saved = localStorage.getItem('restaurantNotifications');
-      return saved ? JSON.parse(saved) : [];
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Filter out notifications from previous days
+        const today = new Date().setHours(0, 0, 0, 0);
+        return parsed.filter(notification => {
+          const notificationDate = new Date(notification.timestamp).setHours(0, 0, 0, 0);
+          return notificationDate >= today;
+        });
+      }
+      return [];
     } catch (e) {
       console.error("Error parsing stored notifications:", e);
       return [];
@@ -76,6 +85,18 @@ export function NotificationProvider({ children }) {
         })
         .map(order => {
           console.log("🔵 Creating notification for order:", order);
+          
+          // Create item summary for display
+          const itemsSummary = order.items
+            ?.slice(0, 3)
+            .map(item => `${item.quantity} ${item.name || 'item'}`)
+            .join(', ');
+          
+          // Add "and X more" if there are more items
+          const itemsText = order.items?.length > 3 
+            ? `${itemsSummary} and ${order.items.length - 3} more` 
+            : itemsSummary;
+          
           // Create a notification for new pending orders
           return {
             id: `order-${order.orderId}-${Date.now()}`,
@@ -84,8 +105,10 @@ export function NotificationProvider({ children }) {
             tableName: order.tableName,
             orderId: order.orderId,
             items: order.items?.length || 0,
+            itemsSummary: itemsText, // Add summary for display
             timestamp: new Date(),
             read: false,
+            processed: false, // Track if this notification has been actioned
             data: order
           };
         });
@@ -124,6 +147,7 @@ export function NotificationProvider({ children }) {
           orderId: event.orderId,
           timestamp: new Date(),
           read: false,
+          processed: false,
           data: event
         }));
       
@@ -150,6 +174,7 @@ export function NotificationProvider({ children }) {
         totalAmount: event.totalAmount,
         timestamp: new Date(),
         read: false,
+        processed: false,
         data: event
       }));
       
@@ -214,6 +239,17 @@ export function NotificationProvider({ children }) {
     });
   };
   
+  // Mark a notification as processed (action taken)
+  const markAsProcessed = (notificationId) => {
+    setNotifications(prev => {
+      const updated = prev.map(item => 
+        item.id === notificationId ? { ...item, processed: true, read: true } : item
+      );
+      localStorage.setItem('restaurantNotifications', JSON.stringify(updated));
+      return updated;
+    });
+  };
+  
   // Mark all notifications as read
   const markAllAsRead = () => {
     setNotifications(prev => {
@@ -223,9 +259,48 @@ export function NotificationProvider({ children }) {
     });
   };
   
+  // Clear notifications by type (mark as read)
+  const clearNotificationsByType = (type) => {
+    if (!type || type === 'all') return;
+    
+    setNotifications(prev => {
+      const updated = prev.map(item => 
+        item.type === type ? { ...item, read: true } : item
+      );
+      localStorage.setItem('restaurantNotifications', JSON.stringify(updated));
+      return updated;
+    });
+  };
+  
+// Remove a notification
   const removeNotification = (notificationId) => {
     setNotifications(prev => {
       const updated = prev.filter(item => item.id !== notificationId);
+      localStorage.setItem('restaurantNotifications', JSON.stringify(updated));
+      return updated;
+    });
+  };
+  
+  // Remove notifications by type and processed status
+  const removeNotificationsByType = (type, processedOnly = false) => {
+    setNotifications(prev => {
+      let updated;
+      
+      if (type === 'all') {
+        // If removing all notifications (or all processed)
+        if (processedOnly) {
+          updated = prev.filter(item => !item.processed);
+        } else {
+          updated = []; // Remove all
+        }
+      } else {
+        // If removing specific type
+        updated = prev.filter(item => {
+          // Keep if not this type OR not matching processed state
+          return item.type !== type || (processedOnly && !item.processed);
+        });
+      }
+      
       localStorage.setItem('restaurantNotifications', JSON.stringify(updated));
       return updated;
     });
@@ -237,10 +312,24 @@ export function NotificationProvider({ children }) {
     localStorage.removeItem('restaurantNotifications');
   };
   
-  // Get notifications by type
+  // Get notifications by type (and not processed by default)
   const getNotificationsByType = (type) => {
     if (!type || type === 'all') return notifications;
     return notifications.filter(item => item.type === type);
+  };
+  
+  // Get all processed notifications
+  const getProcessedNotifications = () => {
+    return notifications.filter(item => item.processed);
+  };
+  
+  // Get today's notifications only
+  const getTodayNotifications = () => {
+    const today = new Date().setHours(0, 0, 0, 0);
+    return notifications.filter(notification => {
+      const notificationDate = new Date(notification.timestamp).setHours(0, 0, 0, 0);
+      return notificationDate >= today;
+    });
   };
   
   // Value to provide
@@ -248,10 +337,15 @@ export function NotificationProvider({ children }) {
     notifications,
     unreadCount,
     markAsRead,
+    markAsProcessed,
     markAllAsRead,
     clearNotifications,
+    clearNotificationsByType,
     getNotificationsByType,
-    removeNotification
+    getProcessedNotifications,
+    getTodayNotifications,
+    removeNotification,
+    removeNotificationsByType
   };
   
   return (
